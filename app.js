@@ -884,16 +884,30 @@
     }[type] || "New item";
   }
 
-  function saveJsonFile() {
+  async function saveJsonFile() {
     const payload = {
       ...timeline,
       exportedAt: new Date().toISOString(),
     };
-    downloadBlob(
-      new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
-      `${filenameBase()}.json`,
-    );
-    setStatus("JSON saved");
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const filename = `${filenameBase()}.json`;
+
+    try {
+      const savedWithPicker = await saveBlobWithPicker(blob, filename, {
+        description: "Timeline JSON",
+        accept: { "application/json": [".json"] },
+      });
+      if (!savedWithPicker) downloadBlob(blob, filename);
+      setStatus("JSON saved");
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        setStatus("Save canceled");
+        return;
+      }
+      console.error(error);
+      downloadBlob(blob, filename);
+      setStatus("JSON downloaded");
+    }
   }
 
   async function loadJsonFile() {
@@ -1068,6 +1082,18 @@
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  }
+
+  async function saveBlobWithPicker(blob, filename, fileType) {
+    if (!window.showSaveFilePicker) return false;
+    const handle = await window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [fileType],
+    });
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return true;
   }
 
   function svgEl(tagName, attributes = {}, text = null) {

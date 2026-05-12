@@ -19,7 +19,7 @@ Open `index.html` in a browser.
 - Dragging items across dates and lanes
 - Resize handles for periods and lines
 - Dynamic Gregorian and transliterated Iranian Solar Hijri date labels
-- JSON save/load
+- JSON save/load with a browser save dialog when supported
 - SVG, PNG, and single-page PDF export
 
 The app starts with a blank timeline ending at today by default. Use `Load JSON` to open saved timelines.
