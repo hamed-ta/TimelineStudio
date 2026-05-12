@@ -10,12 +10,14 @@ Open `index.html` in a browser.
 
 - Horizontal scrollable SVG timeline
 - Zoom controls and pointer-centered zoom with Ctrl/Command + mouse wheel
+- Real date placement with year, month, week, or day drag snapping
 - Event, period, line, and text items
-- Dragging items across years and lanes
+- Click-and-drag panning across the timeline canvas
+- Renamable row/line labels
+- Dragging items across dates and lanes
 - Resize handles for periods and lines
-- Solar Hijri and Gregorian year labels with age labels
-- Browser autosave
+- Dynamic Gregorian and transliterated Iranian Solar Hijri date labels
 - JSON save/load
 - SVG, PNG, and single-page PDF export
 
-The included sample uses the timeline data from the prompt.
+The app starts with a blank timeline. Use `Load JSON` to open saved timelines, or `Sample` to load the original prompt data.

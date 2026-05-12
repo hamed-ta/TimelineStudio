@@ -1,14 +1,36 @@
 (() => {
-  const STORAGE_KEY = "timeline-studio-document-v1";
-  const ZOOM_KEY = "timeline-studio-zoom-v1";
+  const ZOOM_KEY = "timeline-studio-zoom-v2";
   const NS = "http://www.w3.org/2000/svg";
   const LEFT_GUTTER = 132;
   const RIGHT_GUTTER = 110;
-  const AXIS_HEIGHT = 92;
+  const AXIS_HEIGHT = 112;
   const FOOTER_HEIGHT = 34;
   const DEFAULT_ROW_HEIGHT = 68;
-  const MIN_ZOOM = 56;
-  const MAX_ZOOM = 360;
+  const MIN_ZOOM = 8;
+  const MAX_ZOOM = 120;
+  const DEFAULT_ZOOM = 18;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const AVG_DAYS_PER_MONTH = 365.2425 / 12;
+  const EN_DATE_FORMAT = new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const EN_MONTH_FORMAT = new Intl.DateTimeFormat("en", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  const IRANIAN_DATE_FORMAT = new Intl.DateTimeFormat("en-US-u-ca-persian", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const IRANIAN_MONTH_FORMAT = new Intl.DateTimeFormat("en-US-u-ca-persian", {
+    month: "short",
+    timeZone: "UTC",
+  });
 
   const TYPE_COLORS = {
     event: "#d97706",
@@ -20,11 +42,11 @@
   const dom = {
     statusText: document.getElementById("statusText"),
     timelineTitleInput: document.getElementById("timelineTitleInput"),
-    startYearInput: document.getElementById("startYearInput"),
-    endYearInput: document.getElementById("endYearInput"),
-    birthYearInput: document.getElementById("birthYearInput"),
-    shOffsetInput: document.getElementById("shOffsetInput"),
+    startDateInput: document.getElementById("startDateInput"),
+    endDateInput: document.getElementById("endDateInput"),
     snapInput: document.getElementById("snapInput"),
+    laneList: document.getElementById("laneList"),
+    addLaneButton: document.getElementById("addLaneButton"),
     itemForm: document.getElementById("itemForm"),
     itemTypeInput: document.getElementById("itemTypeInput"),
     itemTitleInput: document.getElementById("itemTitleInput"),
@@ -33,6 +55,7 @@
     itemStartInput: document.getElementById("itemStartInput"),
     itemEndInput: document.getElementById("itemEndInput"),
     itemEndField: document.getElementById("itemEndField"),
+    itemCalendarPreview: document.getElementById("itemCalendarPreview"),
     itemNotesInput: document.getElementById("itemNotesInput"),
     deleteItemButton: document.getElementById("deleteItemButton"),
     duplicateItemButton: document.getElementById("duplicateItemButton"),
@@ -54,20 +77,20 @@
     stageMeta: document.getElementById("stageMeta"),
   };
 
-  let timeline = loadLocalTimeline() || createSampleTimeline();
+  let timeline = createEmptyTimeline();
   let selectedId = null;
-  let zoom = clamp(Number(localStorage.getItem(ZOOM_KEY)) || 148, MIN_ZOOM, MAX_ZOOM);
+  let zoom = clamp(Number(localStorage.getItem(ZOOM_KEY)) || DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM);
   let suppressControlEvents = false;
   let dragState = null;
-  let localSaveTimer = null;
 
   const EXPORT_CSS = `
     .axis-band{fill:#f8fafc}
     .canvas-bg{fill:#ffffff}
     .grid-major{stroke:#cbd5e1;stroke-width:1}
     .grid-minor{stroke:#e6ebf0;stroke-width:1}
+    .grid-day{stroke:#f1f4f7;stroke-width:1}
     .lane-rule{stroke:#d9e0e7;stroke-width:1}
-    .lane-label,.axis-label,.age-label{fill:#667586;font-size:12px}
+    .lane-label,.axis-label,.axis-iranian,.age-label,.axis-month{fill:#667586;font-size:12px}
     .axis-year{fill:#1d2732;font-size:13px;font-weight:700}
     .title-label{font-size:13px;font-weight:700}
     .note-label{font-size:13px;font-weight:650}
@@ -94,18 +117,21 @@
 
     [
       dom.timelineTitleInput,
-      dom.startYearInput,
-      dom.endYearInput,
-      dom.birthYearInput,
-      dom.shOffsetInput,
+      dom.startDateInput,
+      dom.endDateInput,
       dom.snapInput,
     ].forEach((control) => {
       control.addEventListener("input", updateTimelineFromControls);
       control.addEventListener("change", updateTimelineFromControls);
     });
+    [dom.itemStartInput, dom.itemEndInput].forEach((control) => {
+      control.addEventListener("input", updateItemCalendarPreviewFromInputs);
+      control.addEventListener("change", updateItemCalendarPreviewFromInputs);
+    });
 
     dom.itemTypeInput.addEventListener("change", () => {
       dom.itemEndField.hidden = !hasEndYear(dom.itemTypeInput.value);
+      updateItemCalendarPreviewFromInputs();
     });
 
     dom.itemForm.addEventListener("submit", (event) => {
@@ -116,6 +142,7 @@
     dom.deleteItemButton.addEventListener("click", deleteSelectedItem);
     dom.duplicateItemButton.addEventListener("click", duplicateSelectedItem);
     dom.resetSampleButton.addEventListener("click", resetToSample);
+    dom.addLaneButton.addEventListener("click", addLane);
 
     dom.saveJsonButton.addEventListener("click", saveJsonFile);
     dom.loadJsonButton.addEventListener("click", () => dom.fileInput.click());
@@ -138,21 +165,37 @@
       }
     });
 
-    dom.timelineSvg.addEventListener("pointerdown", beginPointerDrag);
-    dom.timelineSvg.addEventListener("pointermove", movePointerDrag);
-    dom.timelineSvg.addEventListener("pointerup", endPointerDrag);
-    dom.timelineSvg.addEventListener("pointercancel", endPointerDrag);
+    dom.timelineViewport.addEventListener("pointerdown", beginPointerDrag);
+    dom.timelineViewport.addEventListener("pointermove", movePointerDrag);
+    dom.timelineViewport.addEventListener("pointerup", endPointerDrag);
+    dom.timelineViewport.addEventListener("pointercancel", endPointerDrag);
+  }
+
+  function createEmptyTimeline() {
+    const year = new Date().getFullYear();
+    return {
+      version: 2,
+      settings: {
+        title: "New Timeline",
+        startDate: yearStartIso(year),
+        endDate: yearEndIso(year),
+        snap: "month",
+        rowHeight: DEFAULT_ROW_HEIGHT,
+        laneLabels: ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5"],
+      },
+      items: [],
+    };
   }
 
   function createSampleTimeline() {
     const items = [];
-    const add = (type, lane, startYear, endYear, title, color, notes = "") => {
+    const add = (type, lane, startDate, endDate, title, color, notes = "") => {
       items.push({
         id: createId(type),
         type,
         lane,
-        startYear,
-        endYear,
+        startDate,
+        endDate,
         title,
         color,
         notes,
@@ -171,25 +214,23 @@
       [2002, 2005, "High School: Hafez"],
       [2005, 2006, "High School: Shahriar"],
       [2006, 2007, "Pre-University"],
-    ].forEach(([start, end, title]) => add("period", 0, start, end, title, "#2563eb"));
+    ].forEach(([start, end, title]) => add("period", 0, yearStartIso(start), yearStartIso(end), title, "#2563eb"));
 
-    add("period", 1, 1993, 1995, "Home: Pashekori", "#0f766e");
-    add("period", 1, 1995, 2000, "Home: Sharifi", "#0f766e");
-    add("period", 1, 2000, 2005, "Home: Ferdowsi", "#0f766e");
-    add("period", 1, 2005, 2007, "Home: Aziz", "#0f766e");
-    add("event", 2, 1988, 1988, "1", "#d97706", "1367 SH / 1988 AD");
-    add("line", 3, 1993, 2007, "School and home years", "#be123c");
-    add("text", 4, 1988, 1988, "1367 SH / 1988 AD", "#7c3aed");
+    add("period", 1, "1993-01-01", "1995-01-01", "Home: Pashekori", "#0f766e");
+    add("period", 1, "1995-01-01", "2000-01-01", "Home: Sharifi", "#0f766e");
+    add("period", 1, "2000-01-01", "2005-01-01", "Home: Ferdowsi", "#0f766e");
+    add("period", 1, "2005-01-01", "2007-01-01", "Home: Aziz", "#0f766e");
+    add("event", 2, "1988-01-01", "1988-01-01", "1", "#d97706", "Jan 1, 1988 AD / 11 Dey 1366");
+    add("line", 3, "1993-01-01", "2007-01-01", "School and home years", "#be123c");
+    add("text", 4, "1988-01-01", "1988-01-01", "Jan 1, 1988 AD / 11 Dey 1366", "#7c3aed");
 
     return {
-      version: 1,
+      version: 2,
       settings: {
         title: "Personal Timeline",
-        startYear: 1988,
-        endYear: 2006,
-        birthYear: 1988,
-        shOffset: -621,
-        snap: 1,
+        startDate: "1988-01-01",
+        endDate: "2006-12-31",
+        snap: "month",
         rowHeight: DEFAULT_ROW_HEIGHT,
         laneLabels: ["Education", "Home", "Events", "Lines", "Notes"],
       },
@@ -198,54 +239,67 @@
   }
 
   function normalizeTimeline(input) {
-    const fallback = createSampleTimeline();
+    const fallback = createEmptyTimeline();
     const settings = {
       ...fallback.settings,
       ...(input && input.settings ? input.settings : {}),
     };
 
-    settings.title = String(settings.title || "Personal Timeline");
-    settings.startYear = toNumber(settings.startYear, 1988);
-    settings.endYear = toNumber(settings.endYear, 2006);
-    if (settings.endYear < settings.startYear) {
-      settings.endYear = settings.startYear;
+    settings.title = String(settings.title || "New Timeline");
+    settings.startDate = normalizeDateInput(
+      settings.startDate,
+      yearStartIso(toNumber(settings.startYear, 1988)),
+    );
+    settings.endDate = normalizeDateInput(
+      settings.endDate,
+      settings.endYear === undefined ? "2006-12-31" : yearEndIso(toNumber(settings.endYear, 2006)),
+    );
+    if (compareIso(settings.endDate, settings.startDate) < 0) {
+      settings.endDate = settings.startDate;
     }
-    settings.birthYear = toNumber(settings.birthYear, settings.startYear);
-    settings.shOffset = toNumber(settings.shOffset, -621);
-    settings.snap = clamp(toNumber(settings.snap, 1), 0.1, 10);
+    delete settings.birthDate;
+    delete settings.birthYear;
+    delete settings.shOffset;
+    settings.snap = normalizeSnap(settings.snap);
     settings.rowHeight = clamp(toNumber(settings.rowHeight, DEFAULT_ROW_HEIGHT), 48, 120);
     settings.laneLabels = Array.isArray(settings.laneLabels)
       ? settings.laneLabels.map((label) => String(label))
       : fallback.settings.laneLabels;
 
     const rawItems = Array.isArray(input && input.items) ? input.items : fallback.items;
-    const items = rawItems.map((item) => normalizeItem(item, settings.startYear)).filter(Boolean);
+    const items = rawItems.map((item) => normalizeItem(item, settings.startDate)).filter(Boolean);
 
     return {
-      version: 1,
+      version: 2,
       settings,
       items,
     };
   }
 
-  function normalizeItem(item, defaultStartYear = 1988) {
+  function normalizeItem(item, defaultStartDate = "1988-01-01") {
     if (!item || typeof item !== "object") return null;
     const type = ["event", "period", "line", "text"].includes(item.type) ? item.type : "event";
-    const startYear = toNumber(item.startYear, defaultStartYear);
-    let endYear = toNumber(item.endYear, startYear);
-    if (hasEndYear(type) && endYear <= startYear) {
-      endYear = startYear + 1;
+    const startDate = normalizeDateInput(
+      item.startDate,
+      item.startYear === undefined ? defaultStartDate : isoFromYearValue(toNumber(item.startYear, isoYear(defaultStartDate))),
+    );
+    let endDate = normalizeDateInput(
+      item.endDate,
+      item.endYear === undefined ? startDate : isoFromYearValue(toNumber(item.endYear, isoYear(startDate))),
+    );
+    if (hasEndYear(type) && compareIso(endDate, startDate) <= 0) {
+      endDate = addDaysIso(startDate, 1);
     }
     if (!hasEndYear(type)) {
-      endYear = startYear;
+      endDate = startDate;
     }
 
     return {
       id: String(item.id || createId(type)),
       type,
       lane: clamp(Math.round(toNumber(item.lane, 0)), 0, 20),
-      startYear,
-      endYear,
+      startDate,
+      endDate,
       title: String(item.title || titleForType(type)),
       color: normalizeColor(item.color || TYPE_COLORS[type]),
       notes: String(item.notes || ""),
@@ -253,16 +307,14 @@
   }
 
   function renderAll(options = {}) {
-    const save = options.save !== false;
     timeline = normalizeTimeline(timeline);
     if (selectedId && !getItem(selectedId)) selectedId = null;
 
     syncTimelineControls();
     syncItemForm();
+    renderLaneControls();
     renderTimeline();
     updateMeta();
-
-    if (save) scheduleLocalSave();
   }
 
   function renderTimeline() {
@@ -272,10 +324,12 @@
     const settings = timeline.settings;
     const laneCount = Math.max(
       5,
+      settings.laneLabels.length,
       ...timeline.items.map((item) => Math.max(0, Number(item.lane) + 1)),
     );
     const rowHeight = settings.rowHeight || DEFAULT_ROW_HEIGHT;
-    const contentWidth = LEFT_GUTTER + (settings.endYear - settings.startYear + 1) * zoom + RIGHT_GUTTER;
+    const contentEndDate = addDaysIso(settings.endDate, 1);
+    const contentWidth = LEFT_GUTTER + daysBetween(settings.startDate, contentEndDate) * pixelsPerDay() + RIGHT_GUTTER;
     const contentHeight = AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT;
 
     svg.setAttribute("width", String(Math.ceil(contentWidth)));
@@ -293,36 +347,43 @@
 
     timeline.items
       .slice()
-      .sort((a, b) => a.lane - b.lane || a.startYear - b.startYear)
+      .sort((a, b) => a.lane - b.lane || compareIso(a.startDate, b.startDate))
       .forEach((item) => drawItem(svg, defs, item, rowHeight));
   }
 
   function drawGrid(svg, settings, laneCount, rowHeight, contentHeight) {
-    const labelStep = zoom < 74 ? 5 : zoom < 112 ? 2 : 1;
-    const start = settings.startYear;
-    const end = settings.endYear;
+    const startYear = isoYear(settings.startDate);
+    const endYear = isoYear(settings.endDate);
+    const yearLabelStep = zoom < 13 ? 5 : zoom < 21 ? 2 : 1;
+    const contentEndDate = addDaysIso(settings.endDate, 1);
 
-    if (zoom >= 128) {
-      for (let year = start + 0.5; year <= end + 0.5; year += 1) {
-        const x = yearToX(year);
-        svg.append(svgEl("line", { class: "grid-minor", x1: x, x2: x, y1: AXIS_HEIGHT, y2: contentHeight }));
+    if (zoom >= 74) {
+      for (let date = settings.startDate; compareIso(date, contentEndDate) <= 0; date = addDaysIso(date, 7)) {
+        const x = dateToX(date);
+        svg.append(svgEl("line", { class: "grid-day", x1: x, x2: x, y1: AXIS_HEIGHT, y2: contentHeight }));
       }
     }
 
-    for (let year = start; year <= end + 1; year += 1) {
-      const x = yearToX(year);
-      svg.append(svgEl("line", { class: "grid-major", x1: x, x2: x, y1: 0, y2: contentHeight }));
+    for (let year = startYear; year <= endYear; year += 1) {
+      for (let month = 0; month < 12; month += 1) {
+        const date = isoFromParts(year, month, 1);
+        if (compareIso(date, settings.startDate) < 0 || compareIso(date, contentEndDate) > 0) continue;
+        const x = dateToX(date);
+        const isYearStart = month === 0;
+        svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: isYearStart ? 0 : AXIS_HEIGHT, y2: contentHeight }));
 
-      if (year <= end && (year - start) % labelStep === 0) {
-        svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: 26 }, `${year} AD`));
-        svg.append(svgEl("text", { class: "axis-label", x: x + 8, y: 47 }, `${year + settings.shOffset} SH`));
-        svg.append(svgEl("text", { class: "age-label", x: x + 8, y: 68 }, `Age ${year - settings.birthYear + 1}`));
+        if (isYearStart && (year - startYear) % yearLabelStep === 0) {
+          svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: 24 }, `${formatDisplayDate(date)} AD`));
+          svg.append(svgEl("text", { class: "axis-iranian", x: x + 8, y: 47 }, formatIranianDate(date)));
+        } else if (!isYearStart && zoom >= 42) {
+          svg.append(svgEl("text", { class: "axis-month", x: x + 5, y: 100 }, `${monthName(date)} / ${iranianMonthName(date)}`));
+        }
       }
     }
 
     for (let lane = 0; lane <= laneCount; lane += 1) {
       const y = AXIS_HEIGHT + lane * rowHeight;
-      svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: yearToX(end + 1), y1: y, y2: y }));
+      svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: dateToX(contentEndDate), y1: y, y2: y }));
     }
   }
 
@@ -342,8 +403,8 @@
     });
 
     const y = AXIS_HEIGHT + item.lane * rowHeight + rowHeight / 2;
-    const x1 = yearToX(item.startYear);
-    const x2 = yearToX(hasEndYear(item.type) ? item.endYear : item.startYear);
+    const x1 = dateToX(item.startDate);
+    const x2 = dateToX(hasEndYear(item.type) ? item.endDate : item.startDate);
 
     if (item.type === "period") {
       drawPeriod(group, item, x1, x2, y);
@@ -444,19 +505,17 @@
   function updateMeta() {
     const settings = timeline.settings;
     dom.stageTitle.textContent = settings.title;
-    dom.stageMeta.textContent = `${settings.startYear + settings.shOffset} SH / ${settings.startYear} AD to ${settings.endYear + settings.shOffset} SH / ${settings.endYear} AD`;
+    dom.stageMeta.textContent = `${formatDisplayDate(settings.startDate)} AD / ${formatIranianDate(settings.startDate)} to ${formatDisplayDate(settings.endDate)} AD / ${formatIranianDate(settings.endDate)}`;
   }
 
   function syncTimelineControls() {
     suppressControlEvents = true;
     dom.timelineTitleInput.value = timeline.settings.title;
-    dom.startYearInput.value = timeline.settings.startYear;
-    dom.endYearInput.value = timeline.settings.endYear;
-    dom.birthYearInput.value = timeline.settings.birthYear;
-    dom.shOffsetInput.value = timeline.settings.shOffset;
+    dom.startDateInput.value = timeline.settings.startDate;
+    dom.endDateInput.value = timeline.settings.endDate;
     dom.snapInput.value = String(timeline.settings.snap);
     dom.zoomRange.value = String(zoom);
-    dom.zoomLabel.textContent = `${Math.round(zoom)} px/year`;
+    dom.zoomLabel.textContent = `${Math.round(zoom)} px/month`;
     suppressControlEvents = false;
   }
 
@@ -487,6 +546,7 @@
       dom.itemStartInput.value = "";
       dom.itemEndInput.value = "";
       dom.itemNotesInput.value = "";
+      dom.itemCalendarPreview.textContent = "Select an item to see Gregorian and Iranian dates.";
       dom.itemEndField.hidden = true;
       dom.itemForm.classList.add("empty-selection");
       suppressControlEvents = false;
@@ -498,23 +558,96 @@
     dom.itemTitleInput.value = item.title;
     dom.itemLaneInput.value = item.lane;
     dom.itemColorInput.value = item.color;
-    dom.itemStartInput.value = formatYearValue(item.startYear);
-    dom.itemEndInput.value = formatYearValue(item.endYear);
+    dom.itemStartInput.value = item.startDate;
+    dom.itemEndInput.value = item.endDate;
     dom.itemNotesInput.value = item.notes;
     dom.itemEndField.hidden = !hasEndYear(item.type);
+    updateItemCalendarPreview(item);
     suppressControlEvents = false;
+  }
+
+  function renderLaneControls() {
+    const labels = ensureLaneLabels();
+    dom.laneList.replaceChildren();
+    labels.forEach((label, index) => {
+      const field = document.createElement("label");
+      field.className = "lane-editor-label";
+
+      const caption = document.createElement("span");
+      caption.textContent = `Line ${index + 1}`;
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = label;
+      input.dataset.laneIndex = String(index);
+      input.autocomplete = "off";
+      input.addEventListener("input", updateLaneLabelDraft);
+      input.addEventListener("blur", updateLaneLabel);
+      input.addEventListener("change", updateLaneLabel);
+
+      field.append(caption, input);
+      dom.laneList.append(field);
+    });
+  }
+
+  function ensureLaneLabels() {
+    const labels = timeline.settings.laneLabels;
+    const laneCount = Math.max(
+      5,
+      labels.length,
+      ...timeline.items.map((item) => Math.max(0, Number(item.lane) + 1)),
+    );
+    while (labels.length < laneCount) {
+      labels.push(`Line ${labels.length + 1}`);
+    }
+    return labels;
+  }
+
+  function updateLaneLabel(event) {
+    const index = Number(event.currentTarget.dataset.laneIndex);
+    if (!Number.isInteger(index)) return;
+    timeline.settings.laneLabels[index] = event.currentTarget.value.trim() || `Line ${index + 1}`;
+    renderAll();
+    setStatus("Line renamed");
+  }
+
+  function updateLaneLabelDraft(event) {
+    const index = Number(event.currentTarget.dataset.laneIndex);
+    if (!Number.isInteger(index)) return;
+    timeline.settings.laneLabels[index] = event.currentTarget.value;
+  }
+
+  function addLane() {
+    timeline.settings.laneLabels.push(`Line ${timeline.settings.laneLabels.length + 1}`);
+    renderAll();
+    setStatus("Line added");
+  }
+
+  function updateItemCalendarPreviewFromInputs() {
+    if (suppressControlEvents) return;
+    const startDate = normalizeDateInput(dom.itemStartInput.value, timeline.settings.startDate);
+    const endDate = hasEndYear(dom.itemTypeInput.value)
+      ? normalizeDateInput(dom.itemEndInput.value, startDate)
+      : startDate;
+    dom.itemCalendarPreview.textContent = hasEndYear(dom.itemTypeInput.value)
+      ? `${formatDatePair(startDate)} to ${formatDatePair(endDate)}`
+      : formatDatePair(startDate);
+  }
+
+  function updateItemCalendarPreview(item) {
+    dom.itemCalendarPreview.textContent = hasEndYear(item.type)
+      ? `${formatDatePair(item.startDate)} to ${formatDatePair(item.endDate)}`
+      : formatDatePair(item.startDate);
   }
 
   function updateTimelineFromControls() {
     if (suppressControlEvents) return;
     const settings = timeline.settings;
-    settings.title = dom.timelineTitleInput.value.trim() || "Personal Timeline";
-    settings.startYear = Math.round(toNumber(dom.startYearInput.value, settings.startYear));
-    settings.endYear = Math.round(toNumber(dom.endYearInput.value, settings.endYear));
-    if (settings.endYear < settings.startYear) settings.endYear = settings.startYear;
-    settings.birthYear = Math.round(toNumber(dom.birthYearInput.value, settings.birthYear));
-    settings.shOffset = Math.round(toNumber(dom.shOffsetInput.value, settings.shOffset));
-    settings.snap = toNumber(dom.snapInput.value, settings.snap);
+    settings.title = dom.timelineTitleInput.value.trim() || "New Timeline";
+    settings.startDate = normalizeDateInput(dom.startDateInput.value, settings.startDate);
+    settings.endDate = normalizeDateInput(dom.endDateInput.value, settings.endDate);
+    if (compareIso(settings.endDate, settings.startDate) < 0) settings.endDate = settings.startDate;
+    settings.snap = normalizeSnap(dom.snapInput.value);
     renderAll();
     setStatus("Timeline updated");
   }
@@ -528,9 +661,9 @@
     item.title = dom.itemTitleInput.value.trim() || titleForType(type);
     item.lane = clamp(Math.round(toNumber(dom.itemLaneInput.value, item.lane)), 0, 20);
     item.color = normalizeColor(dom.itemColorInput.value || TYPE_COLORS[type]);
-    item.startYear = toNumber(dom.itemStartInput.value, item.startYear);
-    item.endYear = hasEndYear(type) ? toNumber(dom.itemEndInput.value, item.startYear + 1) : item.startYear;
-    if (hasEndYear(type) && item.endYear <= item.startYear) item.endYear = item.startYear + 1;
+    item.startDate = normalizeDateInput(dom.itemStartInput.value, item.startDate);
+    item.endDate = hasEndYear(type) ? normalizeDateInput(dom.itemEndInput.value, addDaysIso(item.startDate, 1)) : item.startDate;
+    if (hasEndYear(type) && compareIso(item.endDate, item.startDate) <= 0) item.endDate = addDaysIso(item.startDate, 1);
     item.notes = dom.itemNotesInput.value;
 
     renderAll();
@@ -538,15 +671,16 @@
   }
 
   function addItem(type) {
-    const centerYear = getViewportCenterYear();
-    const startYear = snapYear(clamp(centerYear, timeline.settings.startYear, timeline.settings.endYear));
+    const centerDate = getViewportCenterDate();
+    const startDate = snapDate(clampIso(centerDate, timeline.settings.startDate, timeline.settings.endDate));
     const laneByType = { period: 0, line: 3, event: 2, text: 4 };
+    const endDate = hasEndYear(type) ? defaultEndDate(startDate) : startDate;
     const item = normalizeItem({
       id: createId(type),
       type,
       lane: laneByType[type] || 0,
-      startYear,
-      endYear: hasEndYear(type) ? Math.min(startYear + 1, timeline.settings.endYear + 1) : startYear,
+      startDate,
+      endDate: clampIso(endDate, addDaysIso(startDate, 1), addDaysIso(timeline.settings.endDate, 1)),
       title: titleForType(type),
       color: TYPE_COLORS[type],
       notes: "",
@@ -595,11 +729,26 @@
   }
 
   function beginPointerDrag(event) {
+    if (event.button !== 0) return;
     const handle = event.target.closest(".resize-handle");
     const itemNode = event.target.closest("[data-item-id]");
     if (!itemNode) {
-      selectedId = null;
-      renderAll();
+      if (selectedId) {
+        selectedId = null;
+        renderAll({ save: false });
+      }
+      dragState = {
+        pointerId: event.pointerId,
+        mode: "pan",
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startScrollLeft: dom.timelineViewport.scrollLeft,
+        startScrollTop: dom.timelineViewport.scrollTop,
+        moved: false,
+      };
+      dom.timelineViewport.setPointerCapture(event.pointerId);
+      dom.timelineViewport.classList.add("is-panning");
+      event.preventDefault();
       return;
     }
 
@@ -614,48 +763,78 @@
       startPoint: point,
       original: { ...item },
     };
-    dom.timelineSvg.setPointerCapture(event.pointerId);
+    dom.timelineViewport.setPointerCapture(event.pointerId);
     renderAll({ save: false });
+    event.preventDefault();
   }
 
   function movePointerDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
+    if (dragState.mode === "pan") {
+      const dx = event.clientX - dragState.startClientX;
+      const dy = event.clientY - dragState.startClientY;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragState.moved = true;
+      dom.timelineViewport.scrollLeft = dragState.startScrollLeft - dx;
+      dom.timelineViewport.scrollTop = dragState.startScrollTop - dy;
+      event.preventDefault();
+      return;
+    }
+
     const item = getItem(dragState.itemId);
     if (!item) return;
     const point = svgPoint(event);
-    const dxYears = (point.x - dragState.startPoint.x) / zoom;
+    const dxDays = Math.round((point.x - dragState.startPoint.x) / pixelsPerDay());
     const dyLanes = Math.round((point.y - dragState.startPoint.y) / timeline.settings.rowHeight);
     const original = dragState.original;
+    const minDate = timeline.settings.startDate;
+    const maxDate = addDaysIso(timeline.settings.endDate, 1);
 
     if (dragState.mode === "start") {
-      item.startYear = snapYear(Math.min(original.startYear + dxYears, item.endYear - timeline.settings.snap));
+      const maxStart = addDaysIso(item.endDate, -minDurationDays());
+      item.startDate = clampIso(snapDate(clampIso(addDaysIso(original.startDate, dxDays), minDate, maxStart)), minDate, maxStart);
     } else if (dragState.mode === "end") {
-      item.endYear = snapYear(Math.max(original.endYear + dxYears, item.startYear + timeline.settings.snap));
+      const minEnd = addDaysIso(item.startDate, minDurationDays());
+      item.endDate = clampIso(snapDate(clampIso(addDaysIso(original.endDate, dxDays), minEnd, maxDate)), minEnd, maxDate);
     } else {
-      item.startYear = snapYear(original.startYear + dxYears);
+      const duration = hasEndYear(item.type) ? daysBetween(original.startDate, original.endDate) : 0;
+      let nextStart = snapDate(addDaysIso(original.startDate, dxDays));
+      if (compareIso(nextStart, minDate) < 0) nextStart = minDate;
+      if (hasEndYear(item.type) && compareIso(addDaysIso(nextStart, duration), maxDate) > 0) {
+        nextStart = addDaysIso(maxDate, -duration);
+      } else if (!hasEndYear(item.type) && compareIso(nextStart, timeline.settings.endDate) > 0) {
+        nextStart = timeline.settings.endDate;
+      }
+      item.startDate = nextStart;
       item.lane = clamp(original.lane + dyLanes, 0, 20);
       if (hasEndYear(item.type)) {
-        const duration = original.endYear - original.startYear;
-        item.endYear = snapYear(item.startYear + duration);
+        item.endDate = addDaysIso(item.startDate, duration);
       } else {
-        item.endYear = item.startYear;
+        item.endDate = item.startDate;
       }
     }
 
-    if (hasEndYear(item.type) && item.endYear <= item.startYear) {
-      item.endYear = item.startYear + timeline.settings.snap;
+    if (hasEndYear(item.type) && compareIso(item.endDate, item.startDate) <= 0) {
+      item.endDate = addDaysIso(item.startDate, minDurationDays());
     }
     renderAll({ save: false });
+    event.preventDefault();
   }
 
   function endPointerDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
+    const wasPan = dragState.mode === "pan";
+    const panMoved = Boolean(dragState.moved);
     try {
-      dom.timelineSvg.releasePointerCapture(event.pointerId);
+      dom.timelineViewport.releasePointerCapture(event.pointerId);
     } catch {
       // Pointer capture may already be released by the browser.
     }
+    dom.timelineViewport.classList.remove("is-panning");
     dragState = null;
+    if (wasPan) {
+      if (panMoved) setStatus("Timeline panned");
+      return;
+    }
     renderAll();
     setStatus("Item moved");
   }
@@ -665,40 +844,40 @@
     event.preventDefault();
     const rect = dom.timelineViewport.getBoundingClientRect();
     const pointerX = dom.timelineViewport.scrollLeft + event.clientX - rect.left;
-    const yearUnderPointer = xToYear(pointerX);
-    const nextZoom = zoom + (event.deltaY > 0 ? -18 : 18);
+    const dateUnderPointer = xToDate(pointerX);
+    const nextZoom = zoom + (event.deltaY > 0 ? -4 : 4);
     setZoom(nextZoom, { render: false });
     renderAll({ save: false });
-    dom.timelineViewport.scrollLeft = yearToX(yearUnderPointer) - (event.clientX - rect.left);
+    dom.timelineViewport.scrollLeft = dateToX(dateUnderPointer) - (event.clientX - rect.left);
   }
 
   function setZoom(value, options = {}) {
-    zoom = clamp(Number(value) || 148, MIN_ZOOM, MAX_ZOOM);
+    zoom = clamp(Number(value) || DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM);
     localStorage.setItem(ZOOM_KEY, String(zoom));
     dom.zoomRange.value = String(zoom);
-    dom.zoomLabel.textContent = `${Math.round(zoom)} px/year`;
+    dom.zoomLabel.textContent = `${Math.round(zoom)} px/month`;
     if (options.render !== false) renderAll({ save: false });
   }
 
   function fitTimelineToViewport() {
-    const years = timeline.settings.endYear - timeline.settings.startYear + 1;
+    const months = Math.max(1, monthsBetween(timeline.settings.startDate, addDaysIso(timeline.settings.endDate, 1)));
     const available = Math.max(200, dom.timelineViewport.clientWidth - LEFT_GUTTER - RIGHT_GUTTER - 24);
-    setZoom(clamp(Math.floor(available / years), MIN_ZOOM, MAX_ZOOM));
+    setZoom(clamp(Math.floor(available / months), MIN_ZOOM, MAX_ZOOM));
     dom.timelineViewport.scrollLeft = 0;
     setStatus("Fit applied");
   }
 
-  function getViewportCenterYear() {
+  function getViewportCenterDate() {
     const centerX = dom.timelineViewport.scrollLeft + dom.timelineViewport.clientWidth / 2;
-    return xToYear(centerX);
+    return xToDate(centerX);
   }
 
-  function yearToX(year) {
-    return LEFT_GUTTER + (Number(year) - timeline.settings.startYear) * zoom;
+  function dateToX(isoDate) {
+    return LEFT_GUTTER + daysBetween(timeline.settings.startDate, isoDate) * pixelsPerDay();
   }
 
-  function xToYear(x) {
-    return timeline.settings.startYear + (Number(x) - LEFT_GUTTER) / zoom;
+  function xToDate(x) {
+    return addDaysIso(timeline.settings.startDate, Math.round((Number(x) - LEFT_GUTTER) / pixelsPerDay()));
   }
 
   function svgPoint(event) {
@@ -734,7 +913,6 @@
       new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
       `${filenameBase()}.json`,
     );
-    saveLocalTimeline();
     setStatus("JSON saved");
   }
 
@@ -912,28 +1090,6 @@
     URL.revokeObjectURL(url);
   }
 
-  function loadLocalTimeline() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? normalizeTimeline(JSON.parse(raw)) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  function scheduleLocalSave() {
-    window.clearTimeout(localSaveTimer);
-    localSaveTimer = window.setTimeout(saveLocalTimeline, 250);
-  }
-
-  function saveLocalTimeline() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(timeline));
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
   function svgEl(tagName, attributes = {}, text = null) {
     const node = document.createElementNS(NS, tagName);
     Object.entries(attributes).forEach(([key, value]) => {
@@ -967,18 +1123,197 @@
     return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "#2563eb";
   }
 
-  function snapYear(value) {
-    const snap = timeline.settings.snap || 1;
-    return Math.round(Number(value) / snap) * snap;
-  }
-
-  function formatYearValue(value) {
-    return Number.isInteger(Number(value)) ? String(Number(value)) : Number(value).toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-  }
-
   function toNumber(value, fallback) {
     const number = Number(value);
     return Number.isFinite(number) ? number : fallback;
+  }
+
+  function pixelsPerDay() {
+    return zoom / AVG_DAYS_PER_MONTH;
+  }
+
+  function normalizeDateInput(value, fallback) {
+    const fallbackIso = isIsoDate(fallback) ? fallback : "1988-01-01";
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return isoFromDate(value);
+    const text = String(value || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text) && isValidIsoDate(text)) return text;
+    if (/^\d{4}$/.test(text)) return `${text}-01-01`;
+    return fallbackIso;
+  }
+
+  function normalizeSnap(value) {
+    if (["year", "month", "week", "day"].includes(value)) return value;
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return "month";
+    if (numeric >= 1) return "year";
+    if (numeric >= 0.25) return "month";
+    if (numeric >= 0.02) return "week";
+    return "day";
+  }
+
+  function snapDate(isoDate) {
+    const date = normalizeDateInput(isoDate, timeline.settings.startDate);
+    const snap = normalizeSnap(timeline.settings.snap);
+    if (snap === "year") {
+      const currentYear = isoYear(date);
+      const midYear = `${currentYear}-07-02`;
+      return yearStartIso(compareIso(date, midYear) < 0 ? currentYear : currentYear + 1);
+    }
+    if (snap === "month") {
+      const year = isoYear(date);
+      const month = isoMonth(date);
+      const day = isoDay(date);
+      return isoFromParts(month === 11 && day >= 16 ? year + 1 : year, day >= 16 ? (month + 1) % 12 : month, 1);
+    }
+    if (snap === "week") {
+      const days = daysBetween(timeline.settings.startDate, date);
+      return addDaysIso(timeline.settings.startDate, Math.round(days / 7) * 7);
+    }
+    return addDaysIso(timeline.settings.startDate, daysBetween(timeline.settings.startDate, date));
+  }
+
+  function minDurationDays() {
+    if (timeline.settings.snap === "year") return 365;
+    if (timeline.settings.snap === "month") return 28;
+    if (timeline.settings.snap === "week") return 7;
+    return 1;
+  }
+
+  function defaultEndDate(startDate) {
+    if (timeline.settings.snap === "year") return addYearsIso(startDate, 1);
+    if (timeline.settings.snap === "week") return addDaysIso(startDate, 7);
+    if (timeline.settings.snap === "day") return addDaysIso(startDate, 1);
+    return addMonthsIso(startDate, 1);
+  }
+
+  function formatDisplayDate(isoDate) {
+    return EN_DATE_FORMAT.format(dateFromIso(isoDate));
+  }
+
+  function formatIranianDate(isoDate) {
+    const parts = IRANIAN_DATE_FORMAT
+      .formatToParts(dateFromIso(isoDate))
+      .reduce((result, part) => {
+        if (part.type !== "literal" && part.type !== "era") result[part.type] = part.value;
+        return result;
+      }, {});
+    return `${parts.day} ${parts.month} ${parts.year}`;
+  }
+
+  function formatDatePair(isoDate) {
+    return `${formatDisplayDate(isoDate)} AD / ${formatIranianDate(isoDate)}`;
+  }
+
+  function monthName(isoDate) {
+    return EN_MONTH_FORMAT.format(dateFromIso(isoDate));
+  }
+
+  function iranianMonthName(isoDate) {
+    return IRANIAN_MONTH_FORMAT.format(dateFromIso(isoDate));
+  }
+
+  function monthsBetween(startIso, endIso) {
+    const startYear = isoYear(startIso);
+    const startMonth = isoMonth(startIso);
+    const endYear = isoYear(endIso);
+    const endMonth = isoMonth(endIso);
+    return Math.max(1, (endYear - startYear) * 12 + endMonth - startMonth + 1);
+  }
+
+  function daysBetween(startIso, endIso) {
+    return Math.round((dateFromIso(endIso).getTime() - dateFromIso(startIso).getTime()) / DAY_MS);
+  }
+
+  function compareIso(a, b) {
+    return normalizeDateInput(a, "1988-01-01").localeCompare(normalizeDateInput(b, "1988-01-01"));
+  }
+
+  function clampIso(value, min, max) {
+    if (compareIso(value, min) < 0) return min;
+    if (compareIso(value, max) > 0) return max;
+    return value;
+  }
+
+  function addDaysIso(isoDate, days) {
+    const date = dateFromIso(isoDate);
+    date.setUTCDate(date.getUTCDate() + Math.round(days));
+    return isoFromDate(date);
+  }
+
+  function addMonthsIso(isoDate, months) {
+    const date = dateFromIso(isoDate);
+    const day = date.getUTCDate();
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() + months);
+    const maxDay = daysInMonth(date.getUTCFullYear(), date.getUTCMonth());
+    date.setUTCDate(Math.min(day, maxDay));
+    return isoFromDate(date);
+  }
+
+  function addYearsIso(isoDate, years) {
+    return addMonthsIso(isoDate, years * 12);
+  }
+
+  function yearStartIso(year) {
+    return `${String(Math.round(year)).padStart(4, "0")}-01-01`;
+  }
+
+  function yearEndIso(year) {
+    return `${String(Math.round(year)).padStart(4, "0")}-12-31`;
+  }
+
+  function isoFromYearValue(value) {
+    const year = Math.floor(value);
+    const fraction = value - year;
+    if (fraction <= 0) return yearStartIso(year);
+    return addDaysIso(yearStartIso(year), Math.round(fraction * daysInYear(year)));
+  }
+
+  function isoFromParts(year, monthIndex, day) {
+    return isoFromDate(new Date(Date.UTC(year, monthIndex, day)));
+  }
+
+  function dateFromIso(isoDate) {
+    const [year, month, day] = normalizeDateInput(isoDate, "1988-01-01").split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  function isoFromDate(date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  function isIsoDate(value) {
+    return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && isValidIsoDate(value);
+  }
+
+  function isValidIsoDate(value) {
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    );
+  }
+
+  function isoYear(isoDate) {
+    return Number(normalizeDateInput(isoDate, "1988-01-01").slice(0, 4));
+  }
+
+  function isoMonth(isoDate) {
+    return Number(normalizeDateInput(isoDate, "1988-01-01").slice(5, 7)) - 1;
+  }
+
+  function isoDay(isoDate) {
+    return Number(normalizeDateInput(isoDate, "1988-01-01").slice(8, 10));
+  }
+
+  function daysInMonth(year, monthIndex) {
+    return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  }
+
+  function daysInYear(year) {
+    return daysBetween(yearStartIso(year), yearStartIso(year + 1));
   }
 
   function clamp(value, min, max) {

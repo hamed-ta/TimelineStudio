@@ -34,8 +34,8 @@
         <div class="zoom-tools">
           <button type="button" class="icon-button" id="zoomOutButton" aria-label="Zoom out">-</button>
           <label for="zoomRange">Zoom</label>
-          <input id="zoomRange" type="range" min="56" max="360" step="4" value="148" />
-          <span id="zoomLabel">148 px/year</span>
+          <input id="zoomRange" type="range" min="8" max="120" step="1" value="18" />
+          <span id="zoomLabel">18 px/month</span>
           <button type="button" class="icon-button" id="zoomInButton" aria-label="Zoom in">+</button>
         </div>
       </header>
@@ -55,32 +55,32 @@
 
             <div class="field-grid">
               <label>
-                Start AD
-                <input id="startYearInput" type="number" step="1" />
+                Start date
+                <input id="startDateInput" type="date" />
               </label>
               <label>
-                End AD
-                <input id="endYearInput" type="number" step="1" />
-              </label>
-              <label>
-                Birth AD
-                <input id="birthYearInput" type="number" step="1" />
-              </label>
-              <label>
-                SH offset
-                <input id="shOffsetInput" type="number" step="1" />
+                End date
+                <input id="endDateInput" type="date" />
               </label>
             </div>
 
             <label>
               Drag snap
               <select id="snapInput">
-                <option value="1">1 year</option>
-                <option value="0.5">6 months</option>
-                <option value="0.25">3 months</option>
-                <option value="0.1">0.1 year</option>
+                <option value="year">1 year</option>
+                <option value="month">1 month</option>
+                <option value="week">1 week</option>
+                <option value="day">1 day</option>
               </select>
             </label>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Rows / Lines</h2>
+              <button type="button" class="quiet-button" id="addLaneButton">Add</button>
+            </div>
+            <div class="lane-list" id="laneList"></div>
           </section>
 
           <section class="panel">
@@ -115,14 +115,15 @@
                   <input id="itemColorInput" type="color" />
                 </label>
                 <label>
-                  Start AD
-                  <input id="itemStartInput" type="number" step="0.1" />
+                  Start date
+                  <input id="itemStartInput" type="date" />
                 </label>
                 <label id="itemEndField">
-                  End AD
-                  <input id="itemEndInput" type="number" step="0.1" />
+                  End date
+                  <input id="itemEndInput" type="date" />
                 </label>
               </div>
+              <p class="calendar-preview" id="itemCalendarPreview"></p>
 
               <label>
                 Notes
@@ -140,8 +141,8 @@
         <section class="timeline-stage" aria-label="Timeline canvas">
           <div class="stage-header">
             <div>
-              <h2 id="stageTitle">Personal Timeline</h2>
-              <p id="stageMeta">1367 SH / 1988 AD to 1385 SH / 2006 AD</p>
+              <h2 id="stageTitle">New Timeline</h2>
+              <p id="stageMeta">Create or load a timeline</p>
             </div>
             <button type="button" class="secondary-button" id="fitButton">Fit</button>
           </div>
