@@ -113,6 +113,26 @@ p {
   gap: 8px;
 }
 
+.toolbar-check,
+.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 650;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.toolbar-check input,
+.check-row input {
+  width: auto;
+  min-width: 0;
+  min-height: auto;
+  margin: 0;
+}
+
 .separator {
   width: 1px;
   height: 24px;
@@ -337,6 +357,10 @@ button:focus-visible,
   cursor: grabbing;
 }
 
+.timeline-viewport.items-locked .item {
+  cursor: inherit;
+}
+
 #timelineSvg {
   display: block;
   min-width: 100%;
@@ -380,7 +404,8 @@ button:focus-visible,
 .axis-label,
 .axis-iranian,
 .age-label,
-.axis-month {
+.axis-month,
+.axis-day {
   fill: #667586;
   font-size: 12px;
 }

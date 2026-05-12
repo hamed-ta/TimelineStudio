@@ -23,6 +23,11 @@
           <button type="button" class="toolbar-button" data-add="line">Line</button>
           <button type="button" class="toolbar-button" data-add="text">Text</button>
           <span class="separator" aria-hidden="true"></span>
+          <label class="toolbar-check">
+            <input id="itemsLockedInput" type="checkbox" />
+            Lock items
+          </label>
+          <span class="separator" aria-hidden="true"></span>
           <button type="button" class="toolbar-button" id="saveJsonButton">Save JSON</button>
           <button type="button" class="toolbar-button" id="loadJsonButton">Load JSON</button>
           <span class="separator" aria-hidden="true"></span>
@@ -34,7 +39,7 @@
         <div class="zoom-tools">
           <button type="button" class="icon-button" id="zoomOutButton" aria-label="Zoom out">-</button>
           <label for="zoomRange">Zoom</label>
-          <input id="zoomRange" type="range" min="8" max="120" step="1" value="18" />
+          <input id="zoomRange" type="range" min="0.5" max="360" step="0.5" value="18" />
           <span id="zoomLabel">18 px/month</span>
           <button type="button" class="icon-button" id="zoomInButton" aria-label="Zoom in">+</button>
         </div>
@@ -45,7 +50,6 @@
           <section class="panel">
             <div class="panel-heading">
               <h2>Timeline</h2>
-              <button type="button" class="quiet-button" id="resetSampleButton">Sample</button>
             </div>
 
             <label>
@@ -56,13 +60,18 @@
             <div class="field-grid">
               <label>
                 Start date
-                <input id="startDateInput" type="date" />
+                <input id="startDateInput" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" autocomplete="off" />
               </label>
               <label>
                 End date
-                <input id="endDateInput" type="date" />
+                <input id="endDateInput" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" autocomplete="off" />
               </label>
             </div>
+
+            <label class="check-row">
+              <input id="autoEndDateInput" type="checkbox" />
+              End at today
+            </label>
 
             <label>
               Drag snap
@@ -116,11 +125,11 @@
                 </label>
                 <label>
                   Start date
-                  <input id="itemStartInput" type="date" />
+                  <input id="itemStartInput" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" autocomplete="off" />
                 </label>
                 <label id="itemEndField">
                   End date
-                  <input id="itemEndInput" type="date" />
+                  <input id="itemEndInput" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" autocomplete="off" />
                 </label>
               </div>
               <p class="calendar-preview" id="itemCalendarPreview"></p>

@@ -6,8 +6,8 @@
   const AXIS_HEIGHT = 112;
   const FOOTER_HEIGHT = 34;
   const DEFAULT_ROW_HEIGHT = 68;
-  const MIN_ZOOM = 8;
-  const MAX_ZOOM = 120;
+  const MIN_ZOOM = 0.5;
+  const MAX_ZOOM = 360;
   const DEFAULT_ZOOM = 18;
   const DAY_MS = 24 * 60 * 60 * 1000;
   const AVG_DAYS_PER_MONTH = 365.2425 / 12;
@@ -44,6 +44,8 @@
     timelineTitleInput: document.getElementById("timelineTitleInput"),
     startDateInput: document.getElementById("startDateInput"),
     endDateInput: document.getElementById("endDateInput"),
+    autoEndDateInput: document.getElementById("autoEndDateInput"),
+    itemsLockedInput: document.getElementById("itemsLockedInput"),
     snapInput: document.getElementById("snapInput"),
     laneList: document.getElementById("laneList"),
     addLaneButton: document.getElementById("addLaneButton"),
@@ -59,7 +61,6 @@
     itemNotesInput: document.getElementById("itemNotesInput"),
     deleteItemButton: document.getElementById("deleteItemButton"),
     duplicateItemButton: document.getElementById("duplicateItemButton"),
-    resetSampleButton: document.getElementById("resetSampleButton"),
     saveJsonButton: document.getElementById("saveJsonButton"),
     loadJsonButton: document.getElementById("loadJsonButton"),
     exportSvgButton: document.getElementById("exportSvgButton"),
@@ -90,7 +91,7 @@
     .grid-minor{stroke:#e6ebf0;stroke-width:1}
     .grid-day{stroke:#f1f4f7;stroke-width:1}
     .lane-rule{stroke:#d9e0e7;stroke-width:1}
-    .lane-label,.axis-label,.axis-iranian,.age-label,.axis-month{fill:#667586;font-size:12px}
+    .lane-label,.axis-label,.axis-iranian,.age-label,.axis-month,.axis-day{fill:#667586;font-size:12px}
     .axis-year{fill:#1d2732;font-size:13px;font-weight:700}
     .title-label{font-size:13px;font-weight:700}
     .note-label{font-size:13px;font-weight:650}
@@ -115,18 +116,19 @@
       button.addEventListener("click", () => addItem(button.dataset.add));
     });
 
-    [
-      dom.timelineTitleInput,
-      dom.startDateInput,
-      dom.endDateInput,
-      dom.snapInput,
-    ].forEach((control) => {
-      control.addEventListener("input", updateTimelineFromControls);
+    dom.timelineTitleInput.addEventListener("input", updateTimelineFromControls);
+    [dom.startDateInput, dom.endDateInput].forEach((control) => {
       control.addEventListener("change", updateTimelineFromControls);
+      control.addEventListener("blur", updateTimelineFromControls);
+      control.addEventListener("keydown", handleTimelineDateKeydown);
     });
+    dom.autoEndDateInput.addEventListener("change", updateTimelineFromControls);
+    dom.itemsLockedInput.addEventListener("change", updateTimelineFromControls);
+    dom.snapInput.addEventListener("change", updateTimelineFromControls);
     [dom.itemStartInput, dom.itemEndInput].forEach((control) => {
       control.addEventListener("input", updateItemCalendarPreviewFromInputs);
       control.addEventListener("change", updateItemCalendarPreviewFromInputs);
+      control.addEventListener("keydown", handleItemDateKeydown);
     });
 
     dom.itemTypeInput.addEventListener("change", () => {
@@ -141,7 +143,6 @@
 
     dom.deleteItemButton.addEventListener("click", deleteSelectedItem);
     dom.duplicateItemButton.addEventListener("click", duplicateSelectedItem);
-    dom.resetSampleButton.addEventListener("click", resetToSample);
     dom.addLaneButton.addEventListener("click", addLane);
 
     dom.saveJsonButton.addEventListener("click", saveJsonFile);
@@ -173,12 +174,15 @@
 
   function createEmptyTimeline() {
     const year = new Date().getFullYear();
+    const today = todayIso();
     return {
       version: 2,
       settings: {
         title: "New Timeline",
         startDate: yearStartIso(year),
-        endDate: yearEndIso(year),
+        endDate: today,
+        autoEndDate: true,
+        itemsLocked: false,
         snap: "month",
         rowHeight: DEFAULT_ROW_HEIGHT,
         laneLabels: ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5"],
@@ -187,59 +191,9 @@
     };
   }
 
-  function createSampleTimeline() {
-    const items = [];
-    const add = (type, lane, startDate, endDate, title, color, notes = "") => {
-      items.push({
-        id: createId(type),
-        type,
-        lane,
-        startDate,
-        endDate,
-        title,
-        color,
-        notes,
-      });
-    };
-
-    [
-      [1993, 1994, "First: Toleh"],
-      [1994, 1995, "Second: Hafez"],
-      [1995, 1996, "Third: Hafez"],
-      [1996, 1997, "Fourth: Hafez"],
-      [1997, 1998, "Fifth: Hafez"],
-      [1998, 2000, "Middle School: Abuzar"],
-      [2000, 2001, "Middle School: Shariati"],
-      [2001, 2002, "High School: Sheikh Morteza"],
-      [2002, 2005, "High School: Hafez"],
-      [2005, 2006, "High School: Shahriar"],
-      [2006, 2007, "Pre-University"],
-    ].forEach(([start, end, title]) => add("period", 0, yearStartIso(start), yearStartIso(end), title, "#2563eb"));
-
-    add("period", 1, "1993-01-01", "1995-01-01", "Home: Pashekori", "#0f766e");
-    add("period", 1, "1995-01-01", "2000-01-01", "Home: Sharifi", "#0f766e");
-    add("period", 1, "2000-01-01", "2005-01-01", "Home: Ferdowsi", "#0f766e");
-    add("period", 1, "2005-01-01", "2007-01-01", "Home: Aziz", "#0f766e");
-    add("event", 2, "1988-01-01", "1988-01-01", "1", "#d97706", "Jan 1, 1988 AD / 11 Dey 1366");
-    add("line", 3, "1993-01-01", "2007-01-01", "School and home years", "#be123c");
-    add("text", 4, "1988-01-01", "1988-01-01", "Jan 1, 1988 AD / 11 Dey 1366", "#7c3aed");
-
-    return {
-      version: 2,
-      settings: {
-        title: "Personal Timeline",
-        startDate: "1988-01-01",
-        endDate: "2006-12-31",
-        snap: "month",
-        rowHeight: DEFAULT_ROW_HEIGHT,
-        laneLabels: ["Education", "Home", "Events", "Lines", "Notes"],
-      },
-      items,
-    };
-  }
-
   function normalizeTimeline(input) {
     const fallback = createEmptyTimeline();
+    fallback.settings.autoEndDate = false;
     const settings = {
       ...fallback.settings,
       ...(input && input.settings ? input.settings : {}),
@@ -248,12 +202,17 @@
     settings.title = String(settings.title || "New Timeline");
     settings.startDate = normalizeDateInput(
       settings.startDate,
-      yearStartIso(toNumber(settings.startYear, 1988)),
+      settings.startYear === undefined ? fallback.settings.startDate : yearStartIso(toNumber(settings.startYear, isoYear(fallback.settings.startDate))),
     );
     settings.endDate = normalizeDateInput(
       settings.endDate,
-      settings.endYear === undefined ? "2006-12-31" : yearEndIso(toNumber(settings.endYear, 2006)),
+      settings.endYear === undefined ? fallback.settings.endDate : yearEndIso(toNumber(settings.endYear, isoYear(fallback.settings.endDate))),
     );
+    settings.autoEndDate = settings.autoEndDate === true;
+    settings.itemsLocked = settings.itemsLocked === true;
+    if (settings.autoEndDate) {
+      settings.endDate = todayIso();
+    }
     if (compareIso(settings.endDate, settings.startDate) < 0) {
       settings.endDate = settings.startDate;
     }
@@ -276,7 +235,7 @@
     };
   }
 
-  function normalizeItem(item, defaultStartDate = "1988-01-01") {
+  function normalizeItem(item, defaultStartDate = todayIso()) {
     if (!item || typeof item !== "object") return null;
     const type = ["event", "period", "line", "text"].includes(item.type) ? item.type : "event";
     const startDate = normalizeDateInput(
@@ -357,10 +316,15 @@
     const yearLabelStep = zoom < 13 ? 5 : zoom < 21 ? 2 : 1;
     const contentEndDate = addDaysIso(settings.endDate, 1);
 
-    if (zoom >= 74) {
-      for (let date = settings.startDate; compareIso(date, contentEndDate) <= 0; date = addDaysIso(date, 7)) {
+    if (zoom >= 92) {
+      const dayLabelStep = zoom >= 280 ? 1 : zoom >= 180 ? 5 : 0;
+      for (let date = settings.startDate; compareIso(date, contentEndDate) <= 0; date = addDaysIso(date, 1)) {
         const x = dateToX(date);
         svg.append(svgEl("line", { class: "grid-day", x1: x, x2: x, y1: AXIS_HEIGHT, y2: contentHeight }));
+        const day = isoDay(date);
+        if (dayLabelStep && (day === 1 || day % dayLabelStep === 0)) {
+          svg.append(svgEl("text", { class: "axis-day", x: x + 3, y: 104 }, String(day)));
+        }
       }
     }
 
@@ -373,10 +337,10 @@
         svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: isYearStart ? 0 : AXIS_HEIGHT, y2: contentHeight }));
 
         if (isYearStart && (year - startYear) % yearLabelStep === 0) {
-          svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: 24 }, `${formatDisplayDate(date)} AD`));
+          svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: 24 }, formatDisplayDate(date)));
           svg.append(svgEl("text", { class: "axis-iranian", x: x + 8, y: 47 }, formatIranianDate(date)));
         } else if (!isYearStart && zoom >= 42) {
-          svg.append(svgEl("text", { class: "axis-month", x: x + 5, y: 100 }, `${monthName(date)} / ${iranianMonthName(date)}`));
+          svg.append(svgEl("text", { class: "axis-month", x: x + 5, y: 84 }, `${monthName(date)} / ${iranianMonthName(date)}`));
         }
       }
     }
@@ -505,7 +469,7 @@
   function updateMeta() {
     const settings = timeline.settings;
     dom.stageTitle.textContent = settings.title;
-    dom.stageMeta.textContent = `${formatDisplayDate(settings.startDate)} AD / ${formatIranianDate(settings.startDate)} to ${formatDisplayDate(settings.endDate)} AD / ${formatIranianDate(settings.endDate)}`;
+    dom.stageMeta.textContent = `${formatDisplayDate(settings.startDate)} / ${formatIranianDate(settings.startDate)} to ${formatDisplayDate(settings.endDate)} / ${formatIranianDate(settings.endDate)}`;
   }
 
   function syncTimelineControls() {
@@ -513,9 +477,13 @@
     dom.timelineTitleInput.value = timeline.settings.title;
     dom.startDateInput.value = timeline.settings.startDate;
     dom.endDateInput.value = timeline.settings.endDate;
+    dom.endDateInput.disabled = timeline.settings.autoEndDate;
+    dom.autoEndDateInput.checked = timeline.settings.autoEndDate;
+    dom.itemsLockedInput.checked = timeline.settings.itemsLocked;
+    dom.timelineViewport.classList.toggle("items-locked", timeline.settings.itemsLocked);
     dom.snapInput.value = String(timeline.settings.snap);
     dom.zoomRange.value = String(zoom);
-    dom.zoomLabel.textContent = `${Math.round(zoom)} px/month`;
+    dom.zoomLabel.textContent = `${formatZoomValue(zoom)} px/month`;
     suppressControlEvents = false;
   }
 
@@ -640,16 +608,37 @@
       : formatDatePair(item.startDate);
   }
 
-  function updateTimelineFromControls() {
+  function updateTimelineFromControls(event) {
     if (suppressControlEvents) return;
     const settings = timeline.settings;
     settings.title = dom.timelineTitleInput.value.trim() || "New Timeline";
     settings.startDate = normalizeDateInput(dom.startDateInput.value, settings.startDate);
-    settings.endDate = normalizeDateInput(dom.endDateInput.value, settings.endDate);
+    settings.autoEndDate = dom.autoEndDateInput.checked;
+    if (event && event.currentTarget === dom.endDateInput) {
+      settings.autoEndDate = false;
+    }
+    settings.endDate = settings.autoEndDate
+      ? todayIso()
+      : normalizeDateInput(dom.endDateInput.value, settings.endDate);
     if (compareIso(settings.endDate, settings.startDate) < 0) settings.endDate = settings.startDate;
+    settings.itemsLocked = dom.itemsLockedInput.checked;
     settings.snap = normalizeSnap(dom.snapInput.value);
     renderAll();
     setStatus("Timeline updated");
+  }
+
+  function handleTimelineDateKeydown(event) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    updateTimelineFromControls(event);
+    event.currentTarget.blur();
+  }
+
+  function handleItemDateKeydown(event) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    updateItemCalendarPreviewFromInputs();
+    event.currentTarget.blur();
   }
 
   function applyItemForm() {
@@ -719,19 +708,10 @@
     setStatus("Item duplicated");
   }
 
-  function resetToSample() {
-    const ok = window.confirm("Replace the current timeline with the sample?");
-    if (!ok) return;
-    timeline = createSampleTimeline();
-    selectedId = null;
-    renderAll();
-    setStatus("Sample loaded");
-  }
-
   function beginPointerDrag(event) {
     if (event.button !== 0) return;
     const handle = event.target.closest(".resize-handle");
-    const itemNode = event.target.closest("[data-item-id]");
+    const itemNode = timeline.settings.itemsLocked ? null : event.target.closest("[data-item-id]");
     if (!itemNode) {
       if (selectedId) {
         selectedId = null;
@@ -855,14 +835,14 @@
     zoom = clamp(Number(value) || DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM);
     localStorage.setItem(ZOOM_KEY, String(zoom));
     dom.zoomRange.value = String(zoom);
-    dom.zoomLabel.textContent = `${Math.round(zoom)} px/month`;
+    dom.zoomLabel.textContent = `${formatZoomValue(zoom)} px/month`;
     if (options.render !== false) renderAll({ save: false });
   }
 
   function fitTimelineToViewport() {
     const months = Math.max(1, monthsBetween(timeline.settings.startDate, addDaysIso(timeline.settings.endDate, 1)));
     const available = Math.max(200, dom.timelineViewport.clientWidth - LEFT_GUTTER - RIGHT_GUTTER - 24);
-    setZoom(clamp(Math.floor(available / months), MIN_ZOOM, MAX_ZOOM));
+    setZoom(clamp(available / months, MIN_ZOOM, MAX_ZOOM));
     dom.timelineViewport.scrollLeft = 0;
     setStatus("Fit applied");
   }
@@ -1133,12 +1113,24 @@
   }
 
   function normalizeDateInput(value, fallback) {
-    const fallbackIso = isIsoDate(fallback) ? fallback : "1988-01-01";
+    const fallbackIso = isIsoDate(fallback) ? fallback : todayIso();
     if (value instanceof Date && !Number.isNaN(value.getTime())) return isoFromDate(value);
     const text = String(value || "").trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(text) && isValidIsoDate(text)) return text;
+    const parsedTextDate = parseDateText(text);
+    if (parsedTextDate) return parsedTextDate;
     if (/^\d{4}$/.test(text)) return `${text}-01-01`;
     return fallbackIso;
+  }
+
+  function parseDateText(text) {
+    const isoLike = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (isoLike) return isoFromYmd(Number(isoLike[1]), Number(isoLike[2]), Number(isoLike[3]));
+
+    const slashDate = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (slashDate) return isoFromYmd(Number(slashDate[3]), Number(slashDate[1]), Number(slashDate[2]));
+
+    return null;
   }
 
   function normalizeSnap(value) {
@@ -1201,7 +1193,11 @@
   }
 
   function formatDatePair(isoDate) {
-    return `${formatDisplayDate(isoDate)} AD / ${formatIranianDate(isoDate)}`;
+    return `${formatDisplayDate(isoDate)} / ${formatIranianDate(isoDate)}`;
+  }
+
+  function formatZoomValue(value) {
+    return Number(value) >= 10 ? String(Math.round(value)) : Number(value).toFixed(1).replace(/\.0$/, "");
   }
 
   function monthName(isoDate) {
@@ -1225,7 +1221,7 @@
   }
 
   function compareIso(a, b) {
-    return normalizeDateInput(a, "1988-01-01").localeCompare(normalizeDateInput(b, "1988-01-01"));
+    return normalizeDateInput(a, todayIso()).localeCompare(normalizeDateInput(b, todayIso()));
   }
 
   function clampIso(value, min, max) {
@@ -1273,8 +1269,18 @@
     return isoFromDate(new Date(Date.UTC(year, monthIndex, day)));
   }
 
+  function isoFromYmd(year, month, day) {
+    const iso = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return isValidIsoDate(iso) ? iso : null;
+  }
+
+  function todayIso() {
+    const today = new Date();
+    return isoFromYmd(today.getFullYear(), today.getMonth() + 1, today.getDate());
+  }
+
   function dateFromIso(isoDate) {
-    const [year, month, day] = normalizeDateInput(isoDate, "1988-01-01").split("-").map(Number);
+    const [year, month, day] = normalizeDateInput(isoDate, todayIso()).split("-").map(Number);
     return new Date(Date.UTC(year, month - 1, day));
   }
 
@@ -1297,15 +1303,15 @@
   }
 
   function isoYear(isoDate) {
-    return Number(normalizeDateInput(isoDate, "1988-01-01").slice(0, 4));
+    return Number(normalizeDateInput(isoDate, todayIso()).slice(0, 4));
   }
 
   function isoMonth(isoDate) {
-    return Number(normalizeDateInput(isoDate, "1988-01-01").slice(5, 7)) - 1;
+    return Number(normalizeDateInput(isoDate, todayIso()).slice(5, 7)) - 1;
   }
 
   function isoDay(isoDate) {
-    return Number(normalizeDateInput(isoDate, "1988-01-01").slice(8, 10));
+    return Number(normalizeDateInput(isoDate, todayIso()).slice(8, 10));
   }
 
   function daysInMonth(year, monthIndex) {
