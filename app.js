@@ -1,0 +1,1009 @@
+(() => {
+  const STORAGE_KEY = "timeline-studio-document-v1";
+  const ZOOM_KEY = "timeline-studio-zoom-v1";
+  const NS = "http://www.w3.org/2000/svg";
+  const LEFT_GUTTER = 132;
+  const RIGHT_GUTTER = 110;
+  const AXIS_HEIGHT = 92;
+  const FOOTER_HEIGHT = 34;
+  const DEFAULT_ROW_HEIGHT = 68;
+  const MIN_ZOOM = 56;
+  const MAX_ZOOM = 360;
+
+  const TYPE_COLORS = {
+    event: "#d97706",
+    period: "#2563eb",
+    line: "#be123c",
+    text: "#7c3aed",
+  };
+
+  const dom = {
+    statusText: document.getElementById("statusText"),
+    timelineTitleInput: document.getElementById("timelineTitleInput"),
+    startYearInput: document.getElementById("startYearInput"),
+    endYearInput: document.getElementById("endYearInput"),
+    birthYearInput: document.getElementById("birthYearInput"),
+    shOffsetInput: document.getElementById("shOffsetInput"),
+    snapInput: document.getElementById("snapInput"),
+    itemForm: document.getElementById("itemForm"),
+    itemTypeInput: document.getElementById("itemTypeInput"),
+    itemTitleInput: document.getElementById("itemTitleInput"),
+    itemLaneInput: document.getElementById("itemLaneInput"),
+    itemColorInput: document.getElementById("itemColorInput"),
+    itemStartInput: document.getElementById("itemStartInput"),
+    itemEndInput: document.getElementById("itemEndInput"),
+    itemEndField: document.getElementById("itemEndField"),
+    itemNotesInput: document.getElementById("itemNotesInput"),
+    deleteItemButton: document.getElementById("deleteItemButton"),
+    duplicateItemButton: document.getElementById("duplicateItemButton"),
+    resetSampleButton: document.getElementById("resetSampleButton"),
+    saveJsonButton: document.getElementById("saveJsonButton"),
+    loadJsonButton: document.getElementById("loadJsonButton"),
+    exportSvgButton: document.getElementById("exportSvgButton"),
+    exportPngButton: document.getElementById("exportPngButton"),
+    exportPdfButton: document.getElementById("exportPdfButton"),
+    fileInput: document.getElementById("fileInput"),
+    zoomRange: document.getElementById("zoomRange"),
+    zoomLabel: document.getElementById("zoomLabel"),
+    zoomInButton: document.getElementById("zoomInButton"),
+    zoomOutButton: document.getElementById("zoomOutButton"),
+    fitButton: document.getElementById("fitButton"),
+    timelineViewport: document.getElementById("timelineViewport"),
+    timelineSvg: document.getElementById("timelineSvg"),
+    stageTitle: document.getElementById("stageTitle"),
+    stageMeta: document.getElementById("stageMeta"),
+  };
+
+  let timeline = loadLocalTimeline() || createSampleTimeline();
+  let selectedId = null;
+  let zoom = clamp(Number(localStorage.getItem(ZOOM_KEY)) || 148, MIN_ZOOM, MAX_ZOOM);
+  let suppressControlEvents = false;
+  let dragState = null;
+  let localSaveTimer = null;
+
+  const EXPORT_CSS = `
+    .axis-band{fill:#f8fafc}
+    .canvas-bg{fill:#ffffff}
+    .grid-major{stroke:#cbd5e1;stroke-width:1}
+    .grid-minor{stroke:#e6ebf0;stroke-width:1}
+    .lane-rule{stroke:#d9e0e7;stroke-width:1}
+    .lane-label,.axis-label,.age-label{fill:#667586;font-size:12px}
+    .axis-year{fill:#1d2732;font-size:13px;font-weight:700}
+    .title-label{font-size:13px;font-weight:700}
+    .note-label{font-size:13px;font-weight:650}
+    .period-body{stroke:rgba(0,0,0,.18);stroke-width:1}
+    .event-stem{stroke-width:2;stroke-linecap:round}
+    .event-marker{stroke:#fff;stroke-width:2}
+    .range-line{fill:none;stroke-width:4;stroke-linecap:round}
+  `;
+
+  init();
+
+  function init() {
+    timeline = normalizeTimeline(timeline);
+    bindEvents();
+    setZoom(zoom, { render: false });
+    renderAll({ save: false });
+    setStatus("Ready");
+  }
+
+  function bindEvents() {
+    document.querySelectorAll("[data-add]").forEach((button) => {
+      button.addEventListener("click", () => addItem(button.dataset.add));
+    });
+
+    [
+      dom.timelineTitleInput,
+      dom.startYearInput,
+      dom.endYearInput,
+      dom.birthYearInput,
+      dom.shOffsetInput,
+      dom.snapInput,
+    ].forEach((control) => {
+      control.addEventListener("input", updateTimelineFromControls);
+      control.addEventListener("change", updateTimelineFromControls);
+    });
+
+    dom.itemTypeInput.addEventListener("change", () => {
+      dom.itemEndField.hidden = !hasEndYear(dom.itemTypeInput.value);
+    });
+
+    dom.itemForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      applyItemForm();
+    });
+
+    dom.deleteItemButton.addEventListener("click", deleteSelectedItem);
+    dom.duplicateItemButton.addEventListener("click", duplicateSelectedItem);
+    dom.resetSampleButton.addEventListener("click", resetToSample);
+
+    dom.saveJsonButton.addEventListener("click", saveJsonFile);
+    dom.loadJsonButton.addEventListener("click", () => dom.fileInput.click());
+    dom.fileInput.addEventListener("change", loadJsonFile);
+
+    dom.exportSvgButton.addEventListener("click", exportSvgFile);
+    dom.exportPngButton.addEventListener("click", exportPngFile);
+    dom.exportPdfButton.addEventListener("click", exportPdfFile);
+
+    dom.zoomRange.addEventListener("input", () => setZoom(Number(dom.zoomRange.value)));
+    dom.zoomInButton.addEventListener("click", () => setZoom(zoom + 20));
+    dom.zoomOutButton.addEventListener("click", () => setZoom(zoom - 20));
+    dom.fitButton.addEventListener("click", fitTimelineToViewport);
+
+    dom.timelineViewport.addEventListener("wheel", handleViewportWheel, { passive: false });
+    dom.timelineViewport.addEventListener("keydown", (event) => {
+      if ((event.key === "Delete" || event.key === "Backspace") && selectedId) {
+        event.preventDefault();
+        deleteSelectedItem();
+      }
+    });
+
+    dom.timelineSvg.addEventListener("pointerdown", beginPointerDrag);
+    dom.timelineSvg.addEventListener("pointermove", movePointerDrag);
+    dom.timelineSvg.addEventListener("pointerup", endPointerDrag);
+    dom.timelineSvg.addEventListener("pointercancel", endPointerDrag);
+  }
+
+  function createSampleTimeline() {
+    const items = [];
+    const add = (type, lane, startYear, endYear, title, color, notes = "") => {
+      items.push({
+        id: createId(type),
+        type,
+        lane,
+        startYear,
+        endYear,
+        title,
+        color,
+        notes,
+      });
+    };
+
+    [
+      [1993, 1994, "First: Toleh"],
+      [1994, 1995, "Second: Hafez"],
+      [1995, 1996, "Third: Hafez"],
+      [1996, 1997, "Fourth: Hafez"],
+      [1997, 1998, "Fifth: Hafez"],
+      [1998, 2000, "Middle School: Abuzar"],
+      [2000, 2001, "Middle School: Shariati"],
+      [2001, 2002, "High School: Sheikh Morteza"],
+      [2002, 2005, "High School: Hafez"],
+      [2005, 2006, "High School: Shahriar"],
+      [2006, 2007, "Pre-University"],
+    ].forEach(([start, end, title]) => add("period", 0, start, end, title, "#2563eb"));
+
+    add("period", 1, 1993, 1995, "Home: Pashekori", "#0f766e");
+    add("period", 1, 1995, 2000, "Home: Sharifi", "#0f766e");
+    add("period", 1, 2000, 2005, "Home: Ferdowsi", "#0f766e");
+    add("period", 1, 2005, 2007, "Home: Aziz", "#0f766e");
+    add("event", 2, 1988, 1988, "1", "#d97706", "1367 SH / 1988 AD");
+    add("line", 3, 1993, 2007, "School and home years", "#be123c");
+    add("text", 4, 1988, 1988, "1367 SH / 1988 AD", "#7c3aed");
+
+    return {
+      version: 1,
+      settings: {
+        title: "Personal Timeline",
+        startYear: 1988,
+        endYear: 2006,
+        birthYear: 1988,
+        shOffset: -621,
+        snap: 1,
+        rowHeight: DEFAULT_ROW_HEIGHT,
+        laneLabels: ["Education", "Home", "Events", "Lines", "Notes"],
+      },
+      items,
+    };
+  }
+
+  function normalizeTimeline(input) {
+    const fallback = createSampleTimeline();
+    const settings = {
+      ...fallback.settings,
+      ...(input && input.settings ? input.settings : {}),
+    };
+
+    settings.title = String(settings.title || "Personal Timeline");
+    settings.startYear = toNumber(settings.startYear, 1988);
+    settings.endYear = toNumber(settings.endYear, 2006);
+    if (settings.endYear < settings.startYear) {
+      settings.endYear = settings.startYear;
+    }
+    settings.birthYear = toNumber(settings.birthYear, settings.startYear);
+    settings.shOffset = toNumber(settings.shOffset, -621);
+    settings.snap = clamp(toNumber(settings.snap, 1), 0.1, 10);
+    settings.rowHeight = clamp(toNumber(settings.rowHeight, DEFAULT_ROW_HEIGHT), 48, 120);
+    settings.laneLabels = Array.isArray(settings.laneLabels)
+      ? settings.laneLabels.map((label) => String(label))
+      : fallback.settings.laneLabels;
+
+    const rawItems = Array.isArray(input && input.items) ? input.items : fallback.items;
+    const items = rawItems.map((item) => normalizeItem(item, settings.startYear)).filter(Boolean);
+
+    return {
+      version: 1,
+      settings,
+      items,
+    };
+  }
+
+  function normalizeItem(item, defaultStartYear = 1988) {
+    if (!item || typeof item !== "object") return null;
+    const type = ["event", "period", "line", "text"].includes(item.type) ? item.type : "event";
+    const startYear = toNumber(item.startYear, defaultStartYear);
+    let endYear = toNumber(item.endYear, startYear);
+    if (hasEndYear(type) && endYear <= startYear) {
+      endYear = startYear + 1;
+    }
+    if (!hasEndYear(type)) {
+      endYear = startYear;
+    }
+
+    return {
+      id: String(item.id || createId(type)),
+      type,
+      lane: clamp(Math.round(toNumber(item.lane, 0)), 0, 20),
+      startYear,
+      endYear,
+      title: String(item.title || titleForType(type)),
+      color: normalizeColor(item.color || TYPE_COLORS[type]),
+      notes: String(item.notes || ""),
+    };
+  }
+
+  function renderAll(options = {}) {
+    const save = options.save !== false;
+    timeline = normalizeTimeline(timeline);
+    if (selectedId && !getItem(selectedId)) selectedId = null;
+
+    syncTimelineControls();
+    syncItemForm();
+    renderTimeline();
+    updateMeta();
+
+    if (save) scheduleLocalSave();
+  }
+
+  function renderTimeline() {
+    const svg = dom.timelineSvg;
+    svg.replaceChildren();
+
+    const settings = timeline.settings;
+    const laneCount = Math.max(
+      5,
+      ...timeline.items.map((item) => Math.max(0, Number(item.lane) + 1)),
+    );
+    const rowHeight = settings.rowHeight || DEFAULT_ROW_HEIGHT;
+    const contentWidth = LEFT_GUTTER + (settings.endYear - settings.startYear + 1) * zoom + RIGHT_GUTTER;
+    const contentHeight = AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT;
+
+    svg.setAttribute("width", String(Math.ceil(contentWidth)));
+    svg.setAttribute("height", String(Math.ceil(contentHeight)));
+    svg.setAttribute("viewBox", `0 0 ${Math.ceil(contentWidth)} ${Math.ceil(contentHeight)}`);
+
+    const defs = svgEl("defs");
+    svg.append(defs);
+    svg.append(svgEl("rect", { class: "canvas-bg", x: 0, y: 0, width: contentWidth, height: contentHeight }));
+    svg.append(svgEl("rect", { class: "axis-band", x: 0, y: 0, width: contentWidth, height: AXIS_HEIGHT }));
+    svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: contentWidth, y1: AXIS_HEIGHT, y2: AXIS_HEIGHT }));
+
+    drawGrid(svg, settings, laneCount, rowHeight, contentHeight);
+    drawLaneLabels(svg, settings, laneCount, rowHeight);
+
+    timeline.items
+      .slice()
+      .sort((a, b) => a.lane - b.lane || a.startYear - b.startYear)
+      .forEach((item) => drawItem(svg, defs, item, rowHeight));
+  }
+
+  function drawGrid(svg, settings, laneCount, rowHeight, contentHeight) {
+    const labelStep = zoom < 74 ? 5 : zoom < 112 ? 2 : 1;
+    const start = settings.startYear;
+    const end = settings.endYear;
+
+    if (zoom >= 128) {
+      for (let year = start + 0.5; year <= end + 0.5; year += 1) {
+        const x = yearToX(year);
+        svg.append(svgEl("line", { class: "grid-minor", x1: x, x2: x, y1: AXIS_HEIGHT, y2: contentHeight }));
+      }
+    }
+
+    for (let year = start; year <= end + 1; year += 1) {
+      const x = yearToX(year);
+      svg.append(svgEl("line", { class: "grid-major", x1: x, x2: x, y1: 0, y2: contentHeight }));
+
+      if (year <= end && (year - start) % labelStep === 0) {
+        svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: 26 }, `${year} AD`));
+        svg.append(svgEl("text", { class: "axis-label", x: x + 8, y: 47 }, `${year + settings.shOffset} SH`));
+        svg.append(svgEl("text", { class: "age-label", x: x + 8, y: 68 }, `Age ${year - settings.birthYear + 1}`));
+      }
+    }
+
+    for (let lane = 0; lane <= laneCount; lane += 1) {
+      const y = AXIS_HEIGHT + lane * rowHeight;
+      svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: yearToX(end + 1), y1: y, y2: y }));
+    }
+  }
+
+  function drawLaneLabels(svg, settings, laneCount, rowHeight) {
+    for (let lane = 0; lane < laneCount; lane += 1) {
+      const label = settings.laneLabels[lane] || `Lane ${lane}`;
+      const y = AXIS_HEIGHT + lane * rowHeight + rowHeight / 2 + 4;
+      svg.append(svgEl("text", { class: "lane-label", x: 18, y }, label));
+    }
+  }
+
+  function drawItem(svg, defs, item, rowHeight) {
+    const group = svgEl("g", {
+      class: `item item-${item.type}${item.id === selectedId ? " selected" : ""}`,
+      "data-item-id": item.id,
+      tabindex: "0",
+    });
+
+    const y = AXIS_HEIGHT + item.lane * rowHeight + rowHeight / 2;
+    const x1 = yearToX(item.startYear);
+    const x2 = yearToX(hasEndYear(item.type) ? item.endYear : item.startYear);
+
+    if (item.type === "period") {
+      drawPeriod(group, item, x1, x2, y);
+    } else if (item.type === "line") {
+      drawLine(group, defs, item, x1, x2, y);
+    } else if (item.type === "event") {
+      drawEvent(group, item, x1, y);
+    } else {
+      drawTextItem(group, item, x1, y);
+    }
+
+    if (item.id === selectedId) drawSelection(group, item, x1, x2, y);
+    svg.append(group);
+  }
+
+  function drawPeriod(group, item, x1, x2, y) {
+    const width = Math.max(12, x2 - x1);
+    group.append(
+      svgEl("rect", {
+        class: "period-body",
+        x: x1,
+        y: y - 17,
+        width,
+        height: 34,
+        rx: 6,
+        fill: item.color,
+      }),
+    );
+
+    const label = fitText(item.title, width - 16);
+    group.append(
+      svgEl("text", {
+        class: "title-label",
+        x: x1 + width / 2,
+        y: y + 5,
+        "text-anchor": "middle",
+        fill: readableTextColor(item.color),
+      }, label),
+    );
+  }
+
+  function drawLine(group, defs, item, x1, x2, y) {
+    const markerId = `arrow-${safeSvgId(item.id)}`;
+    if (!document.getElementById(markerId)) {
+      const marker = svgEl("marker", {
+        id: markerId,
+        markerWidth: 9,
+        markerHeight: 9,
+        refX: 8,
+        refY: 4.5,
+        orient: "auto",
+        markerUnits: "strokeWidth",
+      });
+      marker.append(svgEl("path", { d: "M 0 0 L 9 4.5 L 0 9 z", fill: item.color }));
+      defs.append(marker);
+    }
+
+    group.append(
+      svgEl("line", {
+        class: "range-line",
+        x1,
+        y1: y,
+        x2,
+        y2: y,
+        stroke: item.color,
+        "marker-end": `url(#${markerId})`,
+      }),
+    );
+    group.append(svgEl("text", { class: "note-label", x: x1 + 8, y: y - 11, fill: "#1d2732" }, fitText(item.title, Math.max(80, x2 - x1 - 20))));
+  }
+
+  function drawEvent(group, item, x, y) {
+    group.append(svgEl("line", { class: "event-stem", x1: x, y1: y - 23, x2: x, y2: y + 23, stroke: item.color }));
+    group.append(svgEl("circle", { class: "event-marker", cx: x, cy: y, r: 9, fill: item.color }));
+    group.append(svgEl("text", { class: "note-label", x: x + 16, y: y + 5, fill: "#1d2732" }, item.title));
+  }
+
+  function drawTextItem(group, item, x, y) {
+    group.append(svgEl("circle", { cx: x, cy: y, r: 4, fill: item.color }));
+    group.append(svgEl("text", { class: "note-label", x: x + 10, y: y + 5, fill: item.color }, item.title));
+  }
+
+  function drawSelection(group, item, x1, x2, y) {
+    if (item.type === "period") {
+      const width = Math.max(12, x2 - x1);
+      group.append(svgEl("rect", { class: "selection-outline", x: x1 - 4, y: y - 21, width: width + 8, height: 42, rx: 8 }));
+      group.append(svgEl("rect", { class: "resize-handle", "data-item-id": item.id, "data-handle": "start", x: x1 - 5, y: y - 11, width: 10, height: 22, rx: 3 }));
+      group.append(svgEl("rect", { class: "resize-handle", "data-item-id": item.id, "data-handle": "end", x: x2 - 5, y: y - 11, width: 10, height: 22, rx: 3 }));
+    } else if (item.type === "line") {
+      group.append(svgEl("rect", { class: "selection-outline", x: Math.min(x1, x2) - 7, y: y - 19, width: Math.abs(x2 - x1) + 14, height: 38, rx: 8 }));
+      group.append(svgEl("circle", { class: "resize-handle", "data-item-id": item.id, "data-handle": "start", cx: x1, cy: y, r: 6 }));
+      group.append(svgEl("circle", { class: "resize-handle", "data-item-id": item.id, "data-handle": "end", cx: x2, cy: y, r: 6 }));
+    } else {
+      group.append(svgEl("rect", { class: "selection-outline", x: x1 - 12, y: y - 22, width: 210, height: 44, rx: 8 }));
+    }
+  }
+
+  function updateMeta() {
+    const settings = timeline.settings;
+    dom.stageTitle.textContent = settings.title;
+    dom.stageMeta.textContent = `${settings.startYear + settings.shOffset} SH / ${settings.startYear} AD to ${settings.endYear + settings.shOffset} SH / ${settings.endYear} AD`;
+  }
+
+  function syncTimelineControls() {
+    suppressControlEvents = true;
+    dom.timelineTitleInput.value = timeline.settings.title;
+    dom.startYearInput.value = timeline.settings.startYear;
+    dom.endYearInput.value = timeline.settings.endYear;
+    dom.birthYearInput.value = timeline.settings.birthYear;
+    dom.shOffsetInput.value = timeline.settings.shOffset;
+    dom.snapInput.value = String(timeline.settings.snap);
+    dom.zoomRange.value = String(zoom);
+    dom.zoomLabel.textContent = `${Math.round(zoom)} px/year`;
+    suppressControlEvents = false;
+  }
+
+  function syncItemForm() {
+    const item = getItem(selectedId);
+    const controls = [
+      dom.itemTypeInput,
+      dom.itemTitleInput,
+      dom.itemLaneInput,
+      dom.itemColorInput,
+      dom.itemStartInput,
+      dom.itemEndInput,
+      dom.itemNotesInput,
+      dom.deleteItemButton,
+      dom.duplicateItemButton,
+    ];
+
+    suppressControlEvents = true;
+    controls.forEach((control) => {
+      control.disabled = !item;
+    });
+
+    if (!item) {
+      dom.itemTypeInput.value = "event";
+      dom.itemTitleInput.value = "";
+      dom.itemLaneInput.value = "";
+      dom.itemColorInput.value = TYPE_COLORS.event;
+      dom.itemStartInput.value = "";
+      dom.itemEndInput.value = "";
+      dom.itemNotesInput.value = "";
+      dom.itemEndField.hidden = true;
+      dom.itemForm.classList.add("empty-selection");
+      suppressControlEvents = false;
+      return;
+    }
+
+    dom.itemForm.classList.remove("empty-selection");
+    dom.itemTypeInput.value = item.type;
+    dom.itemTitleInput.value = item.title;
+    dom.itemLaneInput.value = item.lane;
+    dom.itemColorInput.value = item.color;
+    dom.itemStartInput.value = formatYearValue(item.startYear);
+    dom.itemEndInput.value = formatYearValue(item.endYear);
+    dom.itemNotesInput.value = item.notes;
+    dom.itemEndField.hidden = !hasEndYear(item.type);
+    suppressControlEvents = false;
+  }
+
+  function updateTimelineFromControls() {
+    if (suppressControlEvents) return;
+    const settings = timeline.settings;
+    settings.title = dom.timelineTitleInput.value.trim() || "Personal Timeline";
+    settings.startYear = Math.round(toNumber(dom.startYearInput.value, settings.startYear));
+    settings.endYear = Math.round(toNumber(dom.endYearInput.value, settings.endYear));
+    if (settings.endYear < settings.startYear) settings.endYear = settings.startYear;
+    settings.birthYear = Math.round(toNumber(dom.birthYearInput.value, settings.birthYear));
+    settings.shOffset = Math.round(toNumber(dom.shOffsetInput.value, settings.shOffset));
+    settings.snap = toNumber(dom.snapInput.value, settings.snap);
+    renderAll();
+    setStatus("Timeline updated");
+  }
+
+  function applyItemForm() {
+    const item = getItem(selectedId);
+    if (!item) return;
+
+    const type = dom.itemTypeInput.value;
+    item.type = type;
+    item.title = dom.itemTitleInput.value.trim() || titleForType(type);
+    item.lane = clamp(Math.round(toNumber(dom.itemLaneInput.value, item.lane)), 0, 20);
+    item.color = normalizeColor(dom.itemColorInput.value || TYPE_COLORS[type]);
+    item.startYear = toNumber(dom.itemStartInput.value, item.startYear);
+    item.endYear = hasEndYear(type) ? toNumber(dom.itemEndInput.value, item.startYear + 1) : item.startYear;
+    if (hasEndYear(type) && item.endYear <= item.startYear) item.endYear = item.startYear + 1;
+    item.notes = dom.itemNotesInput.value;
+
+    renderAll();
+    setStatus("Item updated");
+  }
+
+  function addItem(type) {
+    const centerYear = getViewportCenterYear();
+    const startYear = snapYear(clamp(centerYear, timeline.settings.startYear, timeline.settings.endYear));
+    const laneByType = { period: 0, line: 3, event: 2, text: 4 };
+    const item = normalizeItem({
+      id: createId(type),
+      type,
+      lane: laneByType[type] || 0,
+      startYear,
+      endYear: hasEndYear(type) ? Math.min(startYear + 1, timeline.settings.endYear + 1) : startYear,
+      title: titleForType(type),
+      color: TYPE_COLORS[type],
+      notes: "",
+    });
+
+    timeline.items.push(item);
+    selectedId = item.id;
+    renderAll();
+    setStatus(`${titleForType(type)} added`);
+  }
+
+  function deleteSelectedItem() {
+    if (!selectedId) return;
+    const item = getItem(selectedId);
+    if (!item) return;
+    const ok = window.confirm(`Delete "${item.title}"?`);
+    if (!ok) return;
+    timeline.items = timeline.items.filter((candidate) => candidate.id !== selectedId);
+    selectedId = null;
+    renderAll();
+    setStatus("Item deleted");
+  }
+
+  function duplicateSelectedItem() {
+    const item = getItem(selectedId);
+    if (!item) return;
+    const copy = {
+      ...item,
+      id: createId(item.type),
+      title: `${item.title} copy`,
+      lane: clamp(item.lane + 1, 0, 20),
+    };
+    timeline.items.push(copy);
+    selectedId = copy.id;
+    renderAll();
+    setStatus("Item duplicated");
+  }
+
+  function resetToSample() {
+    const ok = window.confirm("Replace the current timeline with the sample?");
+    if (!ok) return;
+    timeline = createSampleTimeline();
+    selectedId = null;
+    renderAll();
+    setStatus("Sample loaded");
+  }
+
+  function beginPointerDrag(event) {
+    const handle = event.target.closest(".resize-handle");
+    const itemNode = event.target.closest("[data-item-id]");
+    if (!itemNode) {
+      selectedId = null;
+      renderAll();
+      return;
+    }
+
+    const item = getItem(itemNode.dataset.itemId);
+    if (!item) return;
+    selectedId = item.id;
+    const point = svgPoint(event);
+    dragState = {
+      pointerId: event.pointerId,
+      mode: handle ? handle.dataset.handle : "move",
+      itemId: item.id,
+      startPoint: point,
+      original: { ...item },
+    };
+    dom.timelineSvg.setPointerCapture(event.pointerId);
+    renderAll({ save: false });
+  }
+
+  function movePointerDrag(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+    const item = getItem(dragState.itemId);
+    if (!item) return;
+    const point = svgPoint(event);
+    const dxYears = (point.x - dragState.startPoint.x) / zoom;
+    const dyLanes = Math.round((point.y - dragState.startPoint.y) / timeline.settings.rowHeight);
+    const original = dragState.original;
+
+    if (dragState.mode === "start") {
+      item.startYear = snapYear(Math.min(original.startYear + dxYears, item.endYear - timeline.settings.snap));
+    } else if (dragState.mode === "end") {
+      item.endYear = snapYear(Math.max(original.endYear + dxYears, item.startYear + timeline.settings.snap));
+    } else {
+      item.startYear = snapYear(original.startYear + dxYears);
+      item.lane = clamp(original.lane + dyLanes, 0, 20);
+      if (hasEndYear(item.type)) {
+        const duration = original.endYear - original.startYear;
+        item.endYear = snapYear(item.startYear + duration);
+      } else {
+        item.endYear = item.startYear;
+      }
+    }
+
+    if (hasEndYear(item.type) && item.endYear <= item.startYear) {
+      item.endYear = item.startYear + timeline.settings.snap;
+    }
+    renderAll({ save: false });
+  }
+
+  function endPointerDrag(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+    try {
+      dom.timelineSvg.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture may already be released by the browser.
+    }
+    dragState = null;
+    renderAll();
+    setStatus("Item moved");
+  }
+
+  function handleViewportWheel(event) {
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault();
+    const rect = dom.timelineViewport.getBoundingClientRect();
+    const pointerX = dom.timelineViewport.scrollLeft + event.clientX - rect.left;
+    const yearUnderPointer = xToYear(pointerX);
+    const nextZoom = zoom + (event.deltaY > 0 ? -18 : 18);
+    setZoom(nextZoom, { render: false });
+    renderAll({ save: false });
+    dom.timelineViewport.scrollLeft = yearToX(yearUnderPointer) - (event.clientX - rect.left);
+  }
+
+  function setZoom(value, options = {}) {
+    zoom = clamp(Number(value) || 148, MIN_ZOOM, MAX_ZOOM);
+    localStorage.setItem(ZOOM_KEY, String(zoom));
+    dom.zoomRange.value = String(zoom);
+    dom.zoomLabel.textContent = `${Math.round(zoom)} px/year`;
+    if (options.render !== false) renderAll({ save: false });
+  }
+
+  function fitTimelineToViewport() {
+    const years = timeline.settings.endYear - timeline.settings.startYear + 1;
+    const available = Math.max(200, dom.timelineViewport.clientWidth - LEFT_GUTTER - RIGHT_GUTTER - 24);
+    setZoom(clamp(Math.floor(available / years), MIN_ZOOM, MAX_ZOOM));
+    dom.timelineViewport.scrollLeft = 0;
+    setStatus("Fit applied");
+  }
+
+  function getViewportCenterYear() {
+    const centerX = dom.timelineViewport.scrollLeft + dom.timelineViewport.clientWidth / 2;
+    return xToYear(centerX);
+  }
+
+  function yearToX(year) {
+    return LEFT_GUTTER + (Number(year) - timeline.settings.startYear) * zoom;
+  }
+
+  function xToYear(x) {
+    return timeline.settings.startYear + (Number(x) - LEFT_GUTTER) / zoom;
+  }
+
+  function svgPoint(event) {
+    const point = dom.timelineSvg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    return point.matrixTransform(dom.timelineSvg.getScreenCTM().inverse());
+  }
+
+  function getItem(id) {
+    return timeline.items.find((item) => item.id === id) || null;
+  }
+
+  function hasEndYear(type) {
+    return type === "period" || type === "line";
+  }
+
+  function titleForType(type) {
+    return {
+      event: "New event",
+      period: "New period",
+      line: "New line",
+      text: "New text",
+    }[type] || "New item";
+  }
+
+  function saveJsonFile() {
+    const payload = {
+      ...timeline,
+      exportedAt: new Date().toISOString(),
+    };
+    downloadBlob(
+      new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
+      `${filenameBase()}.json`,
+    );
+    saveLocalTimeline();
+    setStatus("JSON saved");
+  }
+
+  async function loadJsonFile() {
+    const file = dom.fileInput.files && dom.fileInput.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      timeline = normalizeTimeline(JSON.parse(text));
+      selectedId = null;
+      renderAll();
+      setStatus("JSON loaded");
+    } catch (error) {
+      console.error(error);
+      setStatus("Could not load JSON");
+      window.alert("The selected file is not a valid timeline JSON file.");
+    } finally {
+      dom.fileInput.value = "";
+    }
+  }
+
+  function exportSvgFile() {
+    const svgText = serializeTimelineSvg();
+    downloadBlob(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }), `${filenameBase()}.svg`);
+    setStatus("SVG exported");
+  }
+
+  async function exportPngFile() {
+    try {
+      setStatus("Exporting PNG");
+      const canvas = await timelineToCanvas("image/png");
+      const blob = await canvasToBlob(canvas, "image/png");
+      downloadBlob(blob, `${filenameBase()}.png`);
+      setStatus("PNG exported");
+    } catch (error) {
+      console.error(error);
+      setStatus("PNG export failed");
+      window.alert("PNG export failed.");
+    }
+  }
+
+  async function exportPdfFile() {
+    try {
+      setStatus("Exporting PDF");
+      const canvas = await timelineToCanvas("image/jpeg");
+      const jpegBlob = await canvasToBlob(canvas, "image/jpeg", 0.92);
+      const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer());
+      const pdfBytes = buildPdfFromJpeg(jpegBytes, canvas.width, canvas.height);
+      downloadBlob(new Blob([pdfBytes], { type: "application/pdf" }), `${filenameBase()}.pdf`);
+      setStatus("PDF exported");
+    } catch (error) {
+      console.error(error);
+      setStatus("PDF export failed");
+      window.alert("PDF export failed.");
+    }
+  }
+
+  function serializeTimelineSvg() {
+    const clone = dom.timelineSvg.cloneNode(true);
+    clone.setAttribute("xmlns", NS);
+    clone.querySelectorAll(".selection-outline,.resize-handle").forEach((node) => node.remove());
+    clone.querySelectorAll(".selected").forEach((node) => node.classList.remove("selected"));
+    const style = document.createElementNS(NS, "style");
+    style.textContent = EXPORT_CSS;
+    clone.insertBefore(style, clone.firstChild);
+    return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(clone)}`;
+  }
+
+  async function timelineToCanvas(type) {
+    const svgText = serializeTimelineSvg();
+    const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    const svgWidth = Number(dom.timelineSvg.getAttribute("width"));
+    const svgHeight = Number(dom.timelineSvg.getAttribute("height"));
+    const maxPixels = 24000000;
+    const scale = clamp(Math.sqrt(maxPixels / Math.max(1, svgWidth * svgHeight)), 0.35, 2);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(svgWidth * scale);
+    canvas.height = Math.ceil(svgHeight * scale);
+
+    try {
+      const image = await loadImage(url);
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.scale(scale, scale);
+      context.drawImage(image, 0, 0, svgWidth, svgHeight);
+      if (type === "image/jpeg") {
+        context.globalCompositeOperation = "destination-over";
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, svgWidth, svgHeight);
+      }
+      return canvas;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function buildPdfFromJpeg(jpegBytes, imageWidth, imageHeight) {
+    const encoder = new TextEncoder();
+    const chunks = [];
+    const offsets = [0];
+    let offset = 0;
+
+    const addBytes = (bytes) => {
+      chunks.push(bytes);
+      offset += bytes.length;
+    };
+    const addText = (text) => addBytes(encoder.encode(text));
+    const beginObject = (number) => {
+      offsets[number] = offset;
+      addText(`${number} 0 obj\n`);
+    };
+
+    const pageWidth = Math.max(300, imageWidth * 0.75);
+    const pageHeight = Math.max(200, imageHeight * 0.75);
+    const contents = `q\n${pageWidth.toFixed(2)} 0 0 ${pageHeight.toFixed(2)} 0 0 cm\n/Im0 Do\nQ\n`;
+
+    addText("%PDF-1.4\n");
+    beginObject(1);
+    addText("<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+    beginObject(2);
+    addText("<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+    beginObject(3);
+    addText(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth.toFixed(2)} ${pageHeight.toFixed(2)}] /Resources << /ProcSet [/PDF /ImageC] /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`);
+    beginObject(4);
+    addText(`<< /Type /XObject /Subtype /Image /Width ${imageWidth} /Height ${imageHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+    addBytes(jpegBytes);
+    addText("\nendstream\nendobj\n");
+    beginObject(5);
+    addText(`<< /Length ${contents.length} >>\nstream\n${contents}endstream\nendobj\n`);
+
+    const xrefOffset = offset;
+    addText("xref\n0 6\n0000000000 65535 f \n");
+    for (let index = 1; index <= 5; index += 1) {
+      addText(`${String(offsets[index]).padStart(10, "0")} 00000 n \n`);
+    }
+    addText(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+    const output = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.length, 0));
+    let cursor = 0;
+    chunks.forEach((chunk) => {
+      output.set(chunk, cursor);
+      cursor += chunk.length;
+    });
+    return output;
+  }
+
+  function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = url;
+    });
+  }
+
+  function canvasToBlob(canvas, type, quality) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Canvas export failed"));
+      }, type, quality);
+    });
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function loadLocalTimeline() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? normalizeTimeline(JSON.parse(raw)) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function scheduleLocalSave() {
+    window.clearTimeout(localSaveTimer);
+    localSaveTimer = window.setTimeout(saveLocalTimeline, 250);
+  }
+
+  function saveLocalTimeline() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(timeline));
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function svgEl(tagName, attributes = {}, text = null) {
+    const node = document.createElementNS(NS, tagName);
+    Object.entries(attributes).forEach(([key, value]) => {
+      if (value === undefined || value === null) return;
+      node.setAttribute(key, String(value));
+    });
+    if (text !== null) node.textContent = text;
+    return node;
+  }
+
+  function fitText(text, maxWidth) {
+    const value = String(text || "");
+    if (maxWidth <= 0) return "";
+    const estimatedWidth = value.length * 7.2;
+    if (estimatedWidth <= maxWidth) return value;
+    const maxChars = Math.max(3, Math.floor(maxWidth / 7.2) - 3);
+    return `${value.slice(0, maxChars)}...`;
+  }
+
+  function readableTextColor(hex) {
+    const clean = normalizeColor(hex).slice(1);
+    const red = parseInt(clean.slice(0, 2), 16);
+    const green = parseInt(clean.slice(2, 4), 16);
+    const blue = parseInt(clean.slice(4, 6), 16);
+    const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+    return luminance > 0.56 ? "#1d2732" : "#ffffff";
+  }
+
+  function normalizeColor(value) {
+    const text = String(value || "").trim();
+    return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "#2563eb";
+  }
+
+  function snapYear(value) {
+    const snap = timeline.settings.snap || 1;
+    return Math.round(Number(value) / snap) * snap;
+  }
+
+  function formatYearValue(value) {
+    return Number.isInteger(Number(value)) ? String(Number(value)) : Number(value).toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  }
+
+  function toNumber(value, fallback) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function createId(prefix) {
+    if (window.crypto && crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function safeSvgId(value) {
+    return String(value).replace(/[^a-zA-Z0-9_-]/g, "-");
+  }
+
+  function filenameBase() {
+    const slug = timeline.settings.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 42);
+    return slug || "timeline";
+  }
+
+  function setStatus(message) {
+    dom.statusText.textContent = message;
+  }
+})();

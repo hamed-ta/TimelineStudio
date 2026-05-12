@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Timeline Studio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>Timeline Studio</h1>
+            <p id="statusText" aria-live="polite">Ready</p>
+          </div>
+        </div>
+
+        <div class="toolbar" role="toolbar" aria-label="Timeline actions">
+          <button type="button" class="toolbar-button" data-add="event">Event</button>
+          <button type="button" class="toolbar-button" data-add="period">Period</button>
+          <button type="button" class="toolbar-button" data-add="line">Line</button>
+          <button type="button" class="toolbar-button" data-add="text">Text</button>
+          <span class="separator" aria-hidden="true"></span>
+          <button type="button" class="toolbar-button" id="saveJsonButton">Save JSON</button>
+          <button type="button" class="toolbar-button" id="loadJsonButton">Load JSON</button>
+          <span class="separator" aria-hidden="true"></span>
+          <button type="button" class="toolbar-button" id="exportSvgButton">SVG</button>
+          <button type="button" class="toolbar-button" id="exportPngButton">PNG</button>
+          <button type="button" class="toolbar-button" id="exportPdfButton">PDF</button>
+        </div>
+
+        <div class="zoom-tools">
+          <button type="button" class="icon-button" id="zoomOutButton" aria-label="Zoom out">-</button>
+          <label for="zoomRange">Zoom</label>
+          <input id="zoomRange" type="range" min="56" max="360" step="4" value="148" />
+          <span id="zoomLabel">148 px/year</span>
+          <button type="button" class="icon-button" id="zoomInButton" aria-label="Zoom in">+</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="inspector" aria-label="Timeline editor">
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Timeline</h2>
+              <button type="button" class="quiet-button" id="resetSampleButton">Sample</button>
+            </div>
+
+            <label>
+              Title
+              <input id="timelineTitleInput" type="text" autocomplete="off" />
+            </label>
+
+            <div class="field-grid">
+              <label>
+                Start AD
+                <input id="startYearInput" type="number" step="1" />
+              </label>
+              <label>
+                End AD
+                <input id="endYearInput" type="number" step="1" />
+              </label>
+              <label>
+                Birth AD
+                <input id="birthYearInput" type="number" step="1" />
+              </label>
+              <label>
+                SH offset
+                <input id="shOffsetInput" type="number" step="1" />
+              </label>
+            </div>
+
+            <label>
+              Drag snap
+              <select id="snapInput">
+                <option value="1">1 year</option>
+                <option value="0.5">6 months</option>
+                <option value="0.25">3 months</option>
+                <option value="0.1">0.1 year</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Item</h2>
+              <button type="button" class="quiet-button danger" id="deleteItemButton">Delete</button>
+            </div>
+
+            <form id="itemForm">
+              <label>
+                Type
+                <select id="itemTypeInput">
+                  <option value="event">Event</option>
+                  <option value="period">Period</option>
+                  <option value="line">Line</option>
+                  <option value="text">Text</option>
+                </select>
+              </label>
+
+              <label>
+                Title
+                <input id="itemTitleInput" type="text" autocomplete="off" />
+              </label>
+
+              <div class="field-grid">
+                <label>
+                  Lane
+                  <input id="itemLaneInput" type="number" min="0" max="20" step="1" />
+                </label>
+                <label>
+                  Color
+                  <input id="itemColorInput" type="color" />
+                </label>
+                <label>
+                  Start AD
+                  <input id="itemStartInput" type="number" step="0.1" />
+                </label>
+                <label id="itemEndField">
+                  End AD
+                  <input id="itemEndInput" type="number" step="0.1" />
+                </label>
+              </div>
+
+              <label>
+                Notes
+                <textarea id="itemNotesInput" rows="4"></textarea>
+              </label>
+
+              <div class="form-actions">
+                <button type="submit" class="primary-button">Apply</button>
+                <button type="button" class="secondary-button" id="duplicateItemButton">Duplicate</button>
+              </div>
+            </form>
+          </section>
+        </aside>
+
+        <section class="timeline-stage" aria-label="Timeline canvas">
+          <div class="stage-header">
+            <div>
+              <h2 id="stageTitle">Personal Timeline</h2>
+              <p id="stageMeta">1367 SH / 1988 AD to 1385 SH / 2006 AD</p>
+            </div>
+            <button type="button" class="secondary-button" id="fitButton">Fit</button>
+          </div>
+
+          <div class="timeline-viewport" id="timelineViewport" tabindex="0">
+            <svg id="timelineSvg" role="img" aria-labelledby="stageTitle stageMeta"></svg>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <input id="fileInput" type="file" accept="application/json,.json" hidden />
+    <script src="app.js"></script>
+  </body>
+</html>
