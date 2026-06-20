@@ -60,6 +60,7 @@ import {
   const RIGHT_GUTTER = 110;
   const AXIS_HEIGHT = 112;
   const FOOTER_HEIGHT = 34;
+  const NOTE_AREA_HEIGHT = 76;
   const DEFAULT_ROW_HEIGHT = 68;
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 360;
@@ -209,7 +210,9 @@ import {
     const rowHeight = settings.rowHeight || DEFAULT_ROW_HEIGHT;
     const contentEndDate = addDaysIso(settings.endDate, 1);
     const contentWidth = LEFT_GUTTER + daysBetween(settings.startDate, contentEndDate) * pixelsPerDay() + RIGHT_GUTTER;
-    const contentHeight = AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT;
+    const laneAreaBottom = AXIS_HEIGHT + laneCount * rowHeight;
+    const noteAreaHeight = timeline.items.some((item) => item.type === "note") ? NOTE_AREA_HEIGHT : 0;
+    const contentHeight = laneAreaBottom + noteAreaHeight + FOOTER_HEIGHT;
 
     svg.setAttribute("width", String(Math.ceil(contentWidth)));
     svg.setAttribute("height", String(Math.ceil(contentHeight)));
@@ -229,10 +232,10 @@ import {
       .sort((a, b) => a.lane - b.lane || compareIso(a.startDate, b.startDate));
     sortedItems
       .filter((item) => item.type === "marker")
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, contentHeight));
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight));
     sortedItems
       .filter((item) => item.type !== "marker")
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, contentHeight));
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight));
   }
 
   function drawGrid(svg, settings, laneCount, rowHeight, contentHeight) {
@@ -305,7 +308,7 @@ import {
     }
   }
 
-  function drawItem(svg, defs, item, rowHeight, contentHeight) {
+  function drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight) {
     const group = svgEl("g", {
       class: `item item-${item.type}${item.id === selectedId ? " selected" : ""}`,
       "data-item-id": item.id,
@@ -323,12 +326,14 @@ import {
     } else if (item.type === "event") {
       drawEvent(group, item, x1, y);
     } else if (item.type === "marker") {
-      drawMarker(group, item, x1, contentHeight);
+      drawMarker(group, item, x1, AXIS_HEIGHT + laneCount * rowHeight);
+    } else if (item.type === "note") {
+      drawNote(group, defs, item, x1, y, laneCount, rowHeight, contentWidth);
     } else {
       drawTextItem(group, item, x1, y);
     }
 
-    if (item.id === selectedId) drawSelection(group, item, x1, x2, y, contentHeight);
+    if (item.id === selectedId) drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight);
     svg.append(group);
   }
 
@@ -394,13 +399,52 @@ import {
     group.append(svgEl("text", { class: "note-label", x: x + 16, y: y + 5 }, item.title));
   }
 
-  function drawMarker(group, item, x, contentHeight) {
+  function drawMarker(group, item, x, laneAreaBottom) {
     const y1 = AXIS_HEIGHT;
-    const y2 = contentHeight - FOOTER_HEIGHT;
+    const y2 = laneAreaBottom;
     group.append(svgEl("line", { class: "marker-hit", x1: x, y1, x2: x, y2, stroke: "transparent" }));
     group.append(svgEl("line", { class: "marker-line", x1: x, y1, x2: x, y2, stroke: item.color }));
     group.append(svgEl("circle", { class: "marker-pin", cx: x, cy: y1, r: 5, fill: item.color }));
     group.append(svgEl("text", { class: "marker-label", x: x + 10, y: y1 + 18, fill: item.color }, item.title));
+  }
+
+  function drawNote(group, defs, item, x, y, laneCount, rowHeight, contentWidth) {
+    const layout = getNoteLayout(item, x, laneCount, rowHeight, contentWidth);
+    const markerId = `note-arrow-${safeSvgId(item.id)}`;
+    if (!document.getElementById(markerId)) {
+      const marker = svgEl("marker", {
+        id: markerId,
+        markerWidth: 8,
+        markerHeight: 8,
+        refX: 7,
+        refY: 4,
+        orient: "auto",
+        markerUnits: "strokeWidth",
+      });
+      marker.append(svgEl("path", { d: "M 0 0 L 8 4 L 0 8 z", fill: item.color }));
+      defs.append(marker);
+    }
+
+    group.append(svgEl("line", {
+      class: "note-leader",
+      x1: layout.leaderX,
+      y1: layout.leaderY,
+      x2: x,
+      y2: y,
+      stroke: item.color,
+      "marker-end": `url(#${markerId})`,
+    }));
+    group.append(svgEl("circle", { class: "note-anchor", cx: x, cy: y, r: 6, fill: item.color }));
+    group.append(svgEl("rect", {
+      class: "note-balloon",
+      x: layout.x,
+      y: layout.y,
+      width: layout.width,
+      height: layout.height,
+      rx: 10,
+      stroke: item.color,
+    }));
+    group.append(svgEl("text", { class: "note-balloon-text", x: layout.x + 12, y: layout.y + 23 }, layout.label));
   }
 
   function drawTextItem(group, item, x, y) {
@@ -408,7 +452,7 @@ import {
     group.append(svgEl("text", { class: "note-label", x: x + 10, y: y + 5, fill: item.color }, item.title));
   }
 
-  function drawSelection(group, item, x1, x2, y, contentHeight) {
+  function drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight) {
     if (item.type === "period") {
       const width = Math.max(12, x2 - x1);
       group.append(svgEl("rect", { class: "selection-outline", x: x1 - 4, y: y - 21, width: width + 8, height: 42, rx: 8 }));
@@ -424,12 +468,38 @@ import {
         x: x1 - 7,
         y: AXIS_HEIGHT + 4,
         width: 14,
-        height: contentHeight - AXIS_HEIGHT - FOOTER_HEIGHT - 8,
+        height: laneCount * rowHeight - 8,
         rx: 7,
+      }));
+    } else if (item.type === "note") {
+      const layout = getNoteLayout(item, x1, laneCount, rowHeight, contentWidth);
+      group.append(svgEl("rect", {
+        class: "selection-outline",
+        x: Math.min(x1 - 10, layout.x - 4),
+        y: Math.min(y - 10, layout.y - 4),
+        width: Math.max(x1 + 10, layout.x + layout.width + 4) - Math.min(x1 - 10, layout.x - 4),
+        height: Math.max(y + 10, layout.y + layout.height + 4) - Math.min(y - 10, layout.y - 4),
+        rx: 12,
       }));
     } else {
       group.append(svgEl("rect", { class: "selection-outline", x: x1 - 12, y: y - 22, width: 210, height: 44, rx: 8 }));
     }
+  }
+
+  function getNoteLayout(item, x, laneCount, rowHeight, contentWidth) {
+    const width = clamp(String(item.title || "").length * 7.2 + 28, 96, 220);
+    const height = 38;
+    const balloonX = clamp(x - width / 2, 12, Math.max(12, contentWidth - width - 12));
+    const balloonY = AXIS_HEIGHT + laneCount * rowHeight + 18;
+    return {
+      x: balloonX,
+      y: balloonY,
+      width,
+      height,
+      label: fitText(item.title, width - 24),
+      leaderX: x,
+      leaderY: balloonY,
+    };
   }
 
   function updateMeta() {
@@ -773,7 +843,7 @@ import {
   function addItem(type) {
     const centerDate = getViewportCenterDate();
     const startDate = snapDate(clampIso(centerDate, timeline.settings.startDate, timeline.settings.endDate));
-    const laneByType = { period: 0, line: 3, event: 2, marker: 0, text: 4 };
+    const laneByType = { period: 0, line: 3, event: 2, marker: 0, note: 2, text: 4 };
     const endDate = hasEndYear(type) ? defaultEndDate(startDate) : startDate;
     const item = normalizeItem({
       id: createId(type),

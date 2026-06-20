@@ -6,14 +6,14 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add vertical all-line marker items for global reference dates.
+Add annotation notes with a leader arrow and text balloon.
 
 ## Now
 
-- Add a marker item type to the model and JSON normalization.
-- Add Marker to the timeline toolbar and item type selector.
-- Render markers as full-height vertical lines across all visible timeline lines.
-- Keep marker items date-based and all-line; they should not depend on a selected line.
+- Add a note item type to the model and JSON normalization.
+- Add Note to the timeline toolbar and item type selector.
+- Render notes as point annotations with an anchor, straight arrow leader, and rounded text balloon below all timeline lines.
+- Keep note items date-based and lane-bound; they should not require a period.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
@@ -68,6 +68,7 @@ Add vertical all-line marker items for global reference dates.
 - Moved the timeline title, date range, and Fit action into the main top bar.
 - Added drag reordering and removal for timeline lines.
 - Added vertical all-line marker items.
+- Added annotation note items with leader arrows and balloons.
 
 ## Risks
 

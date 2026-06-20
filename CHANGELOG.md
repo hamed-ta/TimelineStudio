@@ -15,6 +15,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Moved the current timeline title, date range, and Fit action into the main app header.
 - Added drag reordering and removal for timeline lines from the editor and timeline canvas.
 - Added marker items that draw a vertical line across all timeline lines.
+- Added note items with a leader arrow and text balloon.
 
 ### Documentation
 

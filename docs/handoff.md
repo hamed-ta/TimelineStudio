@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add vertical all-line marker items for global reference dates.
+Add annotation notes with a leader arrow and text balloon.
 
 ## Last Known State
 
@@ -20,6 +20,8 @@ Timeline lines can now be reordered from the editor sidebar or from the timeline
 
 Timeline items now include a marker type for global reference dates. Markers render as vertical lines across all visible timeline lines, use a single date, ignore lane assignment, and are available from the toolbar and item type selector.
 
+Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
+
 Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version remains `0.1.0`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
@@ -28,16 +30,15 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`02a14e9 feat: add line reordering and removal`
+`94cc43f feat: add vertical marker items`
 
 ## Work Completed This Session
 
-- Added product concept and acceptance scenario for all-line marker items.
-- Added `marker` to the typed timeline item model, default colors, title text, and normalization.
-- Added Marker to the toolbar and item type selector.
-- Rendered markers as dashed vertical lines across the full lane area, with marker export styles.
-- Updated the item form so marker items hide end date controls and disable lane editing.
-- Kept marker drag behavior date-only by pinning marker lane to zero.
+- Added product concept and acceptance scenario for annotation note items.
+- Added `note` to the typed timeline item model, default colors, title text, and normalization.
+- Added Note to the toolbar and item type selector.
+- Rendered notes as point annotations with an anchor, straight arrow leader, and rounded text balloon below all timeline lines.
+- Added note export styles so SVG/PNG/PDF output keeps the note leader, anchor, and balloon styling.
 - Updated `CHANGELOG.md`, plan, and handoff docs.
 
 ## Files Changed
@@ -54,20 +55,19 @@ Firebase should wait until the local Vite app is stable.
 
 ## Decisions
 
-- Use a distinct `marker` type rather than overloading `event`, so saved JSON and future UI can reason about all-line reference dates explicitly.
-- Markers have no end date and are not lane-bound; lane is normalized to zero and the lane input is disabled in the form.
-- Draw markers behind normal items so they act as timeline reference guides without hiding item content.
+- Use a distinct `note` type rather than overloading `event` or `text`, so annotations can have their own leader/balloon rendering.
+- Notes are point-based in this slice and do not require a period. Range-attached notes should be a separate future behavior decision.
+- Keep notes lane-bound so they can be reordered with timeline lines like other lane items.
 
 ## Verification
 
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
-- `git diff --check`: passed.
-- Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Marker in the toolbar.
-- Browser smoke: item type became `marker`, lane input was disabled at `0`, and the end date field was hidden.
-- Browser smoke: one selected `.item-marker` rendered with label `New marker`.
-- Browser smoke: marker line rendered from y=112 to y=452 across all five rows, with transparent hit line and marker color `#0f766e`.
-- Browser smoke: console error log was empty during marker checks.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Note in the toolbar.
+- Browser smoke: item type became `note`, lane input stayed enabled at `2`, and the end date field was hidden.
+- Browser smoke: one selected `.item-note` rendered with label `New note`.
+- Browser smoke: note anchor rendered at the date point, the leader line rendered straight down with matching x coordinates, and the balloon rendered below all timeline lines at y=470 after the last lane y=452.
+- Browser smoke: console error log was empty during note checks.
 
 ## Open Issues
 
@@ -79,8 +79,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: add vertical marker items`
+`feat: add annotation note items`
 
 ## Next Safe Step
 
-Review the marker interaction in the browser, then continue UI polish or JSON load/save smoke testing before Firebase work.
+Improve event marker styling with a richer beveled or glass-like appearance.

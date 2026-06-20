@@ -16,6 +16,10 @@ export const TIMELINE_EXPORT_CSS = `
   .marker-line{stroke-width:2;stroke-dasharray:7 7;stroke-linecap:round}
   .marker-pin{stroke:#fff;stroke-width:2}
   .marker-label{font-size:12px;font-weight:750;paint-order:stroke;stroke:#fff;stroke-linejoin:round;stroke-width:4px}
+  .note-leader{fill:none;stroke-width:2;stroke-linecap:round}
+  .note-anchor{stroke:#fff;stroke-width:2}
+  .note-balloon{fill:#fff;stroke-width:2}
+  .note-balloon-text{fill:#1d2732;font-size:13px;font-weight:700}
   .range-line{fill:none;stroke-width:4;stroke-linecap:round}
 `;
 

@@ -218,6 +218,7 @@ export function App() {
                     <select id="itemTypeInput">
                       <option value="event">Event</option>
                       <option value="marker">Marker</option>
+                      <option value="note">Note</option>
                       <option value="period">Period</option>
                       <option value="line">Line</option>
                       <option value="text">Text</option>
@@ -296,6 +297,9 @@ export function App() {
                 </button>
                 <button type="button" className="toolbar-button" data-add="marker">
                   Marker
+                </button>
+                <button type="button" className="toolbar-button" data-add="note">
+                  Note
                 </button>
                 <button type="button" className="toolbar-button" data-add="period">
                   Period

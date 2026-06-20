@@ -927,6 +927,30 @@ button:focus-visible,
   stroke-width: 4px;
 }
 
+.note-leader {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.note-anchor {
+  stroke: var(--timeline-bg);
+  stroke-width: 2;
+}
+
+.note-balloon {
+  fill: color-mix(in srgb, var(--timeline-bg) 88%, var(--surface-raised));
+  stroke-width: 2;
+  filter: drop-shadow(0 8px 12px color-mix(in srgb, var(--text) 12%, transparent));
+}
+
+.note-balloon-text {
+  fill: var(--timeline-label-strong);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
 .range-line {
   fill: none;
   stroke-width: 4;

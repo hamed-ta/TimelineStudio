@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Timeline Studio lets a user create a personal horizontal timeline with events, periods, text notes, and named lines. The timeline can be panned, zoomed, saved, loaded, and exported.
+Timeline Studio lets a user create a personal horizontal timeline with events, periods, marker dates, annotation notes, text notes, and named lines. The timeline can be panned, zoomed, saved, loaded, and exported.
 
 ## Core Concepts
 
@@ -23,6 +23,10 @@ A point-in-time item with a title, date, optional description, and assigned line
 ### Marker
 
 A point-in-time item that draws a vertical line through every timeline line, such as a birthdate or other global reference date.
+
+### Note
+
+A point-in-time annotation with a straight leader arrow pointing to a date and a balloon below all timeline lines. A note does not require a date range.
 
 ### Period
 
@@ -104,6 +108,14 @@ Given a timeline has multiple lines
 When the user creates a marker on `2001-03-04`
 Then a vertical line appears at the correct date position across all visible lines
 And the marker is still present after save/load.
+
+### Create A Note
+
+Given a timeline has a line with events
+When the user creates a note on `2001-03-04`
+Then a leader arrow points to the correct date position
+And a balloon below all timeline lines displays the note title
+And the note is still present after save/load.
 
 ### Create A Period
 
