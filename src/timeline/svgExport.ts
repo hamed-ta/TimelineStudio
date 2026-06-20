@@ -20,6 +20,12 @@ export const TIMELINE_EXPORT_CSS = `
   .marker-line{stroke-width:2;stroke-dasharray:7 7;stroke-linecap:round}
   .marker-pin{stroke:#fff;stroke-width:2}
   .marker-label{font-size:12px;font-weight:750;paint-order:stroke;stroke:#fff;stroke-linejoin:round;stroke-width:4px}
+  .birth-hit{stroke-width:18;pointer-events:stroke}
+  .birth-line-shadow{stroke-width:8;stroke-linecap:round;opacity:.16}
+  .birth-line{stroke-width:3.5;stroke-linecap:round}
+  .birth-pin{stroke:#fff;stroke-width:2}
+  .birth-label-bg{filter:drop-shadow(0 5px 8px rgba(29,39,50,.16))}
+  .birth-label-text{font-size:12px;font-weight:800}
   .note-leader{fill:none;stroke-width:2;stroke-linecap:round}
   .note-anchor{stroke:#fff;stroke-width:2}
   .note-balloon{fill:#fff;stroke-width:2}

@@ -21,6 +21,7 @@ import {
   TYPE_COLORS,
   createEmptyTimeline,
   hasEndYear,
+  isGlobalTimelineItemType,
   normalizeItem,
   normalizeTimeline,
   titleForType,
@@ -157,8 +158,8 @@ import {
     dom.itemTypeInput.addEventListener("change", () => {
       const type = dom.itemTypeInput.value;
       dom.itemEndField.hidden = !hasEndYear(type);
-      dom.itemLaneInput.disabled = type === "marker";
-      if (type === "marker") dom.itemLaneInput.value = "0";
+      dom.itemLaneInput.disabled = isGlobalTimelineItemType(type);
+      if (isGlobalTimelineItemType(type)) dom.itemLaneInput.value = "0";
       updateItemCalendarPreviewFromInputs();
     });
 
@@ -249,10 +250,10 @@ import {
       .slice()
       .sort((a, b) => a.lane - b.lane || compareIso(a.startDate, b.startDate));
     sortedItems
-      .filter((item) => item.type === "marker")
+      .filter((item) => isGlobalTimelineItemType(item.type))
       .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight));
     sortedItems
-      .filter((item) => item.type !== "marker")
+      .filter((item) => !isGlobalTimelineItemType(item.type))
       .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight));
   }
 
@@ -337,7 +338,9 @@ import {
     const x1 = dateToX(item.startDate);
     const x2 = dateToX(hasEndYear(item.type) ? item.endDate : item.startDate);
 
-    if (item.type === "period") {
+    if (item.type === "birth") {
+      drawBirth(group, item, x1, AXIS_HEIGHT + laneCount * rowHeight);
+    } else if (item.type === "period") {
       drawPeriod(group, defs, item, x1, x2, y);
     } else if (item.type === "line") {
       drawLine(group, defs, item, x1, x2, y);
@@ -474,6 +477,26 @@ import {
     group.append(svgEl("text", { class: "marker-label", x: x + 10, y: y1 + 18, fill: item.color }, item.title));
   }
 
+  function drawBirth(group, item, x, laneAreaBottom) {
+    const y1 = AXIS_HEIGHT - 8;
+    const y2 = laneAreaBottom;
+    const label = fitText(item.title || titleForType("birth"), 116);
+    const labelWidth = Math.max(70, label.length * 7.2 + 22);
+    const labelX = x + 10;
+    const labelY = AXIS_HEIGHT + 10;
+    group.append(svgEl("line", { class: "birth-hit", x1: x, y1, x2: x, y2, stroke: "transparent" }));
+    group.append(svgEl("line", { class: "birth-line-shadow", x1: x + 1.5, y1, x2: x + 1.5, y2, stroke: item.color }));
+    group.append(svgEl("line", { class: "birth-line", x1: x, y1, x2: x, y2, stroke: item.color }));
+    group.append(svgEl("circle", { class: "birth-pin", cx: x, cy: AXIS_HEIGHT, r: 7, fill: item.color }));
+    group.append(svgEl("rect", { class: "birth-label-bg", x: labelX, y: labelY, width: labelWidth, height: 22, rx: 6, fill: item.color }));
+    group.append(svgEl("text", {
+      class: "birth-label-text",
+      x: labelX + 11,
+      y: labelY + 15,
+      fill: readableTextColor(item.color),
+    }, label));
+  }
+
   function drawNote(group, defs, item, x, y, laneCount, rowHeight, contentWidth) {
     const layout = getNoteLayout(item, x, laneCount, rowHeight, contentWidth);
     const markerId = `note-arrow-${safeSvgId(item.id)}`;
@@ -528,7 +551,7 @@ import {
       group.append(svgEl("rect", { class: "selection-outline", x: Math.min(x1, x2) - 7, y: y - 19, width: Math.abs(x2 - x1) + 14, height: 38, rx: 8 }));
       group.append(svgEl("circle", { class: "resize-handle", "data-item-id": item.id, "data-handle": "start", cx: x1, cy: y, r: 6 }));
       group.append(svgEl("circle", { class: "resize-handle", "data-item-id": item.id, "data-handle": "end", cx: x2, cy: y, r: 6 }));
-    } else if (item.type === "marker") {
+    } else if (isGlobalTimelineItemType(item.type)) {
       group.append(svgEl("rect", {
         class: "selection-outline",
         x: x1 - 7,
@@ -677,7 +700,7 @@ import {
     dom.itemEndInput.value = item.endDate;
     dom.itemNotesInput.value = item.notes;
     dom.itemEndField.hidden = !hasEndYear(item.type);
-    dom.itemLaneInput.disabled = item.type === "marker";
+    dom.itemLaneInput.disabled = isGlobalTimelineItemType(item.type);
     updateItemCalendarPreview(item);
     suppressControlEvents = false;
   }
@@ -950,7 +973,7 @@ import {
     const type = dom.itemTypeInput.value;
     item.type = type;
     item.title = dom.itemTitleInput.value.trim() || titleForType(type);
-    item.lane = type === "marker" ? 0 : clamp(Math.round(toNumber(dom.itemLaneInput.value, item.lane)), 0, 20);
+    item.lane = isGlobalTimelineItemType(type) ? 0 : clamp(Math.round(toNumber(dom.itemLaneInput.value, item.lane)), 0, 20);
     item.color = normalizeColor(dom.itemColorInput.value || TYPE_COLORS[type]);
     item.startDate = normalizeDateInput(dom.itemStartInput.value, item.startDate);
     item.endDate = hasEndYear(type) ? normalizeDateInput(dom.itemEndInput.value, addDaysIso(item.startDate, 1)) : item.startDate;
@@ -964,7 +987,7 @@ import {
   function addItem(type) {
     const centerDate = getViewportCenterDate();
     const startDate = snapDate(clampIso(centerDate, timeline.settings.startDate, timeline.settings.endDate));
-    const laneByType = { period: 0, line: 3, event: 2, marker: 0, note: 2, text: 4 };
+    const laneByType = { birth: 0, period: 0, line: 3, event: 2, marker: 0, note: 2, text: 4 };
     const endDate = hasEndYear(type) ? defaultEndDate(startDate) : startDate;
     const item = normalizeItem({
       id: createId(type),
@@ -1002,7 +1025,7 @@ import {
       ...item,
       id: createId(item.type),
       title: `${item.title} copy`,
-      lane: item.type === "marker" ? 0 : clamp(item.lane + 1, 0, 20),
+      lane: isGlobalTimelineItemType(item.type) ? 0 : clamp(item.lane + 1, 0, 20),
     };
     timeline.items.push(copy);
     selectedId = copy.id;
@@ -1115,7 +1138,7 @@ import {
         nextStart = timeline.settings.endDate;
       }
       item.startDate = nextStart;
-      item.lane = item.type === "marker" ? 0 : clamp(original.lane + dyLanes, 0, 20);
+      item.lane = isGlobalTimelineItemType(item.type) ? 0 : clamp(original.lane + dyLanes, 0, 20);
       if (hasEndYear(item.type)) {
         item.endDate = addDaysIso(item.startDate, duration);
       } else {

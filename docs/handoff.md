@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Improve local JSON save ergonomics with current-file saving, dirty state, and keyboard save.
+Add birthdate timeline support and live age/duration context.
 
 ## Last Known State
 
@@ -19,6 +19,8 @@ The React shell now owns UI layout preferences for editor sidebar collapse and t
 Timeline lines can now be reordered from the editor sidebar or from the timeline label area. Items assigned to a line move with that line. Lines can be removed after confirmation; items on the removed line are deleted and lower lines shift upward.
 
 Timeline items now include a marker type for global reference dates. Markers render as vertical lines across all visible timeline lines, use a single date, ignore lane assignment, and are available from the toolbar and item type selector.
+
+Timeline items now include a birth type for a person's birthdate. Birth items render as prominent vertical all-line markers, ignore lane assignment, and can be created from the toolbar or item type selector.
 
 Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
 
@@ -38,15 +40,15 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`d67a9f9 feat: soften period bar styling`
+`d921249 feat: improve local JSON save workflow`
 
 ## Work Completed This Session
 
-- Added product acceptance scenarios for current-file saving, download fallback behavior, and unsaved changes.
-- Added browser file-open picker support so a loaded JSON file can become the current writable save target when supported.
-- Changed save behavior to reuse the current file handle, fall back to Save As, and then fall back to JSON download.
-- Added visible file/copy state and unsaved-change state in the top header.
-- Added `Ctrl+S` / `Command+S` handling for JSON save.
+- Added product acceptance scenario for birthdate items.
+- Added saved `birth` item type to the timeline model.
+- Added legacy `settings.birthDate` / `birthYear` migration into a birth item.
+- Added Birth toolbar and item type options.
+- Rendered birth items as prominent vertical all-line markers with export styles.
 - Updated `CHANGELOG.md`, plan, and handoff docs.
 
 ## Files Changed
@@ -57,36 +59,36 @@ Firebase should wait until the local Vite app is stable.
 - `docs/product.md`
 - `app.js`
 - `src/App.tsx`
-- `src/platform/files.ts`
+- `src/timeline/model.ts`
+- `src/timeline/svgExport.ts`
 - `styles.css`
 
 ## Decisions
 
-- Same-file local saving depends on the browser File System Access API; standard file inputs remain read-only by design.
-- Keep download fallback behavior so Safari/Firefox-style environments still support local JSON export.
-- Mark timeline data mutations dirty through the existing `renderAll()` paths, while zoom, pan, selection, Fit, and other view-only updates stay clean.
+- Store the birthdate as a normal item (`type: "birth"`) instead of a timeline setting.
+- Keep `birth` lane-independent like `marker`, with `lane` normalized to `0`.
+- Migrate legacy `settings.birthDate` or `settings.birthYear` into one birth item when no birth item already exists.
 
 ## Verification
 
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
 - `git diff --check`: passed.
-- `npm run build`: passed.
-- Browser smoke through Vite at `http://127.0.0.1:8766/`: initial header showed `No file selected`.
-- Browser smoke: clicked Event in the toolbar; header showed `Unsaved changes`, one timeline item rendered, status was `New event added`, and no console errors were reported.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Birth in the toolbar.
+- Browser smoke: one selected `.item-birth` rendered with one `.birth-line`, label `Birthdate`, disabled lane input, dirty indicator visible, status `Birthdate added`, and no console errors.
 
 ## Open Issues
 
 - No automated browser test harness exists yet.
-- Manual native file picker verification is still needed for accepting the browser write prompt and confirming an actual same-file save on disk.
+- Live hover age readout and period-derived age/duration labels are still pending.
 - Firebase is not installed or configured yet.
 - Rendering and interaction behavior still lives in legacy `app.js`.
 - `npm audit` reports one low-severity transitive `esbuild` advisory for Windows dev-server use.
 
 ## Suggested Commit Message
 
-`feat: improve local JSON save workflow`
+`feat: add birthdate timeline items`
 
 ## Next Safe Step
 
-Manually load or save a JSON file in a Chromium-based browser, edit the timeline, press `Ctrl+S` or `Command+S`, and confirm the same file updates before committing.
+Add live age readout from the birth item and optional age/duration labels on period bars.

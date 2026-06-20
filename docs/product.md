@@ -24,6 +24,10 @@ A point-in-time item with a title, date, optional description, and assigned line
 
 A point-in-time item that draws a vertical line through every timeline line, such as a birthdate or other global reference date.
 
+### Birth
+
+A point-in-time item for a person's birthdate. It draws a prominent vertical line through every timeline line and acts as the source date for age calculations.
+
 ### Note
 
 A point-in-time annotation with a straight leader arrow pointing to a date and a balloon below all timeline lines. A note does not require a date range.
@@ -119,6 +123,13 @@ Given a timeline has multiple lines
 When the user creates a marker on `2001-03-04`
 Then a vertical line appears at the correct date position across all visible lines
 And the marker is still present after save/load.
+
+### Create A Birthdate
+
+Given a timeline has multiple lines
+When the user creates a birth item on `2001-03-04`
+Then a prominent vertical line appears at the correct date position across all visible lines
+And the birth item is still present after save/load.
 
 ### Create A Note
 

@@ -16,6 +16,7 @@ import {
 const DEFAULT_ROW_HEIGHT = 68;
 
 export const TYPE_COLORS: Record<TimelineItemType, string> = {
+  birth: "#dc2626",
   event: "#d97706",
   marker: "#0f766e",
   note: "#0891b2",
@@ -24,7 +25,7 @@ export const TYPE_COLORS: Record<TimelineItemType, string> = {
   text: "#7c3aed",
 };
 
-export type TimelineItemType = "event" | "marker" | "note" | "period" | "line" | "text";
+export type TimelineItemType = "birth" | "event" | "marker" | "note" | "period" | "line" | "text";
 export type { TimelineSnap };
 
 export interface TimelineSettings {
@@ -125,6 +126,8 @@ export function normalizeTimeline(input: unknown): TimelineDocument {
   if (compareIso(settings.endDate, settings.startDate) < 0) {
     settings.endDate = settings.startDate;
   }
+  const legacyBirthDate = rawSettings.birthDate;
+  const legacyBirthYear = rawSettings.birthYear;
   delete rawSettings.birthDate;
   delete rawSettings.birthYear;
   delete rawSettings.shOffset;
@@ -138,6 +141,17 @@ export function normalizeTimeline(input: unknown): TimelineDocument {
   const items = rawItems
     .map((item) => normalizeItem(item, settings.startDate))
     .filter((item): item is TimelineItem => Boolean(item));
+  if (!items.some((item) => item.type === "birth") && (legacyBirthDate !== undefined || legacyBirthYear !== undefined)) {
+    const legacyBirthItem = normalizeItem({
+      id: "birth-legacy",
+      type: "birth",
+      startDate: legacyBirthDate,
+      startYear: legacyBirthYear,
+      title: titleForType("birth"),
+      color: TYPE_COLORS.birth,
+    }, settings.startDate);
+    if (legacyBirthItem) items.push(legacyBirthItem);
+  }
 
   return {
     version: 2,
@@ -168,7 +182,7 @@ export function normalizeItem(item: unknown, defaultStartDate = todayIso()): Tim
   return {
     id: String(source.id || createId(type)),
     type,
-    lane: type === "marker" ? 0 : clamp(Math.round(toNumber(source.lane, 0)), 0, 20),
+    lane: isGlobalTimelineItemType(type) ? 0 : clamp(Math.round(toNumber(source.lane, 0)), 0, 20),
     startDate,
     endDate,
     title: String(source.title || titleForType(type)),
@@ -181,8 +195,13 @@ export function hasEndYear(type: unknown): boolean {
   return type === "period" || type === "line";
 }
 
+export function isGlobalTimelineItemType(type: unknown): boolean {
+  return type === "birth" || type === "marker";
+}
+
 export function titleForType(type: unknown): string {
   return {
+    birth: "Birthdate",
     event: "New event",
     marker: "New marker",
     note: "New note",
@@ -197,7 +216,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function isTimelineItemType(value: unknown): value is TimelineItemType {
-  return ["event", "marker", "note", "period", "line", "text"].includes(String(value));
+  return ["birth", "event", "marker", "note", "period", "line", "text"].includes(String(value));
 }
 
 function normalizeColor(value: unknown): string {

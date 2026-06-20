@@ -6,12 +6,13 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Review local JSON save ergonomics before committing.
+Add birthdate timeline support, then layer live age and duration calculations on top.
 
 ## Now
 
-- Manually verify a real native file-picker save/load flow in a supported browser.
-- Confirm the same-file save behavior feels right before committing.
+- Add a saved birth item type that draws a prominent all-line vertical date marker.
+- Add live hover age readout from the birthdate.
+- Add optional derived age and duration labels on wide-enough period items.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
