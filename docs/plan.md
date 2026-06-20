@@ -6,13 +6,15 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Update the project dependency policy before continuing larger UI layout work.
+Refine the sidebar and toolbar into standard collapsible panels.
 
 ## Now
 
-- Allow reasonable dependencies when they materially improve accessibility, reliability, maintainability, or complex UI behavior.
-- Keep dependency additions documented, scoped, and justified.
-- Continue the movable/collapsible sidebar and toolbar UI slice after the dependency policy is documented.
+- Keep the layout update behavior-preserving: the app should still run locally, edit timelines, save JSON, and preserve all legacy DOM IDs and data hooks.
+- Keep the editor sidebar fixed on the left and the toolbar fixed near the top of the timeline stage.
+- Keep the current timeline title, date range, and Fit action in the main app header.
+- Remember sidebar and toolbar collapse preferences in browser storage.
+- Use clear chevron-style `lucide-react` icons for collapse/expand state instead of character buttons.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
 ## Next
@@ -62,6 +64,8 @@ Update the project dependency policy before continuing larger UI layout work.
 - Added `CHANGELOG.md` and `docs/versioning.md` without bumping the package version.
 - Added system light/dark theme tokens, component styling, and a theme switcher.
 - Added dependency policy guidance in ADR 0006 and agent docs.
+- Added collapsible sidebar and toolbar controls with `lucide-react` icons.
+- Moved the timeline title, date range, and Fit action into the main top bar.
 
 ## Risks
 
@@ -75,6 +79,7 @@ Update the project dependency policy before continuing larger UI layout work.
 - Version changes should be intentional and documented in `CHANGELOG.md`; do not bump `package.json` during routine migration slices.
 - Firebase read/write patterns can create avoidable cost if autosave and realtime listeners are not scoped carefully.
 - Dependencies can increase bundle size, audit noise, and maintenance cost if they are not scoped to real feature value.
+- `lucide-react` is justified only for focused iconography; avoid expanding it into a full design-system dependency.
 
 ## Verification Checklist
 

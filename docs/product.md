@@ -66,9 +66,13 @@ When items are locked, dragging the canvas should pan the timeline and should no
 ## Layout Behavior
 
 - The timeline editor sidebar should be collapsible.
-- The timeline editor sidebar should be movable between the left and right sides of the workspace on wider screens.
 - The timeline action toolbar should be collapsible.
-- The timeline action toolbar should be movable between the top and bottom of the timeline stage.
+- The timeline editor sidebar should stay on the left side of the workspace on wider screens.
+- The timeline action toolbar should stay near the top of the timeline stage.
+- The current timeline title, date range, and Fit action should stay in the main app header.
+- The timeline action toolbar should not duplicate the timeline title or date range.
+- Collapse and expand controls should use recognizable icon buttons rather than text characters.
+- Collapse and expand transitions should be animated.
 - Layout preferences should be remembered in the browser.
 - Layout changes should not alter saved timeline data.
 
@@ -166,7 +170,7 @@ And the theme choice is remembered for the next browser session.
 
 ### Layout Preference
 
-Given the user moves or collapses the editor sidebar or timeline toolbar
+Given the user collapses the editor sidebar or timeline toolbar
 When the workspace layout updates
 Then the timeline data is unchanged
 And the layout choice is remembered for the next browser session.
