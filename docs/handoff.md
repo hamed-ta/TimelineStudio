@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Tune timeline axis label readability.
+Add same-line item edge snapping.
 
 ## Last Known State
 
@@ -32,6 +32,8 @@ Timeline month and day labels adapt to available horizontal space. Month labels 
 
 Fit now respects a readable zoom floor. Short timelines still fit into the viewport, while long timelines reset to the beginning at the minimum readable zoom instead of compressing every item into an unreadable view.
 
+Lane-bound items snap to nearby same-line item edges while dragging or resizing. Range items on the same line are prevented from overlapping during those drag interactions.
+
 Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
@@ -52,7 +54,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`ea3309f fix: simplify timeline context panel`
+`1396a63 fix: keep fit and axis labels readable`
 
 ## Work Completed This Session
 
@@ -63,6 +65,7 @@ Firebase should wait until the local Vite app is stable.
 - Sized the timeline viewport to the rendered timeline content instead of unused workspace height.
 - Made month and day axis labels adaptive so crowded timelines avoid overlapping date text.
 - Prevented Fit from zooming out below the readable zoom floor on long timelines.
+- Added same-line item edge snapping and overlap prevention for lane-bound range items.
 - Updated product notes, changelog, plan, and handoff docs.
 
 ## Files Changed
@@ -72,8 +75,6 @@ Firebase should wait until the local Vite app is stable.
 - `docs/plan.md`
 - `docs/product.md`
 - `app.js`
-- `src/App.tsx`
-- `styles.css`
 
 ## Decisions
 
@@ -84,6 +85,8 @@ Firebase should wait until the local Vite app is stable.
 - Let the SVG's computed content height control the timeline viewport height; only notes add the extra note area.
 - Keep all month and day grid lines, but only render axis label text when the measured label width fits without colliding with the previous visible label.
 - Use the default zoom as the Fit readability floor, so Fit does not compress long timelines below `18 px/month`.
+- Snap to same-line item start and end edges within a pixel-derived threshold, capped at `14` days.
+- Treat only range items as overlap blockers so point annotations can still align with nearby edges.
 
 ## Verification
 
@@ -103,6 +106,9 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke: with range `1989-10-01` to `1990-01-25` at `300 px/month`, the axis rendered 46 day labels and 6 month labels with no measured overlaps across month or day labels.
 - Browser smoke: with range `1987-01-01` to `2022-01-01`, clicking Fit set zoom to `18 px/month`, reset horizontal scroll to `0`, and showed status `Fit applied at readable zoom`.
 - Browser smoke: with the default short range, clicking Fit still fit the timeline into the viewport at `110 px/month` and showed status `Fit applied`.
+- Browser smoke: with day snap enabled, dragging a `Second` period close to the `First` period snapped `Second` to start on `2026-02-01`; the two periods had `0` px gap and no overlap.
+- Browser smoke: dragging `Second` further into `First` kept the periods at `0` px gap with no overlap.
+- Browser smoke: resizing `First` toward `Second` snapped `First` to end on `2026-03-01`; the two periods had `0` px gap and no overlap.
 - Browser smoke: no console warnings or errors were reported.
 
 ## Open Issues
@@ -115,8 +121,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`fix: keep fit and axis labels readable`
+`feat: snap same-line item edges`
 
 ## Next Safe Step
 
-Review adaptive axis labels and readable Fit behavior with a real JSON file, then commit if acceptable.
+Review same-line item edge snapping with a real JSON file, then commit if acceptable.

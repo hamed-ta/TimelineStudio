@@ -193,6 +193,13 @@ When the period item renders with age and duration labels enabled
 Then the period can show age at the start, age at the end, and period duration
 And those values are calculated from the saved dates.
 
+### Snap Items On Same Line
+
+Given two range items are on the same line
+When the user drags or resizes one item close to the other item's edge
+Then the moving edge snaps to the nearby item edge
+And range items on the same line do not overlap after the drag.
+
 ### Rename A Line
 
 Given a timeline line exists

@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Tune timeline readability after real UI review.
+Tune item dragging and timeline readability after real UI review.
 
 ## Now
 
@@ -17,6 +17,7 @@ Tune timeline readability after real UI review.
 - Size the timeline viewport to the rendered axis, lines, and note area instead of stretching into unused workspace height.
 - Stack, simplify, or skip month and day labels so axis date text does not overlap at crowded zoom levels.
 - Keep Fit from zooming out below a readable minimum on long timelines.
+- Snap lane-bound items to nearby same-line item edges and prevent same-line range overlap while dragging.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
