@@ -31,6 +31,10 @@ import {
   parseTimelineJson,
   serializeTimelineJson,
 } from "./src/timeline/json";
+import {
+  downloadBlob,
+  saveBlobWithPicker,
+} from "./src/platform/files";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -987,35 +991,6 @@ import {
         else reject(new Error("Canvas export failed"));
       }, type, quality);
     });
-  }
-
-  function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  async function saveBlobWithPicker(blob, filename, fileType) {
-    if (!window.showSaveFilePicker) return false;
-    let handle;
-    try {
-      handle = await window.showSaveFilePicker({
-        suggestedName: filename,
-        types: [fileType],
-      });
-    } catch (error) {
-      if (error && (error.name === "SecurityError" || error.name === "NotAllowedError")) return false;
-      throw error;
-    }
-    const writable = await handle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-    return true;
   }
 
   function svgEl(tagName, attributes = {}, text = null) {

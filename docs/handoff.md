@@ -2,17 +2,19 @@
 
 ## Current Goal
 
-Continue the React/TypeScript migration by moving timeline JSON parsing and serialization out of legacy `app.js`.
+Continue the React/TypeScript migration by moving browser file helpers out of legacy `app.js`.
 
 ## Last Known State
 
-Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, file picker/download plumbing, export rendering, pan, zoom, fit, lock state, and line renaming.
+Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, export rendering, pan, zoom, fit, lock state, and line renaming.
 
 Timeline document types, default timeline creation, item normalization, and timeline normalization live in `src/timeline/model.ts`.
 
 Shared date parsing, ISO date math, snap normalization, clamping, and numeric normalization live in `src/timeline/dates.ts`.
 
-Timeline JSON parse/serialize behavior now lives in `src/timeline/json.ts`. `app.js` uses that module for Save JSON and Load JSON while keeping browser file handling in the legacy layer.
+Timeline JSON parse/serialize behavior lives in `src/timeline/json.ts`.
+
+Browser download and save-picker helpers now live in `src/platform/files.ts`. `app.js` imports those helpers for JSON save and SVG/PNG/PDF export download behavior.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
@@ -20,27 +22,27 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`2c11098 refactor: extract timeline date utilities`
+`1eb5a85 refactor: extract timeline json handling`
 
 ## Work Completed This Session
 
-- Added `src/timeline/json.ts`.
-- Added `serializeTimelineJson` for exported timeline JSON with `exportedAt`.
-- Added `parseTimelineJson` to parse text and normalize it through the typed model.
-- Updated `app.js` Save JSON to use `serializeTimelineJson`.
-- Updated `app.js` Load JSON to use `parseTimelineJson`.
+- Added `src/platform/files.ts`.
+- Moved `downloadBlob` into the typed platform file helper module.
+- Moved `saveBlobWithPicker` into the typed platform file helper module.
+- Added local File System Access API interfaces for the browser save picker path.
+- Updated `app.js` to import file helpers instead of defining them locally.
 
 ## Files Changed
 
 - `app.js`
-- `src/timeline/json.ts`
+- `src/platform/files.ts`
 - `docs/handoff.md`
 - `docs/plan.md`
 
 ## Decisions
 
 - Keep this slice behavior-preserving; no UI changes and no Firebase work.
-- Keep browser file picker/download plumbing in `app.js` for now.
+- Keep app-level Save JSON, Load JSON, and export orchestration in `app.js` for now.
 - Keep JSON import/export as a first-class compatibility path.
 
 ## Verification
@@ -62,8 +64,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract timeline json handling`
+`refactor: extract browser file helpers`
 
 ## Next Safe Step
 
-Manually run the Vite app, load an existing JSON file from `user-data/`, edit it, save it, and confirm the saved file restores correctly. Then extract the next small boundary, preferably browser file handling or SVG rendering helpers, before adding Firebase.
+Manually run the Vite app, load an existing JSON file from `user-data/`, edit it, save it, and confirm the saved file restores correctly. Then extract the next small boundary, preferably SVG export/rendering helpers or app controller state, before adding Firebase.

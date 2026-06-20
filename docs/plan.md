@@ -6,11 +6,11 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Extract JSON parse and serialize behavior into TypeScript while preserving the current local timeline editor behavior.
+Extract browser file helpers into TypeScript while preserving the current local timeline editor behavior.
 
 ## Now
 
-- Keep the JSON extraction behavior-preserving: the app should still run locally, edit timelines, and save JSON.
+- Keep the browser file helper extraction behavior-preserving: the app should still run locally, edit timelines, save JSON, and export files.
 - Manually verify loading an existing local JSON file in the Vite app.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
@@ -53,6 +53,7 @@ Extract JSON parse and serialize behavior into TypeScript while preserving the c
 - Extracted timeline document types, default timeline creation, item normalization, and timeline normalization into `src/timeline/model.ts`.
 - Extracted shared date parsing, date math, snapping, clamping, and numeric normalization helpers into `src/timeline/dates.ts`.
 - Extracted timeline JSON parse and serialize behavior into `src/timeline/json.ts`.
+- Extracted browser download and save-picker helpers into `src/platform/files.ts`.
 
 ## Risks
 
