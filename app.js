@@ -26,6 +26,11 @@ import {
   normalizeTimeline,
   titleForType,
 } from "./src/timeline/model";
+import {
+  TIMELINE_JSON_MIME,
+  parseTimelineJson,
+  serializeTimelineJson,
+} from "./src/timeline/json";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -800,11 +805,7 @@ import {
   }
 
   async function saveJsonFile() {
-    const payload = {
-      ...timeline,
-      exportedAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const blob = new Blob([serializeTimelineJson(timeline)], { type: TIMELINE_JSON_MIME });
     const filename = `${filenameBase()}.json`;
 
     try {
@@ -830,7 +831,7 @@ import {
     if (!file) return;
     try {
       const text = await file.text();
-      timeline = normalizeTimeline(JSON.parse(text));
+      timeline = parseTimelineJson(text);
       selectedId = null;
       renderAll();
       setStatus("JSON loaded");

@@ -2,15 +2,17 @@
 
 ## Current Goal
 
-Continue the React/TypeScript migration by moving shared date utilities out of legacy `app.js` and the model module.
+Continue the React/TypeScript migration by moving timeline JSON parsing and serialization out of legacy `app.js`.
 
 ## Last Known State
 
-Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, import/export, pan, zoom, fit, lock state, line renaming, and SVG/PNG/PDF export.
+Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, file picker/download plumbing, export rendering, pan, zoom, fit, lock state, and line renaming.
 
 Timeline document types, default timeline creation, item normalization, and timeline normalization live in `src/timeline/model.ts`.
 
-Shared date parsing, ISO date math, snap normalization, clamping, and numeric normalization now live in `src/timeline/dates.ts`. Both `app.js` and `src/timeline/model.ts` import those helpers instead of keeping duplicate local copies.
+Shared date parsing, ISO date math, snap normalization, clamping, and numeric normalization live in `src/timeline/dates.ts`.
+
+Timeline JSON parse/serialize behavior now lives in `src/timeline/json.ts`. `app.js` uses that module for Save JSON and Load JSON while keeping browser file handling in the legacy layer.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
@@ -18,28 +20,27 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`62f912a feat(migration): add vite react typescript shell`
+`2c11098 refactor: extract timeline date utilities`
 
 ## Work Completed This Session
 
-- Added `src/timeline/dates.ts`.
-- Moved shared date parsing, ISO date math, snap normalization, clamping, and numeric normalization helpers into the typed date module.
-- Updated `src/timeline/model.ts` to import date helpers from `src/timeline/dates.ts`.
-- Updated `app.js` to import date helpers from `src/timeline/dates.ts`.
-- Removed duplicated date helper implementations from `app.js` and `src/timeline/model.ts`.
+- Added `src/timeline/json.ts`.
+- Added `serializeTimelineJson` for exported timeline JSON with `exportedAt`.
+- Added `parseTimelineJson` to parse text and normalize it through the typed model.
+- Updated `app.js` Save JSON to use `serializeTimelineJson`.
+- Updated `app.js` Load JSON to use `parseTimelineJson`.
 
 ## Files Changed
 
 - `app.js`
-- `src/timeline/dates.ts`
-- `src/timeline/model.ts`
+- `src/timeline/json.ts`
 - `docs/handoff.md`
 - `docs/plan.md`
 
 ## Decisions
 
 - Keep this slice behavior-preserving; no UI changes and no Firebase work.
-- Keep rendering and interaction logic in `app.js` until smaller typed boundaries are extracted.
+- Keep browser file picker/download plumbing in `app.js` for now.
 - Keep JSON import/export as a first-class compatibility path.
 
 ## Verification
@@ -48,8 +49,7 @@ Firebase should wait until the local Vite app is stable.
 - `npm run typecheck`: passed.
 - `npm run build`: passed.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: app loaded with no console errors.
-- Browser smoke: created an event, entered `2026/02/03`, applied the item form, and confirmed the date normalized to `2026-02-03`.
-- Browser smoke: confirmed the SVG contained the new item.
+- Browser smoke: created an event, edited the title, applied the item form, and confirmed the SVG contained the new item.
 - Browser smoke: clicked Save JSON and confirmed status changed to `JSON saved` with no console errors.
 
 ## Open Issues
@@ -62,8 +62,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract timeline date utilities`
+`refactor: extract timeline json handling`
 
 ## Next Safe Step
 
-Manually run the Vite app, load an existing JSON file from `user-data/`, edit it, save it, and confirm the saved file restores correctly. Then extract the next small boundary, preferably JSON import/export repository behavior or SVG rendering helpers, before adding Firebase.
+Manually run the Vite app, load an existing JSON file from `user-data/`, edit it, save it, and confirm the saved file restores correctly. Then extract the next small boundary, preferably browser file handling or SVG rendering helpers, before adding Firebase.
