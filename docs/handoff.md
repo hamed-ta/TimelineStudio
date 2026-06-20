@@ -2,87 +2,64 @@
 
 ## Current Goal
 
-Complete the first behavior-preserving Vite, React, and TypeScript migration slice.
+Continue the React/TypeScript migration by moving timeline data normalization out of legacy `app.js`.
 
 ## Last Known State
 
-Timeline Studio now has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine is still responsible for timeline pan, zoom, fit, lock state, line renaming, JSON save/load, and SVG/PNG/PDF export.
+Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, import/export, pan, zoom, fit, lock state, line renaming, and SVG/PNG/PDF export.
+
+Timeline document types, default timeline creation, item normalization, and timeline normalization now live in `src/timeline/model.ts`. `app.js` imports those functions and constants instead of keeping local copies.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
-Agent workflow documents are in place and committed. `AGENTS.md` points to the detailed workflow docs instead of duplicating the full red/green/refactor process.
-
-The accepted target stack for the next product direction is Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting. The first implementation step should preserve existing local behavior before adding Firebase.
+The accepted target stack for the next product direction is Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting. Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`4f95f80 docs: plan modern web app migration`
+`62f912a feat(migration): add vite react typescript shell`
 
 ## Work Completed This Session
 
-- Established RED with `npm run build`, which failed because `package.json` did not exist.
-- Added `package.json`, `package-lock.json`, `tsconfig.json`, and `vite.config.ts`.
-- Replaced `index.html` with the Vite entry shell.
-- Added `src/App.tsx` to render the existing app DOM through React.
-- Added `src/main.tsx` to mount React and then load the existing `app.js` timeline engine.
-- Marked `app.js` as an ES module for Vite import.
-- Kept JSON download fallback working when the file picker is unavailable or blocked.
-- Added `node_modules/` and `dist/` to `.gitignore`.
-- Updated README, AGENTS, browser smoke, plan, and handoff docs for the Vite workflow.
+- Added `src/timeline/model.ts`.
+- Defined typed timeline item, settings, and document shapes.
+- Moved `TYPE_COLORS`, `createEmptyTimeline`, `normalizeTimeline`, `normalizeItem`, `hasEndYear`, and `titleForType` into the typed model module.
+- Removed the duplicated legacy versions of those functions from `app.js`.
+- Wired `app.js` to import the typed model functions.
 
 ## Files Changed
 
-- `.gitignore`
-- `AGENTS.md`
-- `README.md`
 - `app.js`
-- `index.html`
-- `package-lock.json`
-- `package.json`
-- `src/App.tsx`
-- `src/main.tsx`
-- `tsconfig.json`
-- `vite.config.ts`
+- `src/timeline/model.ts`
 - `docs/handoff.md`
 - `docs/plan.md`
-- `docs/workflows/browser-smoke.md`
 
 ## Decisions
 
-- Keep personal timeline files out of default app state.
-- Use `user-data/` for local user-owned data that should not be committed.
-- Keep detailed red/green/refactor instructions in `docs/workflows/red-green-refactor.md`; keep `AGENTS.md` as a concise rule and pointer.
-- Use React first as a DOM shell while leaving legacy timeline behavior in `app.js`.
-- Add Firebase Auth, Firestore, and Firebase Hosting only after the local Vite app is stable.
-- Keep JSON import/export as a first-class portability feature.
-- Treat Google Drive as a possible later import/export or backup integration, not primary storage.
-- Do not force an `esbuild` transitive override for the low-severity Windows-only dev-server advisory because Vite declares `esbuild ^0.27.0` and the patched version is `0.28.1`.
+- Keep this slice behavior-preserving; no UI changes and no Firebase work.
+- Keep rendering and interaction logic in `app.js` until smaller typed boundaries are extracted.
+- Keep JSON import/export as a first-class compatibility path.
 
 ## Verification
 
-- RED: `npm run build` failed before migration because `package.json` was missing.
-- `npm install`: passed.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
 - `npm run build`: passed.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: app loaded with no console errors.
 - Browser smoke: created an event, edited the title, applied the item form, and confirmed the SVG contained the new item.
 - Browser smoke: clicked Save JSON and confirmed status changed to `JSON saved` with no console errors.
-- `npm audit --json`: reports one low-severity transitive `esbuild` advisory affecting Windows dev server use.
 
 ## Open Issues
 
 - No automated browser test harness exists yet.
-- Browser smoke checks are manual until a test harness such as Playwright is added.
 - Manual JSON load verification is still needed in the Vite app because the available browser automation surface did not expose file upload.
 - Firebase is not installed or configured yet.
-- Most timeline behavior still lives in untyped legacy `app.js`.
+- Most rendering and interaction behavior still lives in untyped legacy `app.js`.
 - `npm audit` reports one low-severity transitive `esbuild` advisory for Windows dev-server use.
 
 ## Suggested Commit Message
 
-`feat: add vite react typescript shell`
+`refactor: extract timeline model to typescript`
 
 ## Next Safe Step
 
-Manually run the Vite app, load an existing JSON file from `user-data/`, edit it, save it, and confirm the saved file still restores correctly. Then continue extracting legacy timeline behavior into typed modules before adding Firebase.
+Manually run the Vite app, load an existing JSON file from `user-data/`, edit it, save it, and confirm the saved file restores correctly. Then extract the next small boundary, preferably date utilities or JSON repository behavior, before moving renderer/event logic.

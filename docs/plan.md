@@ -6,18 +6,18 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add the first Vite, React, and TypeScript shell while preserving the current local timeline editor behavior.
+Extract timeline data normalization into TypeScript while preserving the current local timeline editor behavior.
 
 ## Now
 
-- Keep the Vite shell behavior-preserving: the app should still run locally, edit timelines, and save JSON.
+- Keep the typed model extraction behavior-preserving: the app should still run locally, edit timelines, and save JSON.
 - Manually verify loading an existing local JSON file in the Vite app.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
 ## Next
 
-- Verify local JSON load, edit, save, pan, zoom, fit, and export before adding backend features.
 - Move more legacy behavior behind typed module boundaries in small testable steps.
+- Verify local JSON load, edit, save, pan, zoom, fit, and export before adding backend features.
 - Add Firebase only after the local app migration is stable.
 
 ## Later
@@ -49,7 +49,8 @@ Add the first Vite, React, and TypeScript shell while preserving the current loc
 - Added `.gitignore` rules for `user-data/` and `.DS_Store`.
 - Committed ignored user data and handoff cleanup in `ca4bd12`.
 - Committed the modern web app migration plan in `4f95f80`.
-- Added a minimal Vite, React, and TypeScript shell that bootstraps the existing `app.js` behavior.
+- Committed the minimal Vite, React, and TypeScript shell in `62f912a`.
+- Extracted timeline document types, default timeline creation, item normalization, and timeline normalization into `src/timeline/model.ts`.
 
 ## Risks
 

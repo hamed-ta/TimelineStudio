@@ -1,3 +1,12 @@
+import {
+  TYPE_COLORS,
+  createEmptyTimeline,
+  hasEndYear,
+  normalizeItem,
+  normalizeTimeline,
+  titleForType,
+} from "./src/timeline/model";
+
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
   const NS = "http://www.w3.org/2000/svg";
@@ -31,13 +40,6 @@
     month: "short",
     timeZone: "UTC",
   });
-
-  const TYPE_COLORS = {
-    event: "#d97706",
-    period: "#2563eb",
-    line: "#be123c",
-    text: "#7c3aed",
-  };
 
   const dom = {
     statusText: document.getElementById("statusText"),
@@ -170,99 +172,6 @@
     dom.timelineViewport.addEventListener("pointermove", movePointerDrag);
     dom.timelineViewport.addEventListener("pointerup", endPointerDrag);
     dom.timelineViewport.addEventListener("pointercancel", endPointerDrag);
-  }
-
-  function createEmptyTimeline() {
-    const year = new Date().getFullYear();
-    const today = todayIso();
-    return {
-      version: 2,
-      settings: {
-        title: "New Timeline",
-        startDate: yearStartIso(year),
-        endDate: today,
-        autoEndDate: true,
-        itemsLocked: false,
-        snap: "month",
-        rowHeight: DEFAULT_ROW_HEIGHT,
-        laneLabels: ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5"],
-      },
-      items: [],
-    };
-  }
-
-  function normalizeTimeline(input) {
-    const fallback = createEmptyTimeline();
-    fallback.settings.autoEndDate = false;
-    const settings = {
-      ...fallback.settings,
-      ...(input && input.settings ? input.settings : {}),
-    };
-
-    settings.title = String(settings.title || "New Timeline");
-    settings.startDate = normalizeDateInput(
-      settings.startDate,
-      settings.startYear === undefined ? fallback.settings.startDate : yearStartIso(toNumber(settings.startYear, isoYear(fallback.settings.startDate))),
-    );
-    settings.endDate = normalizeDateInput(
-      settings.endDate,
-      settings.endYear === undefined ? fallback.settings.endDate : yearEndIso(toNumber(settings.endYear, isoYear(fallback.settings.endDate))),
-    );
-    settings.autoEndDate = settings.autoEndDate === true;
-    settings.itemsLocked = settings.itemsLocked === true;
-    if (settings.autoEndDate) {
-      settings.endDate = todayIso();
-    }
-    if (compareIso(settings.endDate, settings.startDate) < 0) {
-      settings.endDate = settings.startDate;
-    }
-    delete settings.birthDate;
-    delete settings.birthYear;
-    delete settings.shOffset;
-    settings.snap = normalizeSnap(settings.snap);
-    settings.rowHeight = clamp(toNumber(settings.rowHeight, DEFAULT_ROW_HEIGHT), 48, 120);
-    settings.laneLabels = Array.isArray(settings.laneLabels)
-      ? settings.laneLabels.map((label) => String(label))
-      : fallback.settings.laneLabels;
-
-    const rawItems = Array.isArray(input && input.items) ? input.items : fallback.items;
-    const items = rawItems.map((item) => normalizeItem(item, settings.startDate)).filter(Boolean);
-
-    return {
-      version: 2,
-      settings,
-      items,
-    };
-  }
-
-  function normalizeItem(item, defaultStartDate = todayIso()) {
-    if (!item || typeof item !== "object") return null;
-    const type = ["event", "period", "line", "text"].includes(item.type) ? item.type : "event";
-    const startDate = normalizeDateInput(
-      item.startDate,
-      item.startYear === undefined ? defaultStartDate : isoFromYearValue(toNumber(item.startYear, isoYear(defaultStartDate))),
-    );
-    let endDate = normalizeDateInput(
-      item.endDate,
-      item.endYear === undefined ? startDate : isoFromYearValue(toNumber(item.endYear, isoYear(startDate))),
-    );
-    if (hasEndYear(type) && compareIso(endDate, startDate) <= 0) {
-      endDate = addDaysIso(startDate, 1);
-    }
-    if (!hasEndYear(type)) {
-      endDate = startDate;
-    }
-
-    return {
-      id: String(item.id || createId(type)),
-      type,
-      lane: clamp(Math.round(toNumber(item.lane, 0)), 0, 20),
-      startDate,
-      endDate,
-      title: String(item.title || titleForType(type)),
-      color: normalizeColor(item.color || TYPE_COLORS[type]),
-      notes: String(item.notes || ""),
-    };
   }
 
   function renderAll(options = {}) {
@@ -869,19 +778,6 @@
 
   function getItem(id) {
     return timeline.items.find((item) => item.id === id) || null;
-  }
-
-  function hasEndYear(type) {
-    return type === "period" || type === "line";
-  }
-
-  function titleForType(type) {
-    return {
-      event: "New event",
-      period: "New period",
-      line: "New line",
-      text: "New text",
-    }[type] || "New item";
   }
 
   async function saveJsonFile() {
