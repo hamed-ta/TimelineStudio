@@ -6,11 +6,16 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Review birthdate age and period duration context before the next UI slice.
+Tune birthdate, timeline context panel, and viewport height after real UI review.
 
 ## Now
 
-- Manually review hover age placement and period label readability on real timelines.
+- Keep the birthdate label to the left of the vertical line when possible.
+- Show hovered date, Iranian date, and age in a fixed info panel below the timeline instead of a cursor-following tooltip.
+- Show selected item dates, duration, line, and age context in the same info panel.
+- Split selected item details into short readable lines instead of one dense metadata sentence.
+- Size the timeline viewport to the rendered axis, lines, and note area instead of stretching into unused workspace height.
+- Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 

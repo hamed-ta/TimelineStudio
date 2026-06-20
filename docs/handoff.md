@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add live age and duration context from birthdate items.
+Tune birthdate, timeline context panel, and viewport height.
 
 ## Last Known State
 
@@ -20,9 +20,13 @@ Timeline lines can now be reordered from the editor sidebar or from the timeline
 
 Timeline items now include a marker type for global reference dates. Markers render as vertical lines across all visible timeline lines, use a single date, ignore lane assignment, and are available from the toolbar and item type selector.
 
-Timeline items now include a birth type for a person's birthdate. Birth items render as prominent vertical all-line markers, ignore lane assignment, and can be created from the toolbar or item type selector.
+Timeline items now include a birth type for a person's birthdate. Birth items render as prominent vertical all-line markers, place their label on the left side of the birthdate line when possible, ignore lane assignment, and can be created from the toolbar or item type selector.
 
-The earliest birth item is used as the source date for live age calculations. Hovering the timeline shows a floating age readout for the hovered date.
+The earliest birth item is used as the source date for live age calculations. Hovering the timeline updates a fixed info panel below the timeline with the hovered Gregorian date, Iranian date, and calculated age without moving the timeline viewport.
+
+Selecting a timeline item updates the same info panel with the item type, title, date details, duration when applicable, line context, and age context when a birth item exists. Selection details are split into short rows instead of one dense metadata sentence.
+
+The timeline viewport sizes to the rendered SVG content height for the axis, visible lines, footer spacing, and note area. It no longer stretches vertically just because the workspace has extra unused height.
 
 Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
 
@@ -44,16 +48,16 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`f01e13a feat: add birthdate timeline items`
+`0efd3a9 feat: show age and duration context`
 
 ## Work Completed This Session
 
-- Added product acceptance scenarios for hover age and period age/duration labels.
-- Added live age hover readout from the earliest birth item.
-- Added saved period display toggles for age labels and duration labels.
-- Added wide-period derived labels for start age, duration, and end age.
-- Kept generated age and duration text out of saved JSON; only dates and display preferences are saved.
-- Updated `CHANGELOG.md`, plan, and handoff docs.
+- Moved the birth item label to the left side of the vertical line with a small left-edge clamp.
+- Changed the hover age readout from a cursor-following tooltip to a fixed timeline info panel below the timeline.
+- Added selected-item date, duration, line, and age context to the timeline info panel.
+- Split selected item context into separate readable rows and softened the secondary text weight.
+- Sized the timeline viewport to the rendered timeline content instead of unused workspace height.
+- Updated product notes, changelog, plan, and handoff docs.
 
 ## Files Changed
 
@@ -63,16 +67,15 @@ Firebase should wait until the local Vite app is stable.
 - `docs/product.md`
 - `app.js`
 - `src/App.tsx`
-- `src/timeline/model.ts`
-- `src/timeline/svgExport.ts`
 - `styles.css`
 
 ## Decisions
 
-- Use the earliest `birth` item as the active age source if multiple birth items exist.
-- Save per-period display toggles (`showAgeLabels`, `showDurationLabel`) because they are user settings.
-- Do not save generated age or duration label text; calculate it during render and hover.
-- Only draw period-derived labels when the period is wide enough to avoid crowding the title.
+- Prefer left-side birth labels to avoid overlapping timeline items, which are usually to the right of the birthdate.
+- Clamp the label to the canvas left edge so early birthdates stay visible.
+- Keep age and selection feedback in a stable fixed-height panel so hover updates do not move the timeline viewport.
+- Use separate selection rows for start date, end date, duration, and age so longer item details remain readable.
+- Let the SVG's computed content height control the timeline viewport height; only notes add the extra note area.
 
 ## Verification
 
@@ -81,23 +84,26 @@ Firebase should wait until the local Vite app is stable.
 - `git diff --check`: passed.
 - `npm run build`: passed.
 - Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Birth in the toolbar.
-- Browser smoke: one selected `.item-birth` rendered with one `.birth-line`, label `Birthdate`, disabled lane input, dirty indicator visible, status `Birthdate added`, and no console errors.
-- Browser smoke: created a birth item on `2026-01-01` and a period from `2026-01-01` to `2026-06-20`.
-- Browser smoke: the selected period showed derived labels `Age 0d`, `5m 19d`, and `Age 5m 19d`.
-- Browser smoke: moving over the timeline showed hover text `Age 3m 10d on Apr 11, 2026`, and no console errors were reported.
+- Browser smoke: the rendered birth label `Birthdate` was left of the birth line (`labelX` 189.29944762726132, `lineX` 275.0994476272613).
+- Browser smoke: selected a period and the timeline info panel showed separate rows for `Period: New period - Line 1`, `Start: Mar 1, 2026 / 10 Esfand 1404`, `End: Apr 1, 2026 / 12 Farvardin 1405`, `Duration: 1 month`, and `Age: 0 days to 1 month`.
+- Browser smoke: hovering the timeline updated the pointer panel to `Mar 18, 2026`, `27 Esfand 1404`, and `Age 17 days`.
+- Browser smoke: hover updates did not move the timeline viewport and the panel stayed fixed at `132px` high with internal overflow.
+- Browser smoke: the default 5-line timeline viewport matched the SVG content height (`clientHeight` 486, SVG height 486) with no vertical overflow.
+- Browser smoke: adding a note increased the viewport only for the note area (`clientHeight` 562, SVG height 562) with no vertical overflow.
+- Browser smoke: no console warnings or errors were reported.
 
 ## Open Issues
 
 - No automated browser test harness exists yet.
-- Hover chip and period labels may need visual tuning after testing with a real personal timeline.
+- Timeline info panel and period labels may need visual tuning after testing with a real personal timeline.
 - Firebase is not installed or configured yet.
 - Rendering and interaction behavior still lives in legacy `app.js`.
 - `npm audit` reports one low-severity transitive `esbuild` advisory for Windows dev-server use.
 
 ## Suggested Commit Message
 
-`feat: show age and duration context`
+`fix: simplify timeline context panel`
 
 ## Next Safe Step
 
-Review the birth/age UI with a real JSON file, then tune label thresholds or placement if needed.
+Review the adjusted birth label, simplified timeline info panel, and content-sized timeline height with a real JSON file, then commit if acceptable.

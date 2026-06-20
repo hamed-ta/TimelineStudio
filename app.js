@@ -112,7 +112,15 @@ import {
     fitButton: document.getElementById("fitButton"),
     timelineViewport: document.getElementById("timelineViewport"),
     timelineSvg: document.getElementById("timelineSvg"),
-    timelineHoverReadout: document.getElementById("timelineHoverReadout"),
+    timelineInfoPanel: document.getElementById("timelineInfoPanel"),
+    hoverDateLabel: document.getElementById("hoverDateLabel"),
+    hoverIranianLabel: document.getElementById("hoverIranianLabel"),
+    hoverAgeLabel: document.getElementById("hoverAgeLabel"),
+    selectedItemLabel: document.getElementById("selectedItemLabel"),
+    selectedItemDateLabel: document.getElementById("selectedItemDateLabel"),
+    selectedItemEndLabel: document.getElementById("selectedItemEndLabel"),
+    selectedItemDurationLabel: document.getElementById("selectedItemDurationLabel"),
+    selectedItemAgeLabel: document.getElementById("selectedItemAgeLabel"),
     stageTitle: document.getElementById("stageTitle"),
     stageMeta: document.getElementById("stageMeta"),
     fileNameLabel: document.getElementById("fileNameLabel"),
@@ -128,6 +136,7 @@ import {
   let currentFileHandle = null;
   let currentFileName = "";
   let hasUnsavedChanges = false;
+  let hoverDate = null;
 
   init();
 
@@ -216,6 +225,7 @@ import {
     renderLaneControls();
     renderTimeline();
     updateMeta();
+    updateTimelineInfoPanel();
     if (options.save !== false) {
       markDirty();
     } else {
@@ -478,6 +488,16 @@ import {
     return `Age ${formatCompactDateSpan(birthDate, targetDate)}`;
   }
 
+  function formatDetailedAgeAtDate(birthDate, targetDate) {
+    if (compareIso(targetDate, birthDate) < 0) return "Before birth";
+    return `Age ${formatDetailedDateSpan(birthDate, targetDate)}`;
+  }
+
+  function formatDetailedAgeValueAtDate(birthDate, targetDate) {
+    if (compareIso(targetDate, birthDate) < 0) return "before birth";
+    return formatDetailedDateSpan(birthDate, targetDate);
+  }
+
   function formatCompactDateSpan(startDate, endDate) {
     if (compareIso(endDate, startDate) < 0) return "before";
     const span = getDateSpanParts(startDate, endDate);
@@ -486,6 +506,16 @@ import {
     if (span.months) parts.push(`${span.months}m`);
     if (span.days || parts.length === 0) parts.push(`${span.days}d`);
     return parts.join(" ");
+  }
+
+  function formatDetailedDateSpan(startDate, endDate) {
+    if (compareIso(endDate, startDate) < 0) return "before";
+    const span = getDateSpanParts(startDate, endDate);
+    const parts = [];
+    if (span.years) parts.push(`${span.years} ${span.years === 1 ? "year" : "years"}`);
+    if (span.months) parts.push(`${span.months} ${span.months === 1 ? "month" : "months"}`);
+    if (span.days || parts.length === 0) parts.push(`${span.days} ${span.days === 1 ? "day" : "days"}`);
+    return parts.join(", ");
   }
 
   function getDateSpanParts(startDate, endDate) {
@@ -508,24 +538,18 @@ import {
   }
 
   function updateHoverReadout(event) {
-    if (!dom.timelineHoverReadout) return;
-    const birthItem = getPrimaryBirthItem();
-    if (!birthItem || dragState) {
-      hideHoverReadout();
+    if (dragState) {
       return;
     }
     const rect = dom.timelineViewport.getBoundingClientRect();
     const pointerX = dom.timelineViewport.scrollLeft + event.clientX - rect.left;
-    const hoverDate = clampIso(xToDate(pointerX), timeline.settings.startDate, timeline.settings.endDate);
-    dom.timelineHoverReadout.textContent = `${formatAgeAtDate(birthItem.startDate, hoverDate)} on ${formatDisplayDate(hoverDate)}`;
-    dom.timelineHoverReadout.style.left = `${event.clientX + 14}px`;
-    dom.timelineHoverReadout.style.top = `${event.clientY + 14}px`;
-    dom.timelineHoverReadout.hidden = false;
+    hoverDate = clampIso(xToDate(pointerX), timeline.settings.startDate, timeline.settings.endDate);
+    updateTimelineInfoPanel();
   }
 
   function hideHoverReadout() {
-    if (!dom.timelineHoverReadout) return;
-    dom.timelineHoverReadout.hidden = true;
+    hoverDate = null;
+    updateTimelineInfoPanel();
   }
 
   function drawLine(group, defs, item, x1, x2, y) {
@@ -598,7 +622,7 @@ import {
     const y2 = laneAreaBottom;
     const label = fitText(item.title || titleForType("birth"), 116);
     const labelWidth = Math.max(70, label.length * 7.2 + 22);
-    const labelX = x + 10;
+    const labelX = Math.max(8, x - labelWidth - 10);
     const labelY = AXIS_HEIGHT + 10;
     group.append(svgEl("line", { class: "birth-hit", x1: x, y1, x2: x, y2, stroke: "transparent" }));
     group.append(svgEl("line", { class: "birth-line-shadow", x1: x + 1.5, y1, x2: x + 1.5, y2, stroke: item.color }));
@@ -711,6 +735,106 @@ import {
     const settings = timeline.settings;
     dom.stageTitle.textContent = settings.title;
     dom.stageMeta.textContent = `${formatDisplayDate(settings.startDate)} / ${formatIranianDate(settings.startDate)} to ${formatDisplayDate(settings.endDate)} / ${formatIranianDate(settings.endDate)}`;
+  }
+
+  function updateTimelineInfoPanel() {
+    updatePointerInfo();
+    updateSelectionInfo();
+  }
+
+  function updatePointerInfo() {
+    if (!dom.hoverDateLabel || !dom.hoverIranianLabel || !dom.hoverAgeLabel) return;
+    const birthItem = getPrimaryBirthItem();
+    if (!hoverDate) {
+      dom.hoverDateLabel.textContent = "Hover over the timeline";
+      dom.hoverIranianLabel.textContent = "Gregorian and Iranian dates";
+      dom.hoverAgeLabel.textContent = birthItem ? "Age appears here" : "Add a birth item to calculate age";
+      return;
+    }
+
+    dom.hoverDateLabel.textContent = formatDisplayDate(hoverDate);
+    dom.hoverIranianLabel.textContent = formatIranianDate(hoverDate);
+    dom.hoverAgeLabel.textContent = birthItem
+      ? formatDetailedAgeAtDate(birthItem.startDate, hoverDate)
+      : "Age: add a birth item";
+  }
+
+  function updateSelectionInfo() {
+    if (
+      !dom.selectedItemLabel ||
+      !dom.selectedItemDateLabel ||
+      !dom.selectedItemEndLabel ||
+      !dom.selectedItemDurationLabel ||
+      !dom.selectedItemAgeLabel
+    ) {
+      return;
+    }
+    const item = getItem(selectedId);
+    if (!item) {
+      dom.selectedItemLabel.textContent = "No item selected";
+      dom.selectedItemDateLabel.textContent = "Select an item to inspect dates";
+      setOptionalInfoLine(dom.selectedItemEndLabel, "");
+      setOptionalInfoLine(dom.selectedItemDurationLabel, "");
+      setOptionalInfoLine(dom.selectedItemAgeLabel, "");
+      return;
+    }
+
+    dom.selectedItemLabel.textContent = formatSelectedItemTitle(item);
+    dom.selectedItemDateLabel.textContent = formatSelectedItemStartLine(item);
+    setOptionalInfoLine(dom.selectedItemEndLabel, formatSelectedItemEndLine(item));
+    setOptionalInfoLine(dom.selectedItemDurationLabel, formatSelectedItemDurationLine(item));
+    setOptionalInfoLine(dom.selectedItemAgeLabel, formatSelectedItemAgeLine(item));
+  }
+
+  function setOptionalInfoLine(element, text) {
+    const value = text || "";
+    element.textContent = value;
+    element.hidden = !value;
+  }
+
+  function formatSelectedItemTitle(item) {
+    const lineText = isGlobalTimelineItemType(item.type) ? "" : ` - Line ${item.lane + 1}`;
+    return `${itemTypeLabel(item.type)}: ${item.title}${lineText}`;
+  }
+
+  function formatSelectedItemStartLine(item) {
+    const start = `${formatDisplayDate(item.startDate)} / ${formatIranianDate(item.startDate)}`;
+    return hasEndYear(item.type) ? `Start: ${start}` : `Date: ${start}`;
+  }
+
+  function formatSelectedItemEndLine(item) {
+    if (!hasEndYear(item.type)) return "";
+    const end = `${formatDisplayDate(item.endDate)} / ${formatIranianDate(item.endDate)}`;
+    return `End: ${end}`;
+  }
+
+  function formatSelectedItemDurationLine(item) {
+    if (!hasEndYear(item.type)) return "";
+    return `Duration: ${formatDetailedDateSpan(item.startDate, item.endDate)}`;
+  }
+
+  function formatSelectedItemAgeLine(item) {
+    const birthItem = getPrimaryBirthItem();
+    if (item.type === "birth") {
+      return "Age source";
+    }
+    if (!birthItem) return "";
+    if (hasEndYear(item.type)) {
+      return `Age: ${formatDetailedAgeValueAtDate(birthItem.startDate, item.startDate)} to ${formatDetailedAgeValueAtDate(birthItem.startDate, item.endDate)}`;
+    }
+    return `Age: ${formatDetailedAgeValueAtDate(birthItem.startDate, item.startDate)}`;
+  }
+
+  function itemTypeLabel(type) {
+    return {
+      birth: "Birth",
+      event: "Event",
+      marker: "Marker",
+      note: "Note",
+      period: "Period",
+      line: "Line",
+      text: "Text",
+    }[String(type)] || "Item";
   }
 
   function setCurrentFile(handle, name) {

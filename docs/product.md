@@ -27,6 +27,7 @@ A point-in-time item that draws a vertical line through every timeline line, suc
 ### Birth
 
 A point-in-time item for a person's birthdate. It draws a prominent vertical line through every timeline line and acts as the source date for age calculations.
+Its label should prefer the left side of the vertical line to avoid overlapping later timeline items.
 
 ### Note
 
@@ -94,6 +95,7 @@ When items are locked, dragging the canvas should pan the timeline and should no
 - The timeline action toolbar should not duplicate the timeline title or date range.
 - Collapse and expand controls should use recognizable icon buttons rather than text characters.
 - Collapse and expand transitions should be animated.
+- The timeline viewport height should fit the rendered axis, lines, and note area instead of stretching to fill unused workspace height.
 - Layout preferences should be remembered in the browser.
 - Layout changes should not alter saved timeline data.
 
@@ -132,14 +134,26 @@ And the marker is still present after save/load.
 Given a timeline has multiple lines
 When the user creates a birth item on `2001-03-04`
 Then a prominent vertical line appears at the correct date position across all visible lines
+And the birth label appears to the left of the vertical line when there is room
 And the birth item is still present after save/load.
 
-### Show Hover Age
+### Show Timeline Context
 
 Given a timeline has a birth item on `2001-03-04`
 When the user hovers over a date on the timeline
-Then the app shows the age calculated from the birth item to the hovered date
+Then the app shows the hovered Gregorian date, Iranian date, and age calculated from the birth item in a stable info panel below the timeline
+And updating the hover context does not move the timeline viewport
+When the user selects a timeline item
+Then the same panel shows the item type, title, Gregorian and Iranian date details, duration when the item has an end date, and age context when a birth item exists
+And selection details are split across readable labeled lines instead of one dense sentence
 And the calculated age text is not saved into the timeline JSON.
+
+### Fit Timeline Height To Lines
+
+Given the timeline has named lines
+When the timeline renders
+Then the viewport height fits the axis, visible lines, footer spacing, and note area when notes exist
+And the viewport does not stretch vertically just because the workspace has extra height.
 
 ### Create A Note
 

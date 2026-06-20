@@ -21,6 +21,11 @@ This project follows semantic versioning once releases begin. The current packag
 - Previewed softer period bar backgrounds with restrained color depth and light shadow.
 - Added current-file save behavior where supported, an unsaved-changes indicator, and `Ctrl`/`Command` + `S` JSON saving.
 - Added live age hover readouts and optional period age/duration labels derived from birth items.
+- Moved birth item labels to the left side of the birthdate line to reduce overlap with later items.
+- Changed the hover age readout from a cursor tooltip to a fixed timeline info panel with Gregorian date, Iranian date, and age context.
+- Added selected-item details to the timeline info panel, including dates, duration, line, and age context where available.
+- Simplified selected-item details into separate readable rows in the timeline info panel.
+- Sized the timeline viewport to the rendered timeline content instead of stretching it to fill unused workspace height.
 
 ### Documentation
 
