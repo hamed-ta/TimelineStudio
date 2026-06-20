@@ -2,11 +2,11 @@
 
 ## Current Goal
 
-Continue the React/TypeScript migration by moving browser file helpers out of legacy `app.js`.
+Continue the React/TypeScript migration by moving PDF byte generation out of legacy `app.js`.
 
 ## Last Known State
 
-Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, export rendering, pan, zoom, fit, lock state, and line renaming.
+Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, SVG/canvas export rendering, pan, zoom, fit, lock state, and line renaming.
 
 Timeline document types, default timeline creation, item normalization, and timeline normalization live in `src/timeline/model.ts`.
 
@@ -14,7 +14,9 @@ Shared date parsing, ISO date math, snap normalization, clamping, and numeric no
 
 Timeline JSON parse/serialize behavior lives in `src/timeline/json.ts`.
 
-Browser download and save-picker helpers now live in `src/platform/files.ts`. `app.js` imports those helpers for JSON save and SVG/PNG/PDF export download behavior.
+Browser download and save-picker helpers live in `src/platform/files.ts`.
+
+PDF byte generation now lives in `src/timeline/pdf.ts`. `app.js` still renders the timeline to canvas/JPEG and calls the typed helper to build the PDF bytes.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
@@ -22,27 +24,25 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`1eb5a85 refactor: extract timeline json handling`
+`65f5d93 refactor: extract browser file helpers`
 
 ## Work Completed This Session
 
-- Added `src/platform/files.ts`.
-- Moved `downloadBlob` into the typed platform file helper module.
-- Moved `saveBlobWithPicker` into the typed platform file helper module.
-- Added local File System Access API interfaces for the browser save picker path.
-- Updated `app.js` to import file helpers instead of defining them locally.
+- Added `src/timeline/pdf.ts`.
+- Moved `buildPdfFromJpeg` into the typed PDF helper module.
+- Updated `app.js` to import `buildPdfFromJpeg` instead of defining it locally.
 
 ## Files Changed
 
 - `app.js`
-- `src/platform/files.ts`
+- `src/timeline/pdf.ts`
 - `docs/handoff.md`
 - `docs/plan.md`
 
 ## Decisions
 
 - Keep this slice behavior-preserving; no UI changes and no Firebase work.
-- Keep app-level Save JSON, Load JSON, and export orchestration in `app.js` for now.
+- Keep SVG serialization and canvas/JPEG rendering in `app.js` for now.
 - Keep JSON import/export as a first-class compatibility path.
 
 ## Verification
@@ -52,7 +52,7 @@ Firebase should wait until the local Vite app is stable.
 - `npm run build`: passed.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: app loaded with no console errors.
 - Browser smoke: created an event, edited the title, applied the item form, and confirmed the SVG contained the new item.
-- Browser smoke: clicked Save JSON and confirmed status changed to `JSON saved` with no console errors.
+- Browser smoke: clicked PDF export and confirmed status changed to `PDF exported` with no console errors.
 
 ## Open Issues
 
@@ -64,7 +64,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract browser file helpers`
+`refactor: extract pdf generation helper`
 
 ## Next Safe Step
 
