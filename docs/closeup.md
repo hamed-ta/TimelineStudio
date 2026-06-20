@@ -10,7 +10,8 @@ Use this workflow before ending a meaningful work session or when the user says 
 4. Update `docs/plan.md` if priorities or task status changed.
 5. Update `docs/product.md` if intended user-visible behavior changed.
 6. Add an ADR in `docs/adr/` only if a lasting decision was made.
-7. Commit only when the user asks.
+7. Add a suggested commit message to `docs/handoff.md` when there is uncommitted work.
+8. Commit only when the user asks.
 
 The handoff must include:
 - work completed
@@ -18,4 +19,5 @@ The handoff must include:
 - checks run
 - known issues
 - uncommitted work
+- suggested commit message when a commit is ready
 - next safe step

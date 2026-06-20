@@ -2,51 +2,64 @@
 
 ## Current Goal
 
-Close the current documentation/setup session cleanly and leave the repo ready for the next feature slice.
+Prepare Timeline Studio for a small-step migration to a modern account-based web app.
 
 ## Last Known State
 
-Timeline Studio is a static web app with timeline pan, zoom, fit, lock state, line renaming, JSON save/load, and SVG/PNG/PDF export.
+Timeline Studio is currently a static web app with timeline pan, zoom, fit, lock state, line renaming, JSON save/load, and SVG/PNG/PDF export.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
 Agent workflow documents are in place and committed. `AGENTS.md` points to the detailed workflow docs instead of duplicating the full red/green/refactor process.
 
+The accepted target stack for the next product direction is Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting. The first implementation step should preserve existing local behavior before adding Firebase.
+
 ## Last Commit
 
-`e3ef60b docs(docs): add agentic workflow documentations`
+`ca4bd12 docs(chore): ignore user data and update handoff`
 
 ## Work Completed This Session
 
-- Added `.gitignore` rules for `user-data/` and `.DS_Store`.
-- Confirmed `user-data/` and `.DS_Store` no longer appear in `git status`.
-- Confirmed personal timeline JSON files are in `user-data/`.
-- Ran the closeup verification workflow.
+- Researched and selected the target modern web app stack with the user.
+- Added an ADR for the Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting direction.
+- Updated product notes with planned account/cloud behavior and the requirement to preserve local JSON editing during migration.
+- Updated the plan for a baby-step migration path.
+- Corrected stale handoff state from the previous closeup.
 
 ## Files Changed
 
-- `.gitignore`
+- `docs/adr/0005-modern-web-app-stack.md`
 - `docs/handoff.md`
 - `docs/plan.md`
+- `docs/product.md`
 
 ## Decisions
 
 - Keep personal timeline files out of default app state.
 - Use `user-data/` for local user-owned data that should not be committed.
 - Keep detailed red/green/refactor instructions in `docs/workflows/red-green-refactor.md`; keep `AGENTS.md` as a concise rule and pointer.
+- Migrate toward Vite + React + TypeScript first, preserving current local app behavior.
+- Add Firebase Auth, Firestore, and Firebase Hosting only after the local Vite app is stable.
+- Keep JSON import/export as a first-class portability feature.
+- Treat Google Drive as a possible later import/export or backup integration, not primary storage.
 
 ## Verification
 
-- `node --check app.js`: passed.
-- `git status --short`: checked.
+- Documentation-only change; no runtime behavior changed.
+- `git status --short`: checked before editing.
 
 ## Open Issues
 
-- `.gitignore` is currently untracked.
-- `docs/handoff.md` and `docs/plan.md` are modified by this closeup.
+- Docs are modified but not committed.
 - No automated browser test harness exists yet.
 - Browser smoke checks are manual until a test harness such as Playwright is added.
+- Vite, React, TypeScript, and Firebase are not installed yet.
+- The app is still the original static `index.html`, `styles.css`, and `app.js` implementation.
+
+## Suggested Commit Message
+
+`docs: plan modern web app migration`
 
 ## Next Safe Step
 
-Commit the closeup documentation updates and `.gitignore` if requested. Then choose the next small feature slice, preferably automated browser tests, malformed JSON validation, or an unsaved-change indicator.
+Review and commit the documentation changes if accepted. Then start the first implementation slice: add a minimal Vite + React + TypeScript shell while keeping the current app runnable and preserving JSON load/edit/save behavior.

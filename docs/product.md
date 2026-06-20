@@ -44,6 +44,16 @@ When items are locked, dragging the canvas should pan the timeline and should no
 - Personal timeline data should be created by the user or loaded from a file.
 - The project should not include personal sample data as default app state.
 - JSON is the primary save/load format.
+- During the modern web app migration, local JSON load/edit/save behavior should remain available.
+- In the planned account-based app, signed-in users should be able to store private timeline data in cloud storage.
+- Cloud storage should not replace JSON import/export; JSON remains the portable user-owned format.
+
+## Account And Cloud Behavior
+
+- Account sign-in is planned for a later slice, not the initial framework migration.
+- Firebase Authentication is the planned sign-in provider.
+- Firestore is the planned primary backend database for signed-in user timelines.
+- Google Drive may be added later as an optional import/export or backup path, not as the primary database.
 
 ## Acceptance Scenarios
 
@@ -99,6 +109,22 @@ Given the user has created timeline data
 When the user saves the timeline as JSON
 And later loads the JSON file
 Then the title, date range, lines, events, periods, and text items are restored.
+
+### Preserve Local Editing During Framework Migration
+
+Given the app has migrated to the Vite, React, and TypeScript frontend shell
+When the user loads an existing timeline JSON file
+And edits the timeline
+And saves the timeline as JSON
+Then the saved JSON preserves the edited timeline data
+And the core timeline controls still work.
+
+### Store Timelines For Signed-In Users
+
+Given a user is signed in
+When the user creates or edits a timeline
+Then the app can save that timeline to the user's cloud account
+And another signed-in session for the same user can load the timeline.
 
 ### Export
 
