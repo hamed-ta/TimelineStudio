@@ -6,11 +6,11 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Extract PDF byte generation into TypeScript while preserving the current local timeline editor behavior.
+Extract browser media helpers into TypeScript while preserving the current local timeline editor behavior.
 
 ## Now
 
-- Keep the PDF helper extraction behavior-preserving: the app should still run locally, edit timelines, and export PDF.
+- Keep the media helper extraction behavior-preserving: the app should still run locally, edit timelines, and export PNG/PDF.
 - Manually verify loading an existing local JSON file in the Vite app.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
@@ -55,6 +55,7 @@ Extract PDF byte generation into TypeScript while preserving the current local t
 - Extracted timeline JSON parse and serialize behavior into `src/timeline/json.ts`.
 - Extracted browser download and save-picker helpers into `src/platform/files.ts`.
 - Extracted PDF byte generation into `src/timeline/pdf.ts`.
+- Extracted image loading and canvas-to-blob helpers into `src/platform/media.ts`.
 
 ## Risks
 

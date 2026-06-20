@@ -38,6 +38,10 @@ import {
   downloadBlob,
   saveBlobWithPicker,
 } from "./src/platform/files";
+import {
+  canvasToBlob,
+  loadImage,
+} from "./src/platform/media";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -926,24 +930,6 @@ import {
     } finally {
       URL.revokeObjectURL(url);
     }
-  }
-
-  function loadImage(url) {
-    return new Promise((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = reject;
-      image.src = url;
-    });
-  }
-
-  function canvasToBlob(canvas, type, quality) {
-    return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error("Canvas export failed"));
-      }, type, quality);
-    });
   }
 
   function svgEl(tagName, attributes = {}, text = null) {
