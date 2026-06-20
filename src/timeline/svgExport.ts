@@ -12,6 +12,10 @@ export const TIMELINE_EXPORT_CSS = `
   .period-body{stroke:rgba(0,0,0,.18);stroke-width:1}
   .event-stem{stroke-width:2;stroke-linecap:round}
   .event-marker{stroke:#fff;stroke-width:2}
+  .marker-hit{stroke-width:16;pointer-events:stroke}
+  .marker-line{stroke-width:2;stroke-dasharray:7 7;stroke-linecap:round}
+  .marker-pin{stroke:#fff;stroke-width:2}
+  .marker-label{font-size:12px;font-weight:750;paint-order:stroke;stroke:#fff;stroke-linejoin:round;stroke-width:4px}
   .range-line{fill:none;stroke-width:4;stroke-linecap:round}
 `;
 

@@ -20,6 +20,10 @@ Removing a line removes the items assigned to that line and shifts lower lines u
 
 A point-in-time item with a title, date, optional description, and assigned line.
 
+### Marker
+
+A point-in-time item that draws a vertical line through every timeline line, such as a birthdate or other global reference date.
+
 ### Period
 
 A date range with a start date and end date.
@@ -93,6 +97,13 @@ Given an empty timeline
 When the user creates an event on `2001-03-04`
 Then the event appears at the correct date position
 And it is still present after save/load.
+
+### Create A Marker
+
+Given a timeline has multiple lines
+When the user creates a marker on `2001-03-04`
+Then a vertical line appears at the correct date position across all visible lines
+And the marker is still present after save/load.
 
 ### Create A Period
 

@@ -17,12 +17,13 @@ const DEFAULT_ROW_HEIGHT = 68;
 
 export const TYPE_COLORS: Record<TimelineItemType, string> = {
   event: "#d97706",
+  marker: "#0f766e",
   period: "#2563eb",
   line: "#be123c",
   text: "#7c3aed",
 };
 
-export type TimelineItemType = "event" | "period" | "line" | "text";
+export type TimelineItemType = "event" | "marker" | "period" | "line" | "text";
 export type { TimelineSnap };
 
 export interface TimelineSettings {
@@ -166,7 +167,7 @@ export function normalizeItem(item: unknown, defaultStartDate = todayIso()): Tim
   return {
     id: String(source.id || createId(type)),
     type,
-    lane: clamp(Math.round(toNumber(source.lane, 0)), 0, 20),
+    lane: type === "marker" ? 0 : clamp(Math.round(toNumber(source.lane, 0)), 0, 20),
     startDate,
     endDate,
     title: String(source.title || titleForType(type)),
@@ -182,6 +183,7 @@ export function hasEndYear(type: unknown): boolean {
 export function titleForType(type: unknown): string {
   return {
     event: "New event",
+    marker: "New marker",
     period: "New period",
     line: "New line",
     text: "New text",
@@ -193,7 +195,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function isTimelineItemType(value: unknown): value is TimelineItemType {
-  return ["event", "period", "line", "text"].includes(String(value));
+  return ["event", "marker", "period", "line", "text"].includes(String(value));
 }
 
 function normalizeColor(value: unknown): string {

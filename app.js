@@ -142,7 +142,10 @@ import {
     });
 
     dom.itemTypeInput.addEventListener("change", () => {
-      dom.itemEndField.hidden = !hasEndYear(dom.itemTypeInput.value);
+      const type = dom.itemTypeInput.value;
+      dom.itemEndField.hidden = !hasEndYear(type);
+      dom.itemLaneInput.disabled = type === "marker";
+      if (type === "marker") dom.itemLaneInput.value = "0";
       updateItemCalendarPreviewFromInputs();
     });
 
@@ -221,10 +224,15 @@ import {
     drawGrid(svg, settings, laneCount, rowHeight, contentHeight);
     drawLaneLabels(svg, settings, laneCount, rowHeight);
 
-    timeline.items
+    const sortedItems = timeline.items
       .slice()
-      .sort((a, b) => a.lane - b.lane || compareIso(a.startDate, b.startDate))
-      .forEach((item) => drawItem(svg, defs, item, rowHeight));
+      .sort((a, b) => a.lane - b.lane || compareIso(a.startDate, b.startDate));
+    sortedItems
+      .filter((item) => item.type === "marker")
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, contentHeight));
+    sortedItems
+      .filter((item) => item.type !== "marker")
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, contentHeight));
   }
 
   function drawGrid(svg, settings, laneCount, rowHeight, contentHeight) {
@@ -297,7 +305,7 @@ import {
     }
   }
 
-  function drawItem(svg, defs, item, rowHeight) {
+  function drawItem(svg, defs, item, rowHeight, contentHeight) {
     const group = svgEl("g", {
       class: `item item-${item.type}${item.id === selectedId ? " selected" : ""}`,
       "data-item-id": item.id,
@@ -314,11 +322,13 @@ import {
       drawLine(group, defs, item, x1, x2, y);
     } else if (item.type === "event") {
       drawEvent(group, item, x1, y);
+    } else if (item.type === "marker") {
+      drawMarker(group, item, x1, contentHeight);
     } else {
       drawTextItem(group, item, x1, y);
     }
 
-    if (item.id === selectedId) drawSelection(group, item, x1, x2, y);
+    if (item.id === selectedId) drawSelection(group, item, x1, x2, y, contentHeight);
     svg.append(group);
   }
 
@@ -384,12 +394,21 @@ import {
     group.append(svgEl("text", { class: "note-label", x: x + 16, y: y + 5 }, item.title));
   }
 
+  function drawMarker(group, item, x, contentHeight) {
+    const y1 = AXIS_HEIGHT;
+    const y2 = contentHeight - FOOTER_HEIGHT;
+    group.append(svgEl("line", { class: "marker-hit", x1: x, y1, x2: x, y2, stroke: "transparent" }));
+    group.append(svgEl("line", { class: "marker-line", x1: x, y1, x2: x, y2, stroke: item.color }));
+    group.append(svgEl("circle", { class: "marker-pin", cx: x, cy: y1, r: 5, fill: item.color }));
+    group.append(svgEl("text", { class: "marker-label", x: x + 10, y: y1 + 18, fill: item.color }, item.title));
+  }
+
   function drawTextItem(group, item, x, y) {
     group.append(svgEl("circle", { cx: x, cy: y, r: 4, fill: item.color }));
     group.append(svgEl("text", { class: "note-label", x: x + 10, y: y + 5, fill: item.color }, item.title));
   }
 
-  function drawSelection(group, item, x1, x2, y) {
+  function drawSelection(group, item, x1, x2, y, contentHeight) {
     if (item.type === "period") {
       const width = Math.max(12, x2 - x1);
       group.append(svgEl("rect", { class: "selection-outline", x: x1 - 4, y: y - 21, width: width + 8, height: 42, rx: 8 }));
@@ -399,6 +418,15 @@ import {
       group.append(svgEl("rect", { class: "selection-outline", x: Math.min(x1, x2) - 7, y: y - 19, width: Math.abs(x2 - x1) + 14, height: 38, rx: 8 }));
       group.append(svgEl("circle", { class: "resize-handle", "data-item-id": item.id, "data-handle": "start", cx: x1, cy: y, r: 6 }));
       group.append(svgEl("circle", { class: "resize-handle", "data-item-id": item.id, "data-handle": "end", cx: x2, cy: y, r: 6 }));
+    } else if (item.type === "marker") {
+      group.append(svgEl("rect", {
+        class: "selection-outline",
+        x: x1 - 7,
+        y: AXIS_HEIGHT + 4,
+        width: 14,
+        height: contentHeight - AXIS_HEIGHT - FOOTER_HEIGHT - 8,
+        rx: 7,
+      }));
     } else {
       group.append(svgEl("rect", { class: "selection-outline", x: x1 - 12, y: y - 22, width: 210, height: 44, rx: 8 }));
     }
@@ -468,6 +496,7 @@ import {
     dom.itemEndInput.value = item.endDate;
     dom.itemNotesInput.value = item.notes;
     dom.itemEndField.hidden = !hasEndYear(item.type);
+    dom.itemLaneInput.disabled = item.type === "marker";
     updateItemCalendarPreview(item);
     suppressControlEvents = false;
   }
@@ -730,7 +759,7 @@ import {
     const type = dom.itemTypeInput.value;
     item.type = type;
     item.title = dom.itemTitleInput.value.trim() || titleForType(type);
-    item.lane = clamp(Math.round(toNumber(dom.itemLaneInput.value, item.lane)), 0, 20);
+    item.lane = type === "marker" ? 0 : clamp(Math.round(toNumber(dom.itemLaneInput.value, item.lane)), 0, 20);
     item.color = normalizeColor(dom.itemColorInput.value || TYPE_COLORS[type]);
     item.startDate = normalizeDateInput(dom.itemStartInput.value, item.startDate);
     item.endDate = hasEndYear(type) ? normalizeDateInput(dom.itemEndInput.value, addDaysIso(item.startDate, 1)) : item.startDate;
@@ -744,7 +773,7 @@ import {
   function addItem(type) {
     const centerDate = getViewportCenterDate();
     const startDate = snapDate(clampIso(centerDate, timeline.settings.startDate, timeline.settings.endDate));
-    const laneByType = { period: 0, line: 3, event: 2, text: 4 };
+    const laneByType = { period: 0, line: 3, event: 2, marker: 0, text: 4 };
     const endDate = hasEndYear(type) ? defaultEndDate(startDate) : startDate;
     const item = normalizeItem({
       id: createId(type),
@@ -782,7 +811,7 @@ import {
       ...item,
       id: createId(item.type),
       title: `${item.title} copy`,
-      lane: clamp(item.lane + 1, 0, 20),
+      lane: item.type === "marker" ? 0 : clamp(item.lane + 1, 0, 20),
     };
     timeline.items.push(copy);
     selectedId = copy.id;
@@ -892,7 +921,7 @@ import {
         nextStart = timeline.settings.endDate;
       }
       item.startDate = nextStart;
-      item.lane = clamp(original.lane + dyLanes, 0, 20);
+      item.lane = item.type === "marker" ? 0 : clamp(original.lane + dyLanes, 0, 20);
       if (hasEndYear(item.type)) {
         item.endDate = addDaysIso(item.startDate, duration);
       } else {

@@ -217,6 +217,7 @@ export function App() {
                     Type
                     <select id="itemTypeInput">
                       <option value="event">Event</option>
+                      <option value="marker">Marker</option>
                       <option value="period">Period</option>
                       <option value="line">Line</option>
                       <option value="text">Text</option>
@@ -292,6 +293,9 @@ export function App() {
               <div id="timelineActionToolbar" className="toolbar" role="toolbar" aria-label="Timeline actions">
                 <button type="button" className="toolbar-button" data-add="event">
                   Event
+                </button>
+                <button type="button" className="toolbar-button" data-add="marker">
+                  Marker
                 </button>
                 <button type="button" className="toolbar-button" data-add="period">
                   Period

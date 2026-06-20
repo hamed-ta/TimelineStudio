@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add direct line management so users can reorder and remove timeline lines.
+Add vertical all-line marker items for global reference dates.
 
 ## Last Known State
 
@@ -18,6 +18,8 @@ The React shell now owns UI layout preferences for editor sidebar collapse and t
 
 Timeline lines can now be reordered from the editor sidebar or from the timeline label area. Items assigned to a line move with that line. Lines can be removed after confirmation; items on the removed line are deleted and lower lines shift upward.
 
+Timeline items now include a marker type for global reference dates. Markers render as vertical lines across all visible timeline lines, use a single date, ignore lane assignment, and are available from the toolbar and item type selector.
+
 Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version remains `0.1.0`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
@@ -26,16 +28,16 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`cdf7834 feat: add collapsible layout panels`
+`02a14e9 feat: add line reordering and removal`
 
 ## Work Completed This Session
 
-- Added product scenarios for reordering and removing lines.
-- Added sidebar line rows with pointer-drag handles and remove buttons.
-- Added draggable timeline lane-label hit areas.
-- Updated line reordering so items stay attached to their line as the line moves.
-- Updated line removal so it confirms before deleting the line, removes items on that line, and shifts lower lines up.
-- Reduced the renderer's lane minimum to one while keeping new timelines seeded with five lines.
+- Added product concept and acceptance scenario for all-line marker items.
+- Added `marker` to the typed timeline item model, default colors, title text, and normalization.
+- Added Marker to the toolbar and item type selector.
+- Rendered markers as dashed vertical lines across the full lane area, with marker export styles.
+- Updated the item form so marker items hide end date controls and disable lane editing.
+- Kept marker drag behavior date-only by pinning marker lane to zero.
 - Updated `CHANGELOG.md`, plan, and handoff docs.
 
 ## Files Changed
@@ -45,24 +47,27 @@ Firebase should wait until the local Vite app is stable.
 - `docs/plan.md`
 - `docs/product.md`
 - `app.js`
+- `src/App.tsx`
+- `src/timeline/model.ts`
+- `src/timeline/svgExport.ts`
 - `styles.css`
 
 ## Decisions
 
-- Use pointer dragging for sidebar line reorder instead of browser-native HTML drag/drop because it matches the existing timeline interaction model and works more reliably across test/browser surfaces.
-- Removing a line is destructive for items on that line, so it requires confirmation.
-- Preserve saved JSON compatibility; line order continues to live in `settings.laneLabels`, and item lane numbers are remapped during reorders/removals.
+- Use a distinct `marker` type rather than overloading `event`, so saved JSON and future UI can reason about all-line reference dates explicitly.
+- Markers have no end date and are not lane-bound; lane is normalized to zero and the lane input is disabled in the form.
+- Draw markers behind normal items so they act as timeline reference guides without hiding item content.
 
 ## Verification
 
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
 - `git diff --check`: passed.
-- Browser smoke through Vite at `http://127.0.0.1:8766/`: created a default event on Line 3.
-- Browser smoke: dragged Line 3 from the sidebar to the top; labels became `Line 3`, `Line 1`, `Line 2`, `Line 4`, `Line 5`, and the event marker moved from row y=282 to y=146.
-- Browser smoke: dragged Line 3 from the timeline label area to the bottom; labels became `Line 1`, `Line 2`, `Line 4`, `Line 5`, `Line 3`, and the event marker moved to row y=418.
-- Browser smoke: removed a line; line count dropped from five to four and status changed to `Line removed`.
-- Browser smoke: console error log was empty during reorder checks.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Marker in the toolbar.
+- Browser smoke: item type became `marker`, lane input was disabled at `0`, and the end date field was hidden.
+- Browser smoke: one selected `.item-marker` rendered with label `New marker`.
+- Browser smoke: marker line rendered from y=112 to y=452 across all five rows, with transparent hit line and marker color `#0f766e`.
+- Browser smoke: console error log was empty during marker checks.
 
 ## Open Issues
 
@@ -74,8 +79,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: add line reordering and removal`
+`feat: add vertical marker items`
 
 ## Next Safe Step
 
-Add vertical all-line marker items for dates that should visually distinguish events across every line.
+Review the marker interaction in the browser, then continue UI polish or JSON load/save smoke testing before Firebase work.

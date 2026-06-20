@@ -901,6 +901,32 @@ button:focus-visible,
   stroke-width: 2;
 }
 
+.marker-hit {
+  stroke-width: 16;
+  pointer-events: stroke;
+}
+
+.marker-line {
+  stroke-width: 2;
+  stroke-dasharray: 7 7;
+  stroke-linecap: round;
+}
+
+.marker-pin {
+  stroke: var(--timeline-bg);
+  stroke-width: 2;
+}
+
+.marker-label {
+  font-size: 12px;
+  font-weight: 750;
+  paint-order: stroke;
+  pointer-events: none;
+  stroke: var(--timeline-bg);
+  stroke-linejoin: round;
+  stroke-width: 4px;
+}
+
 .range-line {
   fill: none;
   stroke-width: 4;

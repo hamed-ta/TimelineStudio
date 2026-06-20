@@ -14,6 +14,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Added collapsible editor sidebar and timeline toolbar layout controls with modern panel icons.
 - Moved the current timeline title, date range, and Fit action into the main app header.
 - Added drag reordering and removal for timeline lines from the editor and timeline canvas.
+- Added marker items that draw a vertical line across all timeline lines.
 
 ### Documentation
 

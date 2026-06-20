@@ -6,20 +6,19 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add direct line management so users can reorder and remove timeline lines.
+Add vertical all-line marker items for global reference dates.
 
 ## Now
 
-- Let users reorder lines from the editor sidebar by dragging a line handle.
-- Let users reorder lines from the timeline canvas by dragging the line label area.
-- Keep items attached to their line when that line moves.
-- Let users remove a line after confirmation.
-- When a line is removed, remove items assigned to that line and shift lower lines upward.
+- Add a marker item type to the model and JSON normalization.
+- Add Marker to the timeline toolbar and item type selector.
+- Render markers as full-height vertical lines across all visible timeline lines.
+- Keep marker items date-based and all-line; they should not depend on a selected line.
+- Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
 ## Next
 
-- Add vertical all-line marker items for events that should cut through every line.
 - Start small UI polish slices in React while preserving the element IDs and behavior expected by `app.js`.
 - Verify local JSON load, edit, save, pan, zoom, fit, and export before adding Firebase.
 - Add Firebase only after the local app migration is stable.
@@ -68,6 +67,7 @@ Add direct line management so users can reorder and remove timeline lines.
 - Added collapsible sidebar and toolbar controls with `lucide-react` icons.
 - Moved the timeline title, date range, and Fit action into the main top bar.
 - Added drag reordering and removal for timeline lines.
+- Added vertical all-line marker items.
 
 ## Risks
 
