@@ -597,8 +597,82 @@ button:focus-visible,
   gap: 9px;
 }
 
+.lane-editor-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    opacity 140ms ease;
+}
+
+.lane-editor-row.is-dragging {
+  opacity: 0.55;
+}
+
+.lane-editor-row.is-drop-target {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
 .lane-editor-label {
   margin: 0;
+}
+
+.lane-drag-handle,
+.lane-remove-button {
+  border: 1px solid var(--line);
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  border-radius: 7px;
+  min-height: 34px;
+}
+
+.lane-drag-handle {
+  display: grid;
+  grid-template-columns: repeat(2, 4px);
+  gap: 3px;
+  justify-content: center;
+  align-content: center;
+  padding: 0;
+  cursor: grab;
+}
+
+.lane-drag-handle:active {
+  cursor: grabbing;
+}
+
+.lane-drag-handle span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.lane-remove-button {
+  align-self: end;
+  padding: 0 8px;
+  color: var(--danger);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.lane-remove-button:hover {
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+  background: var(--danger-soft);
+}
+
+.lane-remove-button:disabled {
+  color: var(--text-subtle);
+  opacity: 0.58;
 }
 
 .form-actions {
@@ -701,6 +775,10 @@ button:focus-visible,
   cursor: grabbing;
 }
 
+.timeline-viewport.is-reordering-lanes {
+  cursor: ns-resize;
+}
+
 .timeline-viewport.items-locked .item {
   cursor: inherit;
 }
@@ -752,6 +830,33 @@ button:focus-visible,
 .axis-day {
   fill: var(--timeline-label);
   font-size: 12px;
+}
+
+.lane-label-control {
+  cursor: grab;
+}
+
+.lane-label-control:active {
+  cursor: grabbing;
+}
+
+.lane-label-control:hover .lane-label-hit,
+.lane-label-control:focus-visible .lane-label-hit {
+  fill: var(--accent-soft);
+}
+
+.lane-label-control:focus-visible {
+  outline: none;
+}
+
+.lane-label-control:focus-visible .lane-label {
+  fill: var(--accent-text);
+  font-weight: 700;
+}
+
+.lane-label-grip {
+  fill: var(--timeline-label);
+  opacity: 0.72;
 }
 
 .axis-year {

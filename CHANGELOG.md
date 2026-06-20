@@ -13,6 +13,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Updated the app theme with system, light, and dark UI theme controls.
 - Added collapsible editor sidebar and timeline toolbar layout controls with modern panel icons.
 - Moved the current timeline title, date range, and Fit action into the main app header.
+- Added drag reordering and removal for timeline lines from the editor and timeline canvas.
 
 ### Documentation
 

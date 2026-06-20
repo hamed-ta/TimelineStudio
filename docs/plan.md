@@ -6,19 +6,20 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Refine the sidebar and toolbar into standard collapsible panels.
+Add direct line management so users can reorder and remove timeline lines.
 
 ## Now
 
-- Keep the layout update behavior-preserving: the app should still run locally, edit timelines, save JSON, and preserve all legacy DOM IDs and data hooks.
-- Keep the editor sidebar fixed on the left and the toolbar fixed near the top of the timeline stage.
-- Keep the current timeline title, date range, and Fit action in the main app header.
-- Remember sidebar and toolbar collapse preferences in browser storage.
-- Use clear chevron-style `lucide-react` icons for collapse/expand state instead of character buttons.
+- Let users reorder lines from the editor sidebar by dragging a line handle.
+- Let users reorder lines from the timeline canvas by dragging the line label area.
+- Keep items attached to their line when that line moves.
+- Let users remove a line after confirmation.
+- When a line is removed, remove items assigned to that line and shift lower lines upward.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
 ## Next
 
+- Add vertical all-line marker items for events that should cut through every line.
 - Start small UI polish slices in React while preserving the element IDs and behavior expected by `app.js`.
 - Verify local JSON load, edit, save, pan, zoom, fit, and export before adding Firebase.
 - Add Firebase only after the local app migration is stable.
@@ -66,6 +67,7 @@ Refine the sidebar and toolbar into standard collapsible panels.
 - Added dependency policy guidance in ADR 0006 and agent docs.
 - Added collapsible sidebar and toolbar controls with `lucide-react` icons.
 - Moved the timeline title, date range, and Fit action into the main top bar.
+- Added drag reordering and removal for timeline lines.
 
 ## Risks
 

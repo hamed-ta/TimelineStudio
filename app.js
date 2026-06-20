@@ -109,6 +109,7 @@ import {
   let zoom = clamp(Number(localStorage.getItem(ZOOM_KEY)) || DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM);
   let suppressControlEvents = false;
   let dragState = null;
+  let sidebarLanePointerDrag = null;
 
   init();
 
@@ -198,7 +199,7 @@ import {
 
     const settings = timeline.settings;
     const laneCount = Math.max(
-      5,
+      1,
       settings.laneLabels.length,
       ...timeline.items.map((item) => Math.max(0, Number(item.lane) + 1)),
     );
@@ -269,9 +270,30 @@ import {
 
   function drawLaneLabels(svg, settings, laneCount, rowHeight) {
     for (let lane = 0; lane < laneCount; lane += 1) {
-      const label = settings.laneLabels[lane] || `Lane ${lane}`;
-      const y = AXIS_HEIGHT + lane * rowHeight + rowHeight / 2 + 4;
-      svg.append(svgEl("text", { class: "lane-label", x: 18, y }, label));
+      const label = settings.laneLabels[lane] || `Line ${lane + 1}`;
+      const rowTop = AXIS_HEIGHT + lane * rowHeight;
+      const centerY = rowTop + rowHeight / 2;
+      const group = svgEl("g", {
+        class: "lane-label-control",
+        "data-timeline-lane-index": lane,
+        tabindex: "0",
+        "aria-label": `Drag ${label} to reorder line`,
+      });
+
+      group.append(svgEl("rect", {
+        class: "lane-label-hit",
+        x: 8,
+        y: rowTop + 8,
+        width: LEFT_GUTTER - 20,
+        height: rowHeight - 16,
+        rx: 7,
+        fill: "transparent",
+      }));
+      [-7, 0, 7].forEach((offset) => {
+        group.append(svgEl("circle", { class: "lane-label-grip", cx: 18, cy: centerY + offset, r: 1.7 }));
+      });
+      group.append(svgEl("text", { class: "lane-label", x: 28, y: centerY + 4 }, label));
+      svg.append(group);
     }
   }
 
@@ -454,6 +476,21 @@ import {
     const labels = ensureLaneLabels();
     dom.laneList.replaceChildren();
     labels.forEach((label, index) => {
+      const row = document.createElement("div");
+      row.className = "lane-editor-row";
+      row.dataset.laneIndex = String(index);
+
+      const dragHandle = document.createElement("button");
+      dragHandle.type = "button";
+      dragHandle.className = "lane-drag-handle";
+      dragHandle.dataset.laneIndex = String(index);
+      dragHandle.ariaLabel = `Drag ${label || `Line ${index + 1}`} to reorder`;
+      dragHandle.title = "Drag to reorder";
+      dragHandle.addEventListener("pointerdown", beginSidebarLanePointerDrag);
+      for (let dot = 0; dot < 6; dot += 1) {
+        dragHandle.append(document.createElement("span"));
+      }
+
       const field = document.createElement("label");
       field.className = "lane-editor-label";
 
@@ -470,14 +507,24 @@ import {
       input.addEventListener("change", updateLaneLabel);
 
       field.append(caption, input);
-      dom.laneList.append(field);
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "lane-remove-button";
+      removeButton.textContent = "Remove";
+      removeButton.dataset.laneIndex = String(index);
+      removeButton.disabled = labels.length <= 1;
+      removeButton.addEventListener("click", removeLane);
+
+      row.append(dragHandle, field, removeButton);
+      dom.laneList.append(row);
     });
   }
 
   function ensureLaneLabels() {
     const labels = timeline.settings.laneLabels;
     const laneCount = Math.max(
-      5,
+      1,
       labels.length,
       ...timeline.items.map((item) => Math.max(0, Number(item.lane) + 1)),
     );
@@ -505,6 +552,125 @@ import {
     timeline.settings.laneLabels.push(`Line ${timeline.settings.laneLabels.length + 1}`);
     renderAll();
     setStatus("Line added");
+  }
+
+  function beginSidebarLanePointerDrag(event) {
+    if (event.button !== 0) return;
+    const index = Number(event.currentTarget.dataset.laneIndex);
+    if (!Number.isInteger(index)) return;
+    sidebarLanePointerDrag = {
+      pointerId: event.pointerId,
+      laneIndex: index,
+      moved: false,
+    };
+    event.currentTarget.closest(".lane-editor-row").classList.add("is-dragging");
+    document.addEventListener("pointermove", moveSidebarLanePointerDrag);
+    document.addEventListener("pointerup", endSidebarLanePointerDrag);
+    document.addEventListener("pointercancel", endSidebarLanePointerDrag);
+    event.preventDefault();
+  }
+
+  function moveSidebarLanePointerDrag(event) {
+    if (!sidebarLanePointerDrag || event.pointerId !== sidebarLanePointerDrag.pointerId) return;
+    const targetRow = document.elementFromPoint(event.clientX, event.clientY)?.closest(".lane-editor-row");
+    clearLaneListDragClasses();
+    if (!targetRow || !dom.laneList.contains(targetRow)) {
+      markActiveLaneRow();
+      return;
+    }
+
+    targetRow.classList.add("is-drop-target");
+    const targetIndex = Number(targetRow.dataset.laneIndex);
+    if (Number.isInteger(targetIndex) && targetIndex !== sidebarLanePointerDrag.laneIndex) {
+      const moved = moveLane(sidebarLanePointerDrag.laneIndex, targetIndex, { announce: false });
+      if (moved) {
+        sidebarLanePointerDrag.laneIndex = targetIndex;
+        sidebarLanePointerDrag.moved = true;
+      }
+    }
+    markActiveLaneRow();
+    event.preventDefault();
+  }
+
+  function endSidebarLanePointerDrag(event) {
+    if (!sidebarLanePointerDrag || event.pointerId !== sidebarLanePointerDrag.pointerId) return;
+    const moved = sidebarLanePointerDrag.moved;
+    sidebarLanePointerDrag = null;
+    document.removeEventListener("pointermove", moveSidebarLanePointerDrag);
+    document.removeEventListener("pointerup", endSidebarLanePointerDrag);
+    document.removeEventListener("pointercancel", endSidebarLanePointerDrag);
+    clearLaneListDragClasses();
+    if (moved) {
+      renderAll();
+      setStatus("Line moved");
+    }
+    event.preventDefault();
+  }
+
+  function clearLaneListDragClasses() {
+    dom.laneList.querySelectorAll(".lane-editor-row").forEach((row) => {
+      row.classList.remove("is-dragging", "is-drop-target");
+    });
+  }
+
+  function markActiveLaneRow() {
+    if (!sidebarLanePointerDrag) return;
+    const activeRow = dom.laneList.querySelector(`.lane-editor-row[data-lane-index="${sidebarLanePointerDrag.laneIndex}"]`);
+    if (activeRow) activeRow.classList.add("is-dragging");
+  }
+
+  function moveLane(fromIndex, toIndex, options = {}) {
+    const labels = ensureLaneLabels();
+    const from = Number(fromIndex);
+    const to = clamp(Number(toIndex), 0, labels.length - 1);
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || from >= labels.length || from === to) {
+      return false;
+    }
+
+    const [label] = labels.splice(from, 1);
+    labels.splice(to, 0, label);
+    timeline.items.forEach((item) => {
+      if (item.lane === from) {
+        item.lane = to;
+      } else if (from < to && item.lane > from && item.lane <= to) {
+        item.lane -= 1;
+      } else if (from > to && item.lane >= to && item.lane < from) {
+        item.lane += 1;
+      }
+    });
+
+    renderAll({ save: false });
+    if (options.announce !== false) setStatus("Line moved");
+    return true;
+  }
+
+  function removeLane(event) {
+    const index = Number(event.currentTarget.dataset.laneIndex);
+    const labels = ensureLaneLabels();
+    if (!Number.isInteger(index) || index < 0 || index >= labels.length) return;
+    if (labels.length <= 1) {
+      setStatus("Keep at least one line");
+      return;
+    }
+
+    const label = labels[index] || `Line ${index + 1}`;
+    const itemsOnLine = timeline.items.filter((item) => item.lane === index);
+    const itemText = itemsOnLine.length === 1 ? "1 item" : `${itemsOnLine.length} items`;
+    const ok = window.confirm(
+      itemsOnLine.length
+        ? `Remove "${label}" and delete ${itemText} on it?`
+        : `Remove "${label}"?`,
+    );
+    if (!ok) return;
+
+    const removedItemIds = new Set(itemsOnLine.map((item) => item.id));
+    labels.splice(index, 1);
+    timeline.items = timeline.items
+      .filter((item) => item.lane !== index)
+      .map((item) => (item.lane > index ? { ...item, lane: item.lane - 1 } : item));
+    if (selectedId && removedItemIds.has(selectedId)) selectedId = null;
+    renderAll();
+    setStatus("Line removed");
   }
 
   function updateItemCalendarPreviewFromInputs() {
@@ -626,6 +792,21 @@ import {
 
   function beginPointerDrag(event) {
     if (event.button !== 0) return;
+    const laneNode = event.target.closest("[data-timeline-lane-index]");
+    if (laneNode) {
+      const laneIndex = Number(laneNode.dataset.timelineLaneIndex);
+      if (!Number.isInteger(laneIndex)) return;
+      dragState = {
+        pointerId: event.pointerId,
+        mode: "lane",
+        laneIndex,
+      };
+      dom.timelineViewport.setPointerCapture(event.pointerId);
+      dom.timelineViewport.classList.add("is-reordering-lanes");
+      event.preventDefault();
+      return;
+    }
+
     const handle = event.target.closest(".resize-handle");
     const itemNode = timeline.settings.itemsLocked ? null : event.target.closest("[data-item-id]");
     if (!itemNode) {
@@ -676,6 +857,16 @@ import {
       return;
     }
 
+    if (dragState.mode === "lane") {
+      const targetLane = laneIndexFromPointer(event);
+      if (targetLane !== dragState.laneIndex) {
+        const moved = moveLane(dragState.laneIndex, targetLane, { announce: false });
+        if (moved) dragState.laneIndex = targetLane;
+      }
+      event.preventDefault();
+      return;
+    }
+
     const item = getItem(dragState.itemId);
     if (!item) return;
     const point = svgPoint(event);
@@ -719,6 +910,7 @@ import {
   function endPointerDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const wasPan = dragState.mode === "pan";
+    const wasLaneReorder = dragState.mode === "lane";
     const panMoved = Boolean(dragState.moved);
     try {
       dom.timelineViewport.releasePointerCapture(event.pointerId);
@@ -726,9 +918,15 @@ import {
       // Pointer capture may already be released by the browser.
     }
     dom.timelineViewport.classList.remove("is-panning");
+    dom.timelineViewport.classList.remove("is-reordering-lanes");
     dragState = null;
     if (wasPan) {
       if (panMoved) setStatus("Timeline panned");
+      return;
+    }
+    if (wasLaneReorder) {
+      renderAll();
+      setStatus("Line moved");
       return;
     }
     renderAll();
@@ -781,6 +979,13 @@ import {
     point.x = event.clientX;
     point.y = event.clientY;
     return point.matrixTransform(dom.timelineSvg.getScreenCTM().inverse());
+  }
+
+  function laneIndexFromPointer(event) {
+    const point = svgPoint(event);
+    const labels = ensureLaneLabels();
+    const rowHeight = timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT;
+    return clamp(Math.floor((point.y - AXIS_HEIGHT) / rowHeight), 0, labels.length - 1);
   }
 
   function getItem(id) {

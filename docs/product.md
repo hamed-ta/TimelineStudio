@@ -13,6 +13,8 @@ A horizontal date-based canvas. Time flows left to right.
 ### Line
 
 A named horizontal lane used to group related items, such as School, Home, Work, Family, or Notes.
+Lines can be reordered from the editor or directly from the timeline labels. Items assigned to a line move with that line.
+Removing a line removes the items assigned to that line and shifts lower lines upward after confirmation.
 
 ### Event
 
@@ -104,6 +106,22 @@ Given a timeline line exists
 When the user renames the line
 Then the new name is shown on the timeline
 And the name is preserved after save/load.
+
+### Reorder Lines
+
+Given a timeline has multiple named lines with items on them
+When the user drags a line above or below another line in the editor or from the timeline label
+Then the visible line order changes
+And the items assigned to that line move with it
+And the new line order is preserved after save/load.
+
+### Remove A Line
+
+Given a timeline has more than one line
+When the user removes a line and confirms the destructive action
+Then that line is removed
+And items assigned to that line are removed
+And lower lines shift up without leaving empty lane gaps.
 
 ### Lock Items
 

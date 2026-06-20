@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Refine the sidebar and toolbar into standard collapsible panels.
+Add direct line management so users can reorder and remove timeline lines.
 
 ## Last Known State
 
@@ -16,6 +16,8 @@ The project no longer treats dependency-free status as absolute. ADR 0006 allows
 
 The React shell now owns UI layout preferences for editor sidebar collapse and timeline toolbar collapse. These preferences are stored in browser local storage and do not affect timeline JSON.
 
+Timeline lines can now be reordered from the editor sidebar or from the timeline label area. Items assigned to a line move with that line. Lines can be removed after confirmation; items on the removed line are deleted and lower lines shift upward.
+
 Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version remains `0.1.0`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
@@ -24,54 +26,43 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`51a6453 refactor: extract timeline formatters`
+`cdf7834 feat: add collapsible layout panels`
 
 ## Work Completed This Session
 
-- Added layout behavior scenarios for a collapsible editor sidebar and timeline toolbar.
-- Added ADR 0006 for dependency policy.
-- Updated `AGENTS.md` so future work may add justified dependencies.
-- Moved timeline action buttons into a dock inside the timeline stage while preserving existing IDs and `data-add` hooks.
-- Removed nonstandard sidebar side and toolbar dock controls.
-- Replaced unclear panel icons with animated chevron icon buttons for sidebar and toolbar collapse/expand controls.
-- Moved the current timeline title, date range, and Fit action into the main top bar.
-- Added `lucide-react` for standard panel icons.
+- Added product scenarios for reordering and removing lines.
+- Added sidebar line rows with pointer-drag handles and remove buttons.
+- Added draggable timeline lane-label hit areas.
+- Updated line reordering so items stay attached to their line as the line moves.
+- Updated line removal so it confirms before deleting the line, removes items on that line, and shifts lower lines up.
+- Reduced the renderer's lane minimum to one while keeping new timelines seeded with five lines.
 - Updated `CHANGELOG.md`, plan, and handoff docs.
 
 ## Files Changed
 
 - `CHANGELOG.md`
-- `AGENTS.md`
-- `docs/adr/0006-dependency-policy.md`
 - `docs/handoff.md`
 - `docs/plan.md`
 - `docs/product.md`
-- `package-lock.json`
-- `package.json`
-- `src/App.tsx`
+- `app.js`
 - `styles.css`
 
 ## Decisions
 
-- Keep the layout standard: fixed left editor sidebar, top timeline toolbar, and collapse/expand only.
-- Use `lucide-react` as a focused dependency for recognizable, accessible layout icons.
-- Reasonable dependencies are allowed when justified by feature value, but broad/cross-cutting choices need an ADR.
-- Preserve all IDs and `data-*` hooks used by legacy `app.js`; collapsed controls stay mounted so event listeners remain valid.
+- Use pointer dragging for sidebar line reorder instead of browser-native HTML drag/drop because it matches the existing timeline interaction model and works more reliably across test/browser surfaces.
+- Removing a line is destructive for items on that line, so it requires confirmation.
+- Preserve saved JSON compatibility; line order continues to live in `settings.laneLabels`, and item lane numbers are remapped during reorders/removals.
 
 ## Verification
 
-- `git diff --check`: passed.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
-- `npm run build`: passed.
-- Browser smoke through Vite at `http://127.0.0.1:8766/`: app loaded with no console errors.
-- Browser smoke: confirmed there are no sidebar move or toolbar move buttons.
-- Browser smoke: confirmed the timeline title, date range, and Fit button render in the top bar above the action dock and viewport.
-- Browser smoke: confirmed the old visible `Tools` label is gone and the dock uses a compact `Actions` label.
-- Browser smoke: collapsed/expanded the editor sidebar and timeline toolbar with animated chevron icon states.
-- Browser smoke: reloaded and confirmed collapse preferences persisted.
-- Browser smoke: created an event, entered `2026-02-03`, applied the item form, and clicked Save JSON; status changed to `JSON saved`.
-- Browser smoke: 390px mobile viewport had no horizontal overflow; sidebar and toolbar remained usable.
+- `git diff --check`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: created a default event on Line 3.
+- Browser smoke: dragged Line 3 from the sidebar to the top; labels became `Line 3`, `Line 1`, `Line 2`, `Line 4`, `Line 5`, and the event marker moved from row y=282 to y=146.
+- Browser smoke: dragged Line 3 from the timeline label area to the bottom; labels became `Line 1`, `Line 2`, `Line 4`, `Line 5`, `Line 3`, and the event marker moved to row y=418.
+- Browser smoke: removed a line; line count dropped from five to four and status changed to `Line removed`.
+- Browser smoke: console error log was empty during reorder checks.
 
 ## Open Issues
 
@@ -83,8 +74,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: add collapsible layout panels`
+`feat: add line reordering and removal`
 
 ## Next Safe Step
 
-Review the new layout in the browser. If accepted, continue visual polish on control density and icons without changing legacy DOM hooks.
+Add vertical all-line marker items for dates that should visually distinguish events across every line.
