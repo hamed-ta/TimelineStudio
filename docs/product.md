@@ -270,8 +270,34 @@ And timeline SVG labels use the same font family as the rest of the app.
 Given a timeline item exists
 When the user opens the context menu on the item
 Then the app selects that item
-And the menu offers Copy, Paste, Duplicate, Lock Items or Unlock Items, and Delete
+And the menu offers Add, Copy, Paste, Duplicate, Lock item or Unlock item, and Delete
+And read-only mode is controlled from the top toolbar icon instead of the context menu
 And unavailable commands are disabled.
+
+### Add Item From Context Menu
+
+Given the user opens the context menu on the timeline
+Then the Add submenu is closed by default
+When the user chooses Add and then an item type
+Then that item type is created at the clicked date
+And lane-bound item types use the clicked line.
+
+### Lock Individual Item
+
+Given a timeline item exists
+When the user locks that item from the context menu
+Then that item stays selectable and copyable
+But it cannot be edited, dragged, resized, duplicated, or deleted
+When the user unlocks that item from the context menu
+Then normal item editing and movement are available again.
+
+### Use Read-Only Mode
+
+Given timeline items exist
+When the user turns on read-only mode from the top toolbar icon
+Then the timeline is read-only for item content
+And item creation, editing, movement, duplication, paste, and deletion are unavailable
+But selection, copy, pan, zoom, and turning read-only off remain available.
 
 ### Use Context Menu Zoom Commands
 

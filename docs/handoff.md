@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Move line editing into the timeline and replace weak native color inputs with a shared modern color picker for items and line backgrounds.
+Add context-menu item creation and split toolbar read-only mode from individual item locking.
 
 ## Last Known State
 
@@ -40,7 +40,9 @@ Lane-bound items snap to nearby same-line item edges while dragging or resizing.
 
 The item editor and line editor use a shared dependency-free color picker with a saturation/value plane, hue slider, hex entry, and the curated preset palette. Item colors remain required `#RRGGBB` values. Line background colors are optional and save as `settings.laneColors` entries, preserving compatibility with older JSON that has no line colors.
 
-The timeline has a custom context menu for item commands. Right-clicking an item selects it and shows Copy, Paste, Duplicate, Lock Items or Unlock Items, Delete, Zoom in, Zoom out, and Fit. Copy and paste use an in-app item clipboard. Keyboard shortcuts support `Ctrl`/`Command+C`, `Ctrl`/`Command+V`, `Ctrl`/`Command+D`, `Delete`/`Backspace`, `Ctrl`/`Command+Shift+L`, `+`, and `-` when focus is not in an editor field.
+The timeline has a custom context menu for item commands. Right-clicking the timeline shows Add, Copy, Paste, Duplicate, Lock item or Unlock item, Delete, Zoom in, Zoom out, and Fit. The Add submenu is closed by default and opens after choosing Add, then exposes Birth, Event, Marker, Note, Period, Line, and Text item types; created items use the clicked date and clicked line where applicable. Copy and paste use an in-app item clipboard. Keyboard shortcuts support `Ctrl`/`Command+C`, `Ctrl`/`Command+V`, `Ctrl`/`Command+D`, `Delete`/`Backspace`, `Ctrl`/`Command+Shift+L`, `+`, and `-` when focus is not in an editor field.
+
+Timeline items now have an optional `locked` flag. Old JSON without this field still loads with items unlocked. The top toolbar lock icon is now labeled as read-only mode; turning it on makes item content read-only while preserving selection, copy, pan, zoom, and the ability to turn read-only off. Individual item locking keeps one item selectable and copyable but blocks editing, dragging, resizing, duplicating, and deleting for that item.
 
 The timeline toolbar uses existing `lucide-react` icons with distinct accent colors. Create, file, and export actions are visually grouped with visible group titles and separators, and item locking is a dedicated icon toggle in the toolbar header instead of a checkbox in the action row.
 
@@ -70,7 +72,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`b68d6f6 style: normalize app typography`
+`cdd78a3 feat: move line editing into timeline`
 
 ## Work Completed This Session
 
@@ -110,6 +112,11 @@ Firebase should wait until the local Vite app is stable.
 - Added optional `settings.laneColors` normalization for saved JSON compatibility.
 - Replaced native color inputs with a shared item/line color picker using a color plane, hue slider, hex input, and preset swatches.
 - Made color picker panels flip upward when there is not enough viewport space below the trigger.
+- Added an Add submenu to the timeline context menu with every item type, closed by default until Add is chosen.
+- Added context-menu item creation at the clicked date and clicked line.
+- Added per-item lock and unlock commands.
+- Added an optional `locked` item field with backwards-compatible normalization.
+- Renamed the top toolbar all-items lock control to read-only mode and removed it from the context menu.
 - Updated product notes, changelog, plan, and handoff docs.
 
 ## Files Changed
@@ -139,7 +146,8 @@ Firebase should wait until the local Vite app is stable.
 - Use one add-line control below the last visible line, not one control per line.
 - Use modern Tailwind-style saturated hues for the first palette: red, orange, amber, green, teal, sky, blue, indigo, violet, and pink.
 - Keep context-menu copy/paste in-app for now rather than using the OS clipboard, avoiding browser permissions and preserving full item structure.
-- Treat Lock Items and Unlock Items as commands for the existing global item-lock setting, not as per-item lock state.
+- Keep read-only mode as a top toolbar icon, not a context-menu command.
+- Treat Lock item and Unlock item as per-item protection; locked items remain selectable and copyable.
 - Ignore item command shortcuts while focus is in editor inputs, selects, textareas, or editable content.
 - Reuse `lucide-react` for toolbar iconography instead of adding Font Awesome or another icon dependency.
 - Use colored Lucide icons instead of adding a multicolor icon dependency.
@@ -155,6 +163,18 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
+- RED/documented: product scenarios now require context-menu Add submenu creation, individual item locking, and toolbar-only read-only mode.
+- `node --check app.js`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: right-clicking the timeline showed Add with the submenu closed by default (`display: none`, `aria-expanded=false`), with no Lock all or Unlock all context-menu actions.
+- Browser smoke: clicking Add opened the submenu (`display: block`, `aria-expanded=true`), and choosing Event created `New event` at the clicked date on Line 2.
+- Browser smoke: locking the selected period set the SVG group class to `item item-period locked selected`, changed the selection label to `Locked - Period: New period - Line 2`, and disabled sidebar title, duplicate, and delete controls.
+- Browser smoke: reopening the context menu on the locked period hid Lock item, showed Unlock item, kept Copy enabled, and disabled Duplicate and Delete.
+- Browser smoke: unlocking the selected period restored normal selection text, removed the locked class, and re-enabled item editing, duplicate, and delete controls.
+- Browser smoke: the top toolbar Read only icon turned read-only on, updated title/label to `Turn off read only`, disabled Add submenu items, Paste, Duplicate, Delete, and item form editing, kept Copy enabled, and kept Lock all / Unlock all out of the context menu.
+- Browser smoke: clicking the top toolbar icon again turned read-only off, restored title/label to `Read only`, removed the locked viewport class, and restored item editing, duplicate, and delete controls.
+- Browser smoke: no console warnings or errors were reported for context-menu add and lock flows.
 - RED/documented: product scenarios now require line editing from timeline labels, one add-line control below the last line, and a shared item/line color picker with presets, hue/saturation controls, and hex entry.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
@@ -272,8 +292,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: move line editing into timeline`
+`feat: add context menu creation and item locks`
 
 ## Next Safe Step
 
-Review the in-timeline line editor and shared color picker in the real UI, then commit if acceptable.
+Review the context-menu Add submenu and item/global lock behavior in the real UI, then commit if acceptable.

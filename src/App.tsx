@@ -1,6 +1,7 @@
 import {
   Baby,
   Calendar,
+  ChevronRight,
   Clipboard,
   CircleDot,
   Copy,
@@ -19,6 +20,7 @@ import {
   PanelLeftOpen,
   PanelTopClose,
   PanelTopOpen,
+  Plus,
   Save,
   StickyNote,
   Trash2,
@@ -371,8 +373,8 @@ export function App() {
                     className="icon-button lock-toggle-button"
                     id="itemsLockedButton"
                     aria-pressed="false"
-                    aria-label="Lock items"
-                    title="Lock items"
+                    aria-label="Read only"
+                    title="Read only"
                   >
                     <span className="toggle-icon-stack" aria-hidden="true">
                       <LockKeyholeOpen className="toggle-icon-state" data-lock-state="unlocked" data-active="true" size={17} />
@@ -523,6 +525,60 @@ export function App() {
               </form>
             </div>
             <div className="context-menu" id="timelineContextMenu" role="menu" aria-label="Timeline item actions" hidden>
+              <div className="context-menu-submenu" data-context-submenu="add">
+                <button type="button" role="menuitem" data-context-action="add-menu" aria-haspopup="menu" aria-expanded="false">
+                  <span className="context-menu-label">
+                    <Plus size={15} aria-hidden="true" />
+                    <span>Add</span>
+                  </span>
+                  <ChevronRight size={14} aria-hidden="true" />
+                </button>
+                <div className="context-submenu-panel" role="menu" aria-label="Add item type">
+                  <button type="button" role="menuitem" data-context-add="birth">
+                    <span className="context-menu-label">
+                      <Baby size={15} aria-hidden="true" />
+                      <span>Birth</span>
+                    </span>
+                  </button>
+                  <button type="button" role="menuitem" data-context-add="event">
+                    <span className="context-menu-label">
+                      <CircleDot size={15} aria-hidden="true" />
+                      <span>Event</span>
+                    </span>
+                  </button>
+                  <button type="button" role="menuitem" data-context-add="marker">
+                    <span className="context-menu-label">
+                      <Flag size={15} aria-hidden="true" />
+                      <span>Marker</span>
+                    </span>
+                  </button>
+                  <button type="button" role="menuitem" data-context-add="note">
+                    <span className="context-menu-label">
+                      <StickyNote size={15} aria-hidden="true" />
+                      <span>Note</span>
+                    </span>
+                  </button>
+                  <button type="button" role="menuitem" data-context-add="period">
+                    <span className="context-menu-label">
+                      <Calendar size={15} aria-hidden="true" />
+                      <span>Period</span>
+                    </span>
+                  </button>
+                  <button type="button" role="menuitem" data-context-add="line">
+                    <span className="context-menu-label">
+                      <Minus size={15} aria-hidden="true" />
+                      <span>Line</span>
+                    </span>
+                  </button>
+                  <button type="button" role="menuitem" data-context-add="text">
+                    <span className="context-menu-label">
+                      <Type size={15} aria-hidden="true" />
+                      <span>Text</span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+              <div className="context-menu-separator" role="separator"></div>
               <button type="button" role="menuitem" data-context-action="copy">
                 <span className="context-menu-label">
                   <Copy size={15} aria-hidden="true" />
@@ -544,19 +600,19 @@ export function App() {
                 </span>
                 <kbd>Ctrl/Cmd D</kbd>
               </button>
-              <button type="button" role="menuitem" data-context-action="lock">
+              <button type="button" role="menuitem" data-context-action="lock-item">
                 <span className="context-menu-label">
                   <LockKeyhole size={15} aria-hidden="true" />
-                  <span>Lock items</span>
+                  <span>Lock item</span>
                 </span>
-                <kbd>Ctrl/Cmd Shift L</kbd>
+                <span aria-hidden="true"></span>
               </button>
-              <button type="button" role="menuitem" data-context-action="unlock">
+              <button type="button" role="menuitem" data-context-action="unlock-item">
                 <span className="context-menu-label">
                   <LockKeyholeOpen size={15} aria-hidden="true" />
-                  <span>Unlock items</span>
+                  <span>Unlock item</span>
                 </span>
-                <kbd>Ctrl/Cmd Shift L</kbd>
+                <span aria-hidden="true"></span>
               </button>
               <div className="context-menu-separator" role="separator"></div>
               <button type="button" role="menuitem" data-context-action="zoom-in">

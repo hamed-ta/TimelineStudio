@@ -77,6 +77,7 @@ import {
   const EDGE_SNAP_PIXELS = 14;
   const EDGE_SNAP_MAX_DAYS = 14;
   const AVG_DAYS_PER_MONTH = 365.2425 / 12;
+  const TIMELINE_ITEM_TYPES = ["birth", "event", "marker", "note", "period", "line", "text"];
   const TIMELINE_JSON_FILE_TYPE = {
     description: "Timeline JSON",
     accept: { "application/json": [".json"] },
@@ -521,7 +522,7 @@ import {
 
   function drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight) {
     const group = svgEl("g", {
-      class: `item item-${item.type}${item.id === selectedId ? " selected" : ""}`,
+      class: `item item-${item.type}${item.locked ? " locked" : ""}${item.id === selectedId ? " selected" : ""}`,
       "data-item-id": item.id,
       tabindex: "0",
     });
@@ -969,7 +970,8 @@ import {
 
   function formatSelectedItemTitle(item) {
     const lineText = isGlobalTimelineItemType(item.type) ? "" : ` - Line ${item.lane + 1}`;
-    return `${itemTypeLabel(item.type)}: ${item.title}${lineText}`;
+    const lockedText = item.locked ? "Locked - " : "";
+    return `${lockedText}${itemTypeLabel(item.type)}: ${item.title}${lineText}`;
   }
 
   function formatSelectedItemStartLine(item) {
@@ -1075,6 +1077,7 @@ import {
 
   function syncItemForm() {
     const item = getItem(selectedId);
+    const itemReadOnly = item ? isItemReadOnly(item) : true;
     const controls = [
       dom.itemTypeInput,
       dom.itemTitleInput,
@@ -1091,7 +1094,7 @@ import {
 
     suppressControlEvents = true;
     controls.forEach((control) => {
-      control.disabled = !item;
+      control.disabled = !item || itemReadOnly;
     });
 
     if (!item) {
@@ -1119,7 +1122,7 @@ import {
     dom.itemTitleInput.value = item.title;
     dom.itemLaneInput.value = item.lane;
     setColorPickerValue(itemColorPicker, item.color, { emit: false });
-    setColorPickerDisabled(itemColorPicker, false);
+    setColorPickerDisabled(itemColorPicker, itemReadOnly);
     dom.itemStartInput.value = item.startDate;
     dom.itemEndInput.value = item.endDate;
     dom.itemAgeLabelsInput.checked = item.showAgeLabels !== false;
@@ -1127,7 +1130,7 @@ import {
     dom.itemNotesInput.value = item.notes;
     dom.itemEndField.hidden = !hasEndYear(item.type);
     dom.itemDerivedLabelsField.hidden = item.type !== "period";
-    dom.itemLaneInput.disabled = isGlobalTimelineItemType(item.type);
+    dom.itemLaneInput.disabled = itemReadOnly || isGlobalTimelineItemType(item.type);
     updateItemCalendarPreview(item);
     suppressControlEvents = false;
   }
@@ -1766,9 +1769,36 @@ import {
       && Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
   }
 
+  function canCreateOrPasteItems() {
+    if (!timeline.settings.itemsLocked) return true;
+    setStatus("Turn off read only to edit the timeline");
+    return false;
+  }
+
+  function isItemReadOnly(item) {
+    return Boolean(timeline.settings.itemsLocked || item?.locked);
+  }
+
+  function canModifyItem(item, actionLabel = "modify") {
+    if (!item) return false;
+    if (timeline.settings.itemsLocked) {
+      setStatus(`Turn off read only to ${actionLabel}`);
+      return false;
+    }
+    if (item.locked) {
+      setStatus(`Unlock this item to ${actionLabel}`);
+      return false;
+    }
+    return true;
+  }
+
   function applyItemForm() {
     const item = getItem(selectedId);
     if (!item) return;
+    if (!canModifyItem(item, "edit it")) {
+      syncItemForm();
+      return;
+    }
 
     const previousSnapshot = timelineDataSnapshot();
     const type = dom.itemTypeInput.value;
@@ -1788,22 +1818,10 @@ import {
   }
 
   function addItem(type) {
+    if (!canCreateOrPasteItems()) return;
     const centerDate = getViewportCenterDate();
     const startDate = snapDate(clampIso(centerDate, timeline.settings.startDate, timeline.settings.endDate));
-    const laneByType = { birth: 0, period: 0, line: 3, event: 2, marker: 0, note: 2, text: 4 };
-    const endDate = hasEndYear(type) ? defaultEndDate(startDate) : startDate;
-    const item = normalizeItem({
-      id: createId(type),
-      type,
-      lane: laneByType[type] || 0,
-      startDate,
-      endDate: clampIso(endDate, addDaysIso(startDate, 1), addDaysIso(timeline.settings.endDate, 1)),
-      title: titleForType(type),
-      color: randomPaletteColor(),
-      notes: "",
-      showAgeLabels: true,
-      showDurationLabel: true,
-    });
+    const item = createItemAt(type, { date: startDate });
 
     timeline.items.push(item);
     selectedId = item.id;
@@ -1811,10 +1829,31 @@ import {
     setStatus(`${titleForType(type)} added`);
   }
 
+  function createItemAt(type, target = {}) {
+    const startDate = snapDate(clampIso(target.date || getViewportCenterDate(), timeline.settings.startDate, timeline.settings.endDate));
+    const laneByType = { birth: 0, period: 0, line: 3, event: 2, marker: 0, note: 2, text: 4 };
+    const lane = Number.isInteger(target.lane) ? target.lane : laneByType[type] || 0;
+    const endDate = hasEndYear(type) ? defaultEndDate(startDate) : startDate;
+    return normalizeItem({
+      id: createId(type),
+      type,
+      lane: isGlobalTimelineItemType(type) ? 0 : clamp(lane, 0, 20),
+      startDate,
+      endDate: clampIso(endDate, addDaysIso(startDate, 1), addDaysIso(timeline.settings.endDate, 1)),
+      title: titleForType(type),
+      color: randomPaletteColor(),
+      notes: "",
+      locked: false,
+      showAgeLabels: true,
+      showDurationLabel: true,
+    });
+  }
+
   function deleteSelectedItem() {
     if (!selectedId) return;
     const item = getItem(selectedId);
     if (!item) return;
+    if (!canModifyItem(item, "delete it")) return;
     const ok = window.confirm(`Delete "${item.title}"?`);
     if (!ok) return;
     timeline.items = timeline.items.filter((candidate) => candidate.id !== selectedId);
@@ -1836,6 +1875,7 @@ import {
   }
 
   function pasteCopiedItem(target = {}) {
+    if (!canCreateOrPasteItems()) return false;
     if (!copiedItem) {
       setStatus("Copy an item before pasting");
       updateContextMenuItems();
@@ -1871,17 +1911,20 @@ import {
       lane: isGlobalTimelineItemType(source.type) ? 0 : clamp(Math.round(toNumber(target.lane, source.lane)), 0, 20),
       startDate,
       endDate,
+      locked: false,
     });
   }
 
   function duplicateSelectedItem() {
     const item = getItem(selectedId);
     if (!item) return;
+    if (!canModifyItem(item, "duplicate it")) return;
     const copy = {
       ...item,
       id: createId(item.type),
       title: `${item.title} copy`,
       lane: isGlobalTimelineItemType(item.type) ? 0 : clamp(item.lane + 1, 0, 20),
+      locked: false,
     };
     timeline.items.push(copy);
     selectedId = copy.id;
@@ -1892,7 +1935,7 @@ import {
   function setItemsLocked(locked) {
     const nextLocked = Boolean(locked);
     if (timeline.settings.itemsLocked === nextLocked) {
-      setStatus(nextLocked ? "Items already locked" : "Items already unlocked");
+      setStatus(nextLocked ? "Timeline is already read only" : "Timeline is already editable");
       updateContextMenuItems();
       return;
     }
@@ -1901,7 +1944,7 @@ import {
     timeline.settings.itemsLocked = nextLocked;
     const changed = renderAllAfterMaybeChange(previousSnapshot);
     updateContextMenuItems();
-    if (changed) setStatus(nextLocked ? "Items locked" : "Items unlocked");
+    if (changed) setStatus(nextLocked ? "Read only on" : "Read only off");
   }
 
   function syncItemsLockedButton() {
@@ -1909,8 +1952,8 @@ import {
     const locked = timeline.settings.itemsLocked;
     dom.itemsLockedButton.classList.toggle("is-active", locked);
     dom.itemsLockedButton.setAttribute("aria-pressed", String(locked));
-    dom.itemsLockedButton.setAttribute("aria-label", locked ? "Unlock items" : "Lock items");
-    dom.itemsLockedButton.title = locked ? "Unlock items" : "Lock items";
+    dom.itemsLockedButton.setAttribute("aria-label", locked ? "Turn off read only" : "Read only");
+    dom.itemsLockedButton.title = locked ? "Turn off read only" : "Read only";
     dom.itemsLockedButton.querySelectorAll(".toggle-icon-state").forEach((icon) => {
       icon.dataset.active = String(icon.dataset.lockState === (locked ? "locked" : "unlocked"));
     });
@@ -2058,10 +2101,25 @@ import {
   }
 
   function handleContextMenuClick(event) {
+    const addButton = event.target.closest("[data-context-add]");
+    if (addButton && !addButton.disabled) {
+      const target = contextMenuTarget ? { ...contextMenuTarget } : {};
+      const type = addButton.dataset.contextAdd;
+      closeContextMenu();
+      addItemFromContext(type, target);
+      return;
+    }
+
     const button = event.target.closest("[data-context-action]");
     if (!button || button.disabled) return;
     const action = button.dataset.contextAction;
     const target = contextMenuTarget ? { ...contextMenuTarget } : {};
+
+    if (action === "add-menu") {
+      event.preventDefault();
+      toggleContextSubmenu("add");
+      return;
+    }
     closeContextMenu();
 
     if (action === "copy") {
@@ -2070,10 +2128,10 @@ import {
       pasteCopiedItem(target);
     } else if (action === "duplicate") {
       duplicateSelectedItem();
-    } else if (action === "lock") {
-      setItemsLocked(true);
-    } else if (action === "unlock") {
-      setItemsLocked(false);
+    } else if (action === "lock-item") {
+      setSelectedItemLocked(true);
+    } else if (action === "unlock-item") {
+      setSelectedItemLocked(false);
     } else if (action === "zoom-in") {
       zoomBy(20);
     } else if (action === "zoom-out") {
@@ -2085,21 +2143,77 @@ import {
     }
   }
 
+  function addItemFromContext(type, target) {
+    if (!TIMELINE_ITEM_TYPES.includes(String(type))) return;
+    if (!canCreateOrPasteItems()) return;
+    const item = createItemAt(type, target);
+    timeline.items.push(item);
+    selectedId = item.id;
+    renderAll();
+    setStatus(`${titleForType(type)} added`);
+  }
+
+  function setSelectedItemLocked(locked) {
+    const item = getItem(selectedId);
+    if (!item) {
+      setStatus("Select an item first");
+      return;
+    }
+    const nextLocked = Boolean(locked);
+    if (item.locked === nextLocked) {
+      setStatus(nextLocked ? "Item already locked" : "Item already unlocked");
+      updateContextMenuItems();
+      return;
+    }
+    const previousSnapshot = timelineDataSnapshot();
+    item.locked = nextLocked;
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    updateContextMenuItems();
+    if (changed) setStatus(nextLocked ? "Item locked" : "Item unlocked");
+  }
+
   function updateContextMenuItems() {
     if (!dom.timelineContextMenu) return;
-    const hasSelection = Boolean(getItem(selectedId));
+    const item = getItem(selectedId);
+    const hasSelection = Boolean(item);
+    const allLocked = timeline.settings.itemsLocked;
+    const itemLocked = Boolean(item?.locked);
+    const canModifySelection = hasSelection && !allLocked && !itemLocked;
+    const canAdd = !allLocked;
+    setContextMenuActionState("add-menu", { disabled: !canAdd });
+    setContextMenuAddState({ disabled: !canAdd });
     setContextMenuActionState("copy", { disabled: !hasSelection });
-    setContextMenuActionState("paste", { disabled: !copiedItem });
-    setContextMenuActionState("duplicate", { disabled: !hasSelection });
-    setContextMenuActionState("delete", { disabled: !hasSelection });
-    setContextMenuActionState("lock", {
-      disabled: false,
-      hidden: timeline.settings.itemsLocked,
+    setContextMenuActionState("paste", { disabled: !copiedItem || allLocked });
+    setContextMenuActionState("duplicate", { disabled: !canModifySelection });
+    setContextMenuActionState("delete", { disabled: !canModifySelection });
+    setContextMenuActionState("lock-item", {
+      disabled: !hasSelection,
+      hidden: itemLocked,
     });
-    setContextMenuActionState("unlock", {
-      disabled: false,
-      hidden: !timeline.settings.itemsLocked,
+    setContextMenuActionState("unlock-item", {
+      disabled: !hasSelection,
+      hidden: !itemLocked,
     });
+  }
+
+  function setContextMenuAddState(options = {}) {
+    dom.timelineContextMenu.querySelectorAll("[data-context-add]").forEach((button) => {
+      const disabled = options.disabled === true;
+      button.disabled = disabled;
+      button.setAttribute("aria-disabled", String(disabled));
+    });
+  }
+
+  function toggleContextSubmenu(name) {
+    const submenu = dom.timelineContextMenu.querySelector(`[data-context-submenu="${name}"]`);
+    if (!submenu) return;
+    const isOpen = !submenu.classList.contains("is-open");
+    dom.timelineContextMenu.querySelectorAll(".context-menu-submenu.is-open").forEach((node) => {
+      node.classList.remove("is-open");
+      node.querySelector("[aria-expanded]")?.setAttribute("aria-expanded", "false");
+    });
+    submenu.classList.toggle("is-open", isOpen);
+    submenu.querySelector("[aria-expanded]")?.setAttribute("aria-expanded", String(isOpen));
   }
 
   function setContextMenuActionState(action, options = {}) {
@@ -2122,6 +2236,11 @@ import {
     const top = clamp(clientY, 8, Math.max(8, window.innerHeight - rect.height - 8));
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
+    menu.classList.toggle("opens-submenu-left", left + rect.width + 228 > window.innerWidth - 8);
+    menu.querySelectorAll(".context-menu-submenu.is-open").forEach((node) => {
+      node.classList.remove("is-open");
+      node.querySelector("[aria-expanded]")?.setAttribute("aria-expanded", "false");
+    });
     menu.style.visibility = "";
     focusFirstContextMenuAction();
   }
@@ -2140,6 +2259,10 @@ import {
   function closeContextMenu() {
     if (!dom.timelineContextMenu) return;
     dom.timelineContextMenu.hidden = true;
+    dom.timelineContextMenu.querySelectorAll(".context-menu-submenu.is-open").forEach((node) => {
+      node.classList.remove("is-open");
+      node.querySelector("[aria-expanded]")?.setAttribute("aria-expanded", "false");
+    });
     contextMenuTarget = null;
   }
 
@@ -2170,7 +2293,7 @@ import {
     }
 
     const handle = event.target.closest(".resize-handle");
-    const itemNode = timeline.settings.itemsLocked ? null : event.target.closest("[data-item-id]");
+    const itemNode = event.target.closest("[data-item-id]");
     if (!itemNode) {
       if (selectedId) {
         selectedId = null;
@@ -2194,6 +2317,11 @@ import {
     const item = getItem(itemNode.dataset.itemId);
     if (!item) return;
     selectedId = item.id;
+    if (isItemReadOnly(item)) {
+      renderAll({ save: false });
+      event.preventDefault();
+      return;
+    }
     const point = svgPoint(event);
     dragState = {
       pointerId: event.pointerId,

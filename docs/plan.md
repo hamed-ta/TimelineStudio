@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Move line editing from the sidebar into the timeline label area and improve item/line color picking.
+Add context-menu item creation and split toolbar read-only mode from individual item locking.
 
 ## Now
 
@@ -33,6 +33,9 @@ Move line editing from the sidebar into the timeline label area and improve item
 - Add in-place timeline controls for inserting lines.
 - Remove the old Rows / Lines section from the editor sidebar.
 - Replace native color inputs with a shared picker for item colors and line backgrounds.
+- Add an Add submenu to the timeline context menu with each timeline item type.
+- Keep read-only mode as a top toolbar icon and remove it from the context menu.
+- Add per-item locking in the context menu.
 - Preserve line reorder, remove, save/load, and item lane assignment behavior.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.

@@ -1425,6 +1425,34 @@ button:focus-visible,
   display: none;
 }
 
+.context-menu-submenu {
+  position: relative;
+}
+
+.context-submenu-panel {
+  position: absolute;
+  top: -6px;
+  left: calc(100% + 6px);
+  display: none;
+  width: min(220px, calc(100vw - 16px));
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 97%, transparent);
+  box-shadow:
+    var(--shadow),
+    0 0 0 1px color-mix(in srgb, #ffffff 8%, transparent);
+}
+
+.context-menu.opens-submenu-left .context-submenu-panel {
+  right: calc(100% + 6px);
+  left: auto;
+}
+
+.context-menu-submenu.is-open .context-submenu-panel {
+  display: block;
+}
+
 .context-menu button {
   --context-accent: var(--accent);
   display: grid;
@@ -1471,8 +1499,15 @@ button:focus-visible,
   --context-accent: #0ea5e9;
 }
 
-.context-menu button[data-context-action="lock"],
-.context-menu button[data-context-action="unlock"] {
+.context-menu button[data-context-action="add-menu"],
+.context-menu button[data-context-add] {
+  --context-accent: #22c55e;
+}
+
+.context-menu button[data-context-action="lock-all"],
+.context-menu button[data-context-action="unlock-all"],
+.context-menu button[data-context-action="lock-item"],
+.context-menu button[data-context-action="unlock-item"] {
   --context-accent: #14b8a6;
 }
 
@@ -1728,8 +1763,17 @@ button:focus-visible,
   cursor: grab;
 }
 
+.item.locked {
+  cursor: default;
+  opacity: 0.74;
+}
+
 .item:active {
   cursor: grabbing;
+}
+
+.item.locked:active {
+  cursor: default;
 }
 
 .period-body {

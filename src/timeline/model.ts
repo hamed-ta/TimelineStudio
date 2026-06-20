@@ -70,6 +70,7 @@ export interface TimelineItem {
   title: string;
   color: string;
   notes: string;
+  locked: boolean;
   showAgeLabels: boolean;
   showDurationLabel: boolean;
 }
@@ -102,6 +103,7 @@ interface LegacyItemInput {
   title?: unknown;
   color?: unknown;
   notes?: unknown;
+  locked?: unknown;
   showAgeLabels?: unknown;
   showDurationLabel?: unknown;
 }
@@ -224,6 +226,7 @@ export function normalizeItem(item: unknown, defaultStartDate = todayIso()): Tim
     title: String(source.title || titleForType(type)),
     color: normalizeColor(source.color || TYPE_COLORS[type]),
     notes: String(source.notes || ""),
+    locked: source.locked === true,
     showAgeLabels: source.showAgeLabels !== false,
     showDurationLabel: source.showDurationLabel !== false,
   };

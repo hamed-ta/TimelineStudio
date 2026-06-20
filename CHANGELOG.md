@@ -35,6 +35,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Added colored context menu icons, context menu zoom commands, a readable manual zoom-out minimum, and an empty timeline state.
 - Normalized app typography with a Persian-capable modern font stack and rem-based type scale.
 - Moved line rename, background color, add, and remove controls into the timeline label area and replaced native color inputs with a shared item/line color picker.
+- Added context-menu item creation and individual item locking alongside toolbar read-only mode.
 
 ### Documentation
 
