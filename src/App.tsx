@@ -1,4 +1,53 @@
+import { useEffect, useState } from "react";
+
+type ThemeMode = "system" | "light" | "dark";
+
+const THEME_STORAGE_KEY = "timeline-studio-theme";
+const THEME_ORDER: ThemeMode[] = ["system", "light", "dark"];
+const THEME_LABELS: Record<ThemeMode, string> = {
+  system: "System",
+  light: "Light",
+  dark: "Dark",
+};
+
+function readStoredTheme(): ThemeMode {
+  try {
+    const value = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return value === "light" || value === "dark" ? value : "system";
+  } catch {
+    return "system";
+  }
+}
+
+function applyTheme(mode: ThemeMode) {
+  document.documentElement.dataset.theme = mode;
+}
+
+function storeTheme(mode: ThemeMode) {
+  try {
+    if (mode === "system") {
+      window.localStorage.removeItem(THEME_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+    }
+  } catch {
+    // Theme preference is cosmetic; ignore unavailable browser storage.
+  }
+}
+
+function nextThemeMode(mode: ThemeMode): ThemeMode {
+  return THEME_ORDER[(THEME_ORDER.indexOf(mode) + 1) % THEME_ORDER.length];
+}
+
 export function App() {
+  const [themeMode, setThemeMode] = useState<ThemeMode>(readStoredTheme);
+  const nextMode = nextThemeMode(themeMode);
+
+  useEffect(() => {
+    applyTheme(themeMode);
+    storeTheme(themeMode);
+  }, [themeMode]);
+
   return (
     <>
       <div className="app-shell">
@@ -51,6 +100,18 @@ export function App() {
           </div>
 
           <div className="zoom-tools">
+            <button
+              type="button"
+              className="theme-toggle-button"
+              data-theme-mode={themeMode}
+              aria-label={`Theme: ${THEME_LABELS[themeMode]}. Switch to ${THEME_LABELS[nextMode]}.`}
+              title={`Theme: ${THEME_LABELS[themeMode]}. Switch to ${THEME_LABELS[nextMode]}.`}
+              onClick={() => setThemeMode(nextMode)}
+            >
+              <span className="theme-toggle-icon" aria-hidden="true"></span>
+              <span>{THEME_LABELS[themeMode]}</span>
+            </button>
+            <span className="separator" aria-hidden="true"></span>
             <button type="button" className="icon-button" id="zoomOutButton" aria-label="Zoom out">
               -
             </button>

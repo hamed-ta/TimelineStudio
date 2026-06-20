@@ -10,6 +10,7 @@ This project follows semantic versioning once releases begin. The current packag
 
 - Migrated the app shell to Vite, React, and TypeScript while preserving legacy timeline behavior.
 - Extracted timeline model, date, JSON, export, file, media, PDF, SVG export, and formatting helpers into typed modules.
+- Updated the app theme with system, light, and dark UI theme controls.
 
 ### Documentation
 

@@ -55,6 +55,14 @@ When items are locked, dragging the canvas should pan the timeline and should no
 - Firestore is the planned primary backend database for signed-in user timelines.
 - Google Drive may be added later as an optional import/export or backup path, not as the primary database.
 
+## Theme Behavior
+
+- The app should support both light and dark system color schemes.
+- The user should be able to choose System, Light, or Dark theme from the app UI.
+- The chosen theme preference should be remembered in the browser.
+- The visual theme should use accessible contrast for text, controls, timeline labels, and canvas grid details.
+- Theme changes should not alter saved timeline data.
+
 ## Acceptance Scenarios
 
 ### Start Empty
@@ -131,3 +139,18 @@ And another signed-in session for the same user can load the timeline.
 Given the user has a visible timeline
 When the user exports PNG, SVG, or PDF
 Then the exported file contains the current timeline view.
+
+### System Theme
+
+Given the user's operating system is set to light or dark appearance
+When the user opens Timeline Studio
+Then the app uses the matching visual theme
+And the timeline controls and labels remain readable.
+
+### Theme Preference
+
+Given the user chooses Light or Dark from the theme control
+When the app updates the visual theme
+Then the selected theme overrides the system appearance
+And the timeline data is unchanged
+And the theme choice is remembered for the next browser session.

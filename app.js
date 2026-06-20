@@ -353,13 +353,13 @@ import {
         "marker-end": `url(#${markerId})`,
       }),
     );
-    group.append(svgEl("text", { class: "note-label", x: x1 + 8, y: y - 11, fill: "#1d2732" }, fitText(item.title, Math.max(80, x2 - x1 - 20))));
+    group.append(svgEl("text", { class: "note-label", x: x1 + 8, y: y - 11 }, fitText(item.title, Math.max(80, x2 - x1 - 20))));
   }
 
   function drawEvent(group, item, x, y) {
     group.append(svgEl("line", { class: "event-stem", x1: x, y1: y - 23, x2: x, y2: y + 23, stroke: item.color }));
     group.append(svgEl("circle", { class: "event-marker", cx: x, cy: y, r: 9, fill: item.color }));
-    group.append(svgEl("text", { class: "note-label", x: x + 16, y: y + 5, fill: "#1d2732" }, item.title));
+    group.append(svgEl("text", { class: "note-label", x: x + 16, y: y + 5 }, item.title));
   }
 
   function drawTextItem(group, item, x, y) {

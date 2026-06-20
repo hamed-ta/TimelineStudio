@@ -6,11 +6,11 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Extract display formatting into TypeScript and add versioning/changelog documentation.
+Apply a modern light/dark visual theme with a UI switcher while preserving current timeline behavior.
 
 ## Now
 
-- Keep the display formatter extraction behavior-preserving: the app should still run locally, show Gregorian/Iranian labels, edit timelines, and export files.
+- Keep the theme update behavior-preserving: the app should still run locally, switch themes, show readable controls and timeline labels, edit timelines, and export files.
 - Manually verify loading an existing local JSON file in the Vite app before the first UI polish slice.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
@@ -59,6 +59,7 @@ Extract display formatting into TypeScript and add versioning/changelog document
 - Extracted SVG export serialization and export CSS into `src/timeline/svgExport.ts`.
 - Extracted display date, Iranian date, month, and zoom formatting into `src/timeline/formatters.ts`.
 - Added `CHANGELOG.md` and `docs/versioning.md` without bumping the package version.
+- Added system light/dark theme tokens, component styling, and a theme switcher.
 
 ## Risks
 
