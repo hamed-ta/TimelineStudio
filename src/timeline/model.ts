@@ -58,6 +58,7 @@ export interface TimelineSettings {
   snap: TimelineSnap;
   rowHeight: number;
   laneLabels: string[];
+  laneColors: string[];
 }
 
 export interface TimelineItem {
@@ -119,6 +120,7 @@ export function createEmptyTimeline(): TimelineDocument {
       snap: "month",
       rowHeight: DEFAULT_ROW_HEIGHT,
       laneLabels: ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5"],
+      laneColors: ["", "", "", "", ""],
     },
     items: [],
   };
@@ -161,6 +163,15 @@ export function normalizeTimeline(input: unknown): TimelineDocument {
   settings.laneLabels = Array.isArray(settings.laneLabels)
     ? settings.laneLabels.map((label) => String(label))
     : fallback.settings.laneLabels;
+  settings.laneColors = Array.isArray(settings.laneColors)
+    ? settings.laneColors.map(normalizeOptionalColor)
+    : fallback.settings.laneColors;
+  while (settings.laneColors.length < settings.laneLabels.length) {
+    settings.laneColors.push("");
+  }
+  if (settings.laneColors.length > settings.laneLabels.length) {
+    settings.laneColors.length = settings.laneLabels.length;
+  }
 
   const rawItems = Array.isArray(source.items) ? source.items : fallback.items;
   const items = rawItems
@@ -249,6 +260,11 @@ function isTimelineItemType(value: unknown): value is TimelineItemType {
 function normalizeColor(value: unknown): string {
   const text = String(value || "").trim();
   return /^#[0-9a-fA-F]{6}$/.test(text) ? text : ITEM_COLOR_PALETTE[6].value;
+}
+
+function normalizeOptionalColor(value: unknown): string {
+  const text = String(value || "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "";
 }
 
 function createId(prefix: string): string {

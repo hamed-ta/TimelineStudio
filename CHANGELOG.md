@@ -34,6 +34,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Expanded the item color palette and reorganized the timeline toolbar with colored icons, action groups, and a lock toggle.
 - Added colored context menu icons, context menu zoom commands, a readable manual zoom-out minimum, and an empty timeline state.
 - Normalized app typography with a Persian-capable modern font stack and rem-based type scale.
+- Moved line rename, background color, add, and remove controls into the timeline label area and replaced native color inputs with a shared item/line color picker.
 
 ### Documentation
 

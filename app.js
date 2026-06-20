@@ -92,11 +92,37 @@ import {
     snapInput: document.getElementById("snapInput"),
     laneList: document.getElementById("laneList"),
     addLaneButton: document.getElementById("addLaneButton"),
+    lineEditorPopover: document.getElementById("lineEditorPopover"),
+    lineEditorForm: document.getElementById("lineEditorForm"),
+    lineEditorTitle: document.getElementById("lineEditorTitle"),
+    lineNameInput: document.getElementById("lineNameInput"),
+    lineColorInput: document.getElementById("lineColorInput"),
+    lineColorTrigger: document.getElementById("lineColorTrigger"),
+    lineColorPreview: document.getElementById("lineColorPreview"),
+    lineColorValue: document.getElementById("lineColorValue"),
+    lineColorPanel: document.getElementById("lineColorPanel"),
+    lineColorPlane: document.getElementById("lineColorPlane"),
+    lineColorPlaneMarker: document.getElementById("lineColorPlaneMarker"),
+    lineColorHueInput: document.getElementById("lineColorHueInput"),
+    lineColorHexInput: document.getElementById("lineColorHexInput"),
+    lineColorPalette: document.getElementById("lineColorPalette"),
+    lineColorClearButton: document.getElementById("lineColorClearButton"),
+    lineAddBelowButton: document.getElementById("lineAddBelowButton"),
+    lineRemoveButton: document.getElementById("lineRemoveButton"),
+    lineEditorCloseButton: document.getElementById("lineEditorCloseButton"),
     itemForm: document.getElementById("itemForm"),
     itemTypeInput: document.getElementById("itemTypeInput"),
     itemTitleInput: document.getElementById("itemTitleInput"),
     itemLaneInput: document.getElementById("itemLaneInput"),
     itemColorInput: document.getElementById("itemColorInput"),
+    itemColorTrigger: document.getElementById("itemColorTrigger"),
+    itemColorPreview: document.getElementById("itemColorPreview"),
+    itemColorValue: document.getElementById("itemColorValue"),
+    itemColorPanel: document.getElementById("itemColorPanel"),
+    itemColorPlane: document.getElementById("itemColorPlane"),
+    itemColorPlaneMarker: document.getElementById("itemColorPlaneMarker"),
+    itemColorHueInput: document.getElementById("itemColorHueInput"),
+    itemColorHexInput: document.getElementById("itemColorHexInput"),
     itemColorPalette: document.getElementById("itemColorPalette"),
     itemStartInput: document.getElementById("itemStartInput"),
     itemEndInput: document.getElementById("itemEndInput"),
@@ -151,6 +177,9 @@ import {
   let lastPaletteColorIndex = -1;
   let copiedItem = null;
   let contextMenuTarget = null;
+  let lineEditorLaneIndex = null;
+  let itemColorPicker = null;
+  let lineColorPicker = null;
 
   init();
 
@@ -163,7 +192,7 @@ import {
   }
 
   function bindEvents() {
-    renderItemColorPalette();
+    setupColorPickers();
 
     document.querySelectorAll("[data-add]").forEach((button) => {
       button.addEventListener("click", () => addItem(button.dataset.add));
@@ -203,7 +232,16 @@ import {
 
     dom.deleteItemButton.addEventListener("click", deleteSelectedItem);
     dom.duplicateItemButton.addEventListener("click", duplicateSelectedItem);
-    dom.addLaneButton.addEventListener("click", addLane);
+    if (dom.addLaneButton) dom.addLaneButton.addEventListener("click", () => addLaneAfter(ensureLaneLabels().length - 1));
+    if (dom.lineEditorForm) dom.lineEditorForm.addEventListener("submit", applyLineEditor);
+    if (dom.lineNameInput) dom.lineNameInput.addEventListener("input", updateLineEditorNameDraft);
+    if (dom.lineNameInput) dom.lineNameInput.addEventListener("blur", commitLineEditorName);
+    if (dom.lineColorInput) dom.lineColorInput.addEventListener("input", updateLineEditorColor);
+    if (dom.lineColorInput) dom.lineColorInput.addEventListener("change", updateLineEditorColor);
+    if (dom.lineColorClearButton) dom.lineColorClearButton.addEventListener("click", clearLineEditorColor);
+    if (dom.lineAddBelowButton) dom.lineAddBelowButton.addEventListener("click", addLineFromEditor);
+    if (dom.lineRemoveButton) dom.lineRemoveButton.addEventListener("click", removeLineFromEditor);
+    if (dom.lineEditorCloseButton) dom.lineEditorCloseButton.addEventListener("click", closeLineEditor);
     dom.timelineContextMenu.addEventListener("click", handleContextMenuClick);
 
     dom.saveJsonButton.addEventListener("click", saveJsonFile);
@@ -225,6 +263,19 @@ import {
     dom.timelineViewport.addEventListener("wheel", handleViewportWheel, { passive: false });
     dom.timelineViewport.addEventListener("contextmenu", openTimelineContextMenu);
     dom.timelineViewport.addEventListener("keydown", (event) => {
+      const addNode = event.target.closest?.("[data-timeline-lane-add]");
+      if (addNode && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        addLaneAfter(ensureLaneLabels().length - 1);
+        return;
+      }
+      const laneNode = event.target.closest?.("[data-timeline-lane-index]");
+      if (laneNode && event.key === "Enter") {
+        event.preventDefault();
+        const rect = dom.timelineViewport.getBoundingClientRect();
+        openLineEditor(Number(laneNode.dataset.timelineLaneIndex), rect.left + 48, rect.top + 96);
+        return;
+      }
       if ((event.key === "Delete" || event.key === "Backspace") && selectedId) {
         event.preventDefault();
         deleteSelectedItem();
@@ -238,7 +289,13 @@ import {
     dom.timelineViewport.addEventListener("pointerup", endPointerDrag);
     dom.timelineViewport.addEventListener("pointercancel", endPointerDrag);
     document.addEventListener("pointerdown", closeContextMenuFromPointer, true);
-    window.addEventListener("resize", closeContextMenu);
+    document.addEventListener("pointerdown", closeLineEditorFromPointer, true);
+    document.addEventListener("pointerdown", closeColorPickersFromPointer, true);
+    window.addEventListener("resize", () => {
+      closeContextMenu();
+      closeLineEditor();
+      closeColorPickers();
+    });
   }
 
   function renderAll(options = {}) {
@@ -287,6 +344,7 @@ import {
     svg.append(svgEl("rect", { class: "axis-band", x: 0, y: 0, width: contentWidth, height: AXIS_HEIGHT }));
     svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: contentWidth, y1: AXIS_HEIGHT, y2: AXIS_HEIGHT }));
 
+    drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth);
     drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth);
     drawLaneLabels(svg, settings, laneCount, rowHeight);
 
@@ -345,6 +403,22 @@ import {
     for (let lane = 0; lane <= laneCount; lane += 1) {
       const y = AXIS_HEIGHT + lane * rowHeight;
       svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: contentWidth, y1: y, y2: y }));
+    }
+  }
+
+  function drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth) {
+    const colors = ensureLaneColors();
+    for (let lane = 0; lane < laneCount; lane += 1) {
+      const color = colors[lane];
+      if (!color) continue;
+      svg.append(svgEl("rect", {
+        class: "lane-background",
+        x: 0,
+        y: AXIS_HEIGHT + lane * rowHeight,
+        width: contentWidth,
+        height: rowHeight,
+        fill: color,
+      }));
     }
   }
 
@@ -413,7 +487,7 @@ import {
         class: "lane-label-hit",
         x: 8,
         y: rowTop + 8,
-        width: LEFT_GUTTER - 20,
+        width: LEFT_GUTTER - 46,
         height: rowHeight - 16,
         rx: 7,
         fill: "transparent",
@@ -421,9 +495,28 @@ import {
       [-7, 0, 7].forEach((offset) => {
         group.append(svgEl("circle", { class: "lane-label-grip", cx: 18, cy: centerY + offset, r: 1.7 }));
       });
-      group.append(svgEl("text", { class: "lane-label", x: 28, y: centerY + 4 }, label));
+      group.append(svgEl("text", { class: "lane-label", x: 28, y: centerY + 4 }, fitText(label, LEFT_GUTTER - 66)));
       svg.append(group);
     }
+    const addY = AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT / 2;
+    const addGroup = svgEl("g", {
+      class: "lane-add-control",
+      "data-timeline-lane-add": "true",
+      tabindex: "0",
+      "aria-label": "Add line",
+    });
+    addGroup.append(svgEl("rect", {
+      class: "lane-add-hit",
+      x: 8,
+      y: addY - 13,
+      width: LEFT_GUTTER - 20,
+      height: 26,
+      rx: 7,
+    }));
+    addGroup.append(svgEl("line", { class: "lane-add-icon", x1: 23, x2: 35, y1: addY, y2: addY }));
+    addGroup.append(svgEl("line", { class: "lane-add-icon", x1: 29, x2: 29, y1: addY - 6, y2: addY + 6 }));
+    addGroup.append(svgEl("text", { class: "lane-add-label", x: 44, y: addY + 4 }, "Add line"));
+    svg.append(addGroup);
   }
 
   function drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight) {
@@ -1014,7 +1107,8 @@ import {
       dom.itemCalendarPreview.textContent = "Select an item to see Gregorian and Iranian dates.";
       dom.itemEndField.hidden = true;
       dom.itemDerivedLabelsField.hidden = true;
-      updateColorPaletteState("", { disabled: true });
+      setColorPickerValue(itemColorPicker, TYPE_COLORS.event, { emit: false });
+      setColorPickerDisabled(itemColorPicker, true);
       dom.itemForm.classList.add("empty-selection");
       suppressControlEvents = false;
       return;
@@ -1024,7 +1118,8 @@ import {
     dom.itemTypeInput.value = item.type;
     dom.itemTitleInput.value = item.title;
     dom.itemLaneInput.value = item.lane;
-    dom.itemColorInput.value = item.color;
+    setColorPickerValue(itemColorPicker, item.color, { emit: false });
+    setColorPickerDisabled(itemColorPicker, false);
     dom.itemStartInput.value = item.startDate;
     dom.itemEndInput.value = item.endDate;
     dom.itemAgeLabelsInput.checked = item.showAgeLabels !== false;
@@ -1033,34 +1128,255 @@ import {
     dom.itemEndField.hidden = !hasEndYear(item.type);
     dom.itemDerivedLabelsField.hidden = item.type !== "period";
     dom.itemLaneInput.disabled = isGlobalTimelineItemType(item.type);
-    updateColorPaletteState(item.color, { disabled: false });
     updateItemCalendarPreview(item);
     suppressControlEvents = false;
   }
 
-  function renderItemColorPalette() {
-    if (!dom.itemColorPalette) return;
-    dom.itemColorPalette.replaceChildren();
+  function setupColorPickers() {
+    itemColorPicker = createColorPicker({
+      name: "item",
+      input: dom.itemColorInput,
+      trigger: dom.itemColorTrigger,
+      preview: dom.itemColorPreview,
+      valueLabel: dom.itemColorValue,
+      panel: dom.itemColorPanel,
+      plane: dom.itemColorPlane,
+      planeMarker: dom.itemColorPlaneMarker,
+      hueInput: dom.itemColorHueInput,
+      hexInput: dom.itemColorHexInput,
+      palette: dom.itemColorPalette,
+      defaultColor: TYPE_COLORS.event,
+      emptyLabel: "",
+      onChange: handleItemColorInput,
+    });
+    lineColorPicker = createColorPicker({
+      name: "line",
+      input: dom.lineColorInput,
+      trigger: dom.lineColorTrigger,
+      preview: dom.lineColorPreview,
+      valueLabel: dom.lineColorValue,
+      panel: dom.lineColorPanel,
+      plane: dom.lineColorPlane,
+      planeMarker: dom.lineColorPlaneMarker,
+      hueInput: dom.lineColorHueInput,
+      hexInput: dom.lineColorHexInput,
+      palette: dom.lineColorPalette,
+      defaultColor: "#e2e8f0",
+      emptyLabel: "No color",
+      optional: true,
+      onChange: updateLineEditorColor,
+    });
+  }
+
+  function createColorPicker(config) {
+    if (!config.input || !config.trigger || !config.panel || !config.plane || !config.hueInput || !config.hexInput) return null;
+    const picker = {
+      ...config,
+      root: config.trigger.closest("[data-color-picker]"),
+      hsv: hexToHsv(config.defaultColor),
+      disabled: false,
+    };
+
+    picker.trigger.addEventListener("click", () => toggleColorPicker(picker));
+    picker.hueInput.addEventListener("input", () => updateColorPickerFromHue(picker));
+    picker.hexInput.addEventListener("input", () => updateColorPickerFromHex(picker, { commit: false }));
+    picker.hexInput.addEventListener("change", () => updateColorPickerFromHex(picker, { commit: true }));
+    picker.hexInput.addEventListener("blur", () => updateColorPickerFromHex(picker, { commit: true }));
+    picker.hexInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      updateColorPickerFromHex(picker, { commit: true });
+      setColorPickerOpen(picker, false);
+    });
+    picker.plane.addEventListener("pointerdown", (event) => beginColorPlaneDrag(picker, event));
+    picker.plane.addEventListener("keydown", (event) => nudgeColorPlane(picker, event));
+    renderColorPickerPalette(picker);
+    setColorPickerValue(picker, config.optional ? "" : config.defaultColor, { emit: false });
+    return picker;
+  }
+
+  function renderColorPickerPalette(picker) {
+    if (!picker.palette) return;
+    picker.palette.replaceChildren();
     ITEM_COLOR_PALETTE.forEach((swatch) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "color-swatch-button";
       button.dataset.color = swatch.value;
       button.style.setProperty("--swatch-color", swatch.value);
-      button.setAttribute("aria-label", `Use ${swatch.name} item color`);
+      button.setAttribute("aria-label", `Use ${swatch.name} color`);
       button.title = swatch.name;
       button.setAttribute("aria-pressed", "false");
-      button.addEventListener("click", selectPresetColor);
-      dom.itemColorPalette.append(button);
+      button.addEventListener("click", () => {
+        if (picker.disabled) return;
+        setColorPickerValue(picker, swatch.value, { emit: true });
+      });
+      picker.palette.append(button);
     });
   }
 
-  function selectPresetColor(event) {
-    if (suppressControlEvents) return;
-    const color = event.currentTarget.dataset.color;
-    if (!color) return;
-    dom.itemColorInput.value = normalizeColor(color);
-    applyItemColorFromControl();
+  function toggleColorPicker(picker) {
+    if (!picker || picker.disabled) return;
+    setColorPickerOpen(picker, picker.panel.hidden);
+  }
+
+  function setColorPickerOpen(picker, isOpen) {
+    if (!picker) return;
+    if (isOpen) closeColorPickers(picker);
+    picker.panel.hidden = !isOpen;
+    picker.trigger.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) {
+      syncColorPickerControls(picker);
+      positionColorPickerPanel(picker);
+      requestAnimationFrame(() => picker.hexInput.select());
+    }
+  }
+
+  function positionColorPickerPanel(picker) {
+    picker.panel.style.visibility = "hidden";
+    picker.panel.style.left = "0px";
+    picker.panel.style.top = "0px";
+    const rect = picker.panel.getBoundingClientRect();
+    const rootRect = picker.root?.getBoundingClientRect();
+    if (!rootRect) {
+      picker.panel.style.visibility = "";
+      return;
+    }
+    const viewportPadding = 8;
+    const left = clamp(rootRect.left, viewportPadding, Math.max(viewportPadding, window.innerWidth - rect.width - viewportPadding));
+    const preferredTop = rootRect.bottom + 8;
+    const top = preferredTop + rect.height <= window.innerHeight - viewportPadding
+      ? preferredTop
+      : clamp(rootRect.top - rect.height - 8, viewportPadding, Math.max(viewportPadding, window.innerHeight - rect.height - viewportPadding));
+    picker.panel.style.left = `${left}px`;
+    picker.panel.style.top = `${top}px`;
+    picker.panel.style.visibility = "";
+  }
+
+  function closeColorPickers(exceptPicker = null) {
+    [itemColorPicker, lineColorPicker].forEach((picker) => {
+      if (!picker || picker === exceptPicker) return;
+      setColorPickerOpen(picker, false);
+    });
+  }
+
+  function closeColorPickersFromPointer(event) {
+    [itemColorPicker, lineColorPicker].forEach((picker) => {
+      if (!picker || picker.panel.hidden || !picker.root) return;
+      if (picker.root.contains(event.target)) return;
+      if (picker.panel.contains(event.target)) return;
+      setColorPickerOpen(picker, false);
+    });
+  }
+
+  function setColorPickerDisabled(picker, disabled) {
+    if (!picker) return;
+    picker.disabled = disabled;
+    picker.trigger.disabled = disabled;
+    picker.hueInput.disabled = disabled;
+    picker.hexInput.disabled = disabled;
+    picker.plane.setAttribute("aria-disabled", String(disabled));
+    picker.palette?.querySelectorAll(".color-swatch-button").forEach((button) => {
+      button.disabled = disabled;
+    });
+    picker.root?.classList.toggle("is-disabled", disabled);
+    if (disabled) setColorPickerOpen(picker, false);
+  }
+
+  function setColorPickerValue(picker, value, options = {}) {
+    if (!picker) return;
+    const normalized = picker.optional ? normalizeOptionalColor(value) : normalizeColor(value);
+    const displayColor = normalized || picker.defaultColor;
+    picker.input.value = normalized;
+    picker.hsv = hexToHsv(displayColor);
+    syncColorPickerControls(picker);
+    if (options.emit === true && !suppressControlEvents) {
+      picker.onChange();
+    }
+  }
+
+  function syncColorPickerControls(picker) {
+    const storedColor = picker.input.value;
+    const displayColor = storedColor || picker.defaultColor;
+    picker.preview?.style.setProperty("--selected-color", displayColor);
+    picker.preview?.classList.toggle("is-empty", !storedColor);
+    picker.valueLabel.textContent = storedColor ? storedColor.toUpperCase() : picker.emptyLabel;
+    picker.panel.style.setProperty("--picker-hue-color", hsvToHex(picker.hsv.h, 100, 100));
+    picker.planeMarker.style.left = `${picker.hsv.s}%`;
+    picker.planeMarker.style.top = `${100 - picker.hsv.v}%`;
+    picker.hueInput.value = String(Math.round(picker.hsv.h));
+    picker.hexInput.value = storedColor || displayColor;
+    picker.plane.setAttribute("aria-valuenow", String(Math.round(picker.hsv.s)));
+    picker.plane.setAttribute("aria-valuetext", `Saturation ${Math.round(picker.hsv.s)} percent, brightness ${Math.round(picker.hsv.v)} percent`);
+    picker.palette?.querySelectorAll(".color-swatch-button").forEach((button) => {
+      const isActive = Boolean(storedColor) && button.dataset.color?.toLowerCase() === storedColor.toLowerCase();
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+      button.disabled = picker.disabled;
+    });
+  }
+
+  function updateColorPickerFromHue(picker) {
+    if (picker.disabled) return;
+    const hue = clamp(Number(picker.hueInput.value), 0, 360);
+    setColorPickerValue(picker, hsvToHex(hue, picker.hsv.s, picker.hsv.v), { emit: true });
+  }
+
+  function updateColorPickerFromHex(picker, options = {}) {
+    if (picker.disabled) return;
+    const normalized = parseHexColor(picker.hexInput.value);
+    if (normalized) {
+      setColorPickerValue(picker, normalized, { emit: true });
+      return;
+    }
+    if (options.commit === true) {
+      picker.hexInput.value = picker.input.value || picker.defaultColor;
+    }
+  }
+
+  function beginColorPlaneDrag(picker, event) {
+    if (picker.disabled) return;
+    event.preventDefault();
+    picker.plane.setPointerCapture?.(event.pointerId);
+    updateColorPickerFromPlane(picker, event);
+    const move = (moveEvent) => updateColorPickerFromPlane(picker, moveEvent);
+    const end = () => {
+      picker.plane.removeEventListener("pointermove", move);
+      picker.plane.removeEventListener("pointerup", end);
+      picker.plane.removeEventListener("pointercancel", end);
+    };
+    picker.plane.addEventListener("pointermove", move);
+    picker.plane.addEventListener("pointerup", end);
+    picker.plane.addEventListener("pointercancel", end);
+  }
+
+  function updateColorPickerFromPlane(picker, event) {
+    const rect = picker.plane.getBoundingClientRect();
+    const saturation = clamp(((event.clientX - rect.left) / Math.max(1, rect.width)) * 100, 0, 100);
+    const value = clamp(100 - ((event.clientY - rect.top) / Math.max(1, rect.height)) * 100, 0, 100);
+    setColorPickerValue(picker, hsvToHex(picker.hsv.h, saturation, value), { emit: true });
+  }
+
+  function nudgeColorPlane(picker, event) {
+    if (picker.disabled) return;
+    const step = event.shiftKey ? 10 : 4;
+    let saturation = picker.hsv.s;
+    let value = picker.hsv.v;
+    if (event.key === "ArrowLeft") saturation -= step;
+    else if (event.key === "ArrowRight") saturation += step;
+    else if (event.key === "ArrowDown") value -= step;
+    else if (event.key === "ArrowUp") value += step;
+    else if (event.key === "Home") {
+      saturation = 0;
+      value = 100;
+    } else if (event.key === "End") {
+      saturation = 100;
+      value = 0;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    setColorPickerValue(picker, hsvToHex(picker.hsv.h, clamp(saturation, 0, 100), clamp(value, 0, 100)), { emit: true });
   }
 
   function handleItemColorInput() {
@@ -1072,8 +1388,8 @@ import {
     const item = getItem(selectedId);
     if (!item) return;
     const color = normalizeColor(dom.itemColorInput.value || item.color);
-    dom.itemColorInput.value = color;
-    updateColorPaletteState(color, { disabled: false });
+    setColorPickerValue(itemColorPicker, color, { emit: false });
+    setColorPickerDisabled(itemColorPicker, false);
     if (item.color === color) return;
 
     const previousSnapshot = timelineDataSnapshot();
@@ -1082,19 +1398,8 @@ import {
     if (changed) setStatus("Item color updated");
   }
 
-  function updateColorPaletteState(activeColor, options = {}) {
-    if (!dom.itemColorPalette) return;
-    const disabled = options.disabled === true;
-    const normalized = activeColor ? normalizeColor(activeColor).toLowerCase() : "";
-    dom.itemColorPalette.querySelectorAll(".color-swatch-button").forEach((button) => {
-      const isActive = !disabled && button.dataset.color?.toLowerCase() === normalized;
-      button.disabled = disabled;
-      button.classList.toggle("is-active", isActive);
-      button.setAttribute("aria-pressed", String(isActive));
-    });
-  }
-
   function renderLaneControls() {
+    if (!dom.laneList) return;
     const labels = ensureLaneLabels();
     dom.laneList.replaceChildren();
     labels.forEach((label, index) => {
@@ -1153,7 +1458,22 @@ import {
     while (labels.length < laneCount) {
       labels.push(`Line ${labels.length + 1}`);
     }
+    ensureLaneColors();
     return labels;
+  }
+
+  function ensureLaneColors() {
+    if (!Array.isArray(timeline.settings.laneColors)) {
+      timeline.settings.laneColors = [];
+    }
+    const colors = timeline.settings.laneColors;
+    const labelCount = timeline.settings.laneLabels.length || 1;
+    while (colors.length < labelCount) colors.push("");
+    if (colors.length > labelCount) colors.length = labelCount;
+    colors.forEach((color, index) => {
+      colors[index] = normalizeOptionalColor(color);
+    });
+    return colors;
   }
 
   function updateLaneLabel(event) {
@@ -1173,9 +1493,21 @@ import {
   }
 
   function addLane() {
-    timeline.settings.laneLabels.push(`Line ${timeline.settings.laneLabels.length + 1}`);
-    renderAll();
-    setStatus("Line added");
+    addLaneAfter(ensureLaneLabels().length - 1);
+  }
+
+  function addLaneAfter(index) {
+    const labels = ensureLaneLabels();
+    const colors = ensureLaneColors();
+    const insertAt = clamp(Number(index) + 1, 0, labels.length);
+    const previousSnapshot = timelineDataSnapshot();
+    labels.splice(insertAt, 0, `Line ${labels.length + 1}`);
+    colors.splice(insertAt, 0, "");
+    timeline.items.forEach((item) => {
+      if (!isGlobalTimelineItemType(item.type) && item.lane >= insertAt) item.lane += 1;
+    });
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Line added");
   }
 
   function beginSidebarLanePointerDrag(event) {
@@ -1253,6 +1585,9 @@ import {
 
     const [label] = labels.splice(from, 1);
     labels.splice(to, 0, label);
+    const colors = ensureLaneColors();
+    const [color] = colors.splice(from, 1);
+    colors.splice(to, 0, color || "");
     timeline.items.forEach((item) => {
       if (item.lane === from) {
         item.lane = to;
@@ -1270,6 +1605,10 @@ import {
 
   function removeLane(event) {
     const index = Number(event.currentTarget.dataset.laneIndex);
+    removeLaneByIndex(index);
+  }
+
+  function removeLaneByIndex(index) {
     const labels = ensureLaneLabels();
     if (!Number.isInteger(index) || index < 0 || index >= labels.length) return;
     if (labels.length <= 1) {
@@ -1287,12 +1626,16 @@ import {
     );
     if (!ok) return;
 
+    const colors = ensureLaneColors();
     const removedItemIds = new Set(itemsOnLine.map((item) => item.id));
     labels.splice(index, 1);
+    colors.splice(index, 1);
     timeline.items = timeline.items
       .filter((item) => item.lane !== index)
       .map((item) => (item.lane > index ? { ...item, lane: item.lane - 1 } : item));
     if (selectedId && removedItemIds.has(selectedId)) selectedId = null;
+    if (lineEditorLaneIndex === index) closeLineEditor({ commit: false });
+    if (lineEditorLaneIndex !== null && lineEditorLaneIndex > index) lineEditorLaneIndex -= 1;
     renderAll();
     setStatus("Line removed");
   }
@@ -1573,9 +1916,125 @@ import {
     });
   }
 
+  function openLineEditor(index, clientX, clientY) {
+    const labels = ensureLaneLabels();
+    const colors = ensureLaneColors();
+    if (!Number.isInteger(index) || index < 0 || index >= labels.length || !dom.lineEditorPopover) return;
+    closeContextMenu();
+    lineEditorLaneIndex = index;
+    dom.lineEditorPopover.hidden = false;
+    dom.lineEditorTitle.textContent = `Line ${index + 1}`;
+    dom.lineNameInput.value = labels[index] || `Line ${index + 1}`;
+    const color = normalizeOptionalColor(colors[index]);
+    dom.lineEditorPopover.dataset.color = color;
+    setColorPickerValue(lineColorPicker, color, { emit: false });
+    setColorPickerDisabled(lineColorPicker, false);
+    dom.lineRemoveButton.disabled = labels.length <= 1;
+    positionLineEditor(clientX, clientY);
+    dom.lineNameInput.focus();
+    dom.lineNameInput.select();
+  }
+
+  function positionLineEditor(clientX, clientY) {
+    const popover = dom.lineEditorPopover;
+    if (!popover) return;
+    popover.style.visibility = "hidden";
+    popover.style.left = "0px";
+    popover.style.top = "0px";
+    const rect = popover.getBoundingClientRect();
+    const left = clamp(clientX, 8, Math.max(8, window.innerWidth - rect.width - 8));
+    const top = clamp(clientY, 8, Math.max(8, window.innerHeight - rect.height - 8));
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+    popover.style.visibility = "";
+  }
+
+  function updateLineEditorNameDraft() {
+    if (lineEditorLaneIndex === null) return;
+    const labels = ensureLaneLabels();
+    if (!labels[lineEditorLaneIndex] && dom.lineNameInput.value === "") return;
+    const previousSnapshot = timelineDataSnapshot();
+    labels[lineEditorLaneIndex] = dom.lineNameInput.value;
+    renderAllAfterMaybeChange(previousSnapshot);
+  }
+
+  function commitLineEditorName() {
+    if (lineEditorLaneIndex === null) return;
+    const labels = ensureLaneLabels();
+    const previousSnapshot = timelineDataSnapshot();
+    labels[lineEditorLaneIndex] = dom.lineNameInput.value.trim() || `Line ${lineEditorLaneIndex + 1}`;
+    dom.lineNameInput.value = labels[lineEditorLaneIndex];
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Line renamed");
+  }
+
+  function updateLineEditorColor() {
+    if (lineEditorLaneIndex === null) return;
+    const colors = ensureLaneColors();
+    const previousSnapshot = timelineDataSnapshot();
+    const color = normalizeColor(dom.lineColorInput.value);
+    colors[lineEditorLaneIndex] = color;
+    dom.lineEditorPopover.dataset.color = color;
+    setColorPickerValue(lineColorPicker, color, { emit: false });
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Line color updated");
+  }
+
+  function clearLineEditorColor() {
+    if (lineEditorLaneIndex === null) return;
+    const colors = ensureLaneColors();
+    const previousSnapshot = timelineDataSnapshot();
+    colors[lineEditorLaneIndex] = "";
+    dom.lineEditorPopover.dataset.color = "";
+    setColorPickerValue(lineColorPicker, "", { emit: false });
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Line color cleared");
+  }
+
+  function applyLineEditor(event) {
+    event.preventDefault();
+    commitLineEditorName();
+    closeLineEditor();
+  }
+
+  function addLineFromEditor() {
+    if (lineEditorLaneIndex === null) return;
+    const index = lineEditorLaneIndex;
+    addLaneAfter(index);
+    const rect = dom.lineEditorPopover.getBoundingClientRect();
+    openLineEditor(index + 1, rect.left, rect.top);
+  }
+
+  function removeLineFromEditor() {
+    if (lineEditorLaneIndex === null) return;
+    removeLaneByIndex(lineEditorLaneIndex);
+  }
+
+  function closeLineEditorFromPointer(event) {
+    if (!dom.lineEditorPopover || dom.lineEditorPopover.hidden) return;
+    if (dom.lineEditorPopover.contains(event.target)) return;
+    if (event.target.closest?.("[data-timeline-lane-index]")) return;
+    closeLineEditor();
+  }
+
+  function closeLineEditor(options = {}) {
+    if (!dom.lineEditorPopover) return;
+    if (options.commit !== false && lineEditorLaneIndex !== null && dom.lineNameInput) commitLineEditorName();
+    closeColorPickers(lineColorPicker);
+    setColorPickerOpen(lineColorPicker, false);
+    dom.lineEditorPopover.hidden = true;
+    lineEditorLaneIndex = null;
+  }
+
   function openTimelineContextMenu(event) {
     event.preventDefault();
     const itemNode = event.target.closest("[data-item-id]");
+    const laneNode = event.target.closest("[data-timeline-lane-index]");
+    if (!itemNode && laneNode) {
+      const laneIndex = Number(laneNode.dataset.timelineLaneIndex);
+      openLineEditor(laneIndex, event.clientX, event.clientY);
+      return;
+    }
     const item = itemNode ? getItem(itemNode.dataset.itemId) : null;
     const point = svgPoint(event);
     const date = snapDate(clampIso(xToDate(point.x), timeline.settings.startDate, timeline.settings.endDate));
@@ -1687,6 +2146,14 @@ import {
   function beginPointerDrag(event) {
     closeContextMenu();
     if (event.button !== 0) return;
+    const laneAddNode = event.target.closest("[data-timeline-lane-add]");
+    if (laneAddNode) {
+      event.preventDefault();
+      closeLineEditor();
+      addLaneAfter(ensureLaneLabels().length - 1);
+      return;
+    }
+
     const laneNode = event.target.closest("[data-timeline-lane-index]");
     if (laneNode) {
       const laneIndex = Number(laneNode.dataset.timelineLaneIndex);
@@ -2273,9 +2740,77 @@ import {
     return `#${[red, green, blue].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
   }
 
-  function normalizeColor(value) {
+  function parseHexColor(value) {
     const text = String(value || "").trim();
-    return /^#[0-9a-fA-F]{6}$/.test(text) ? text : ITEM_COLOR_PALETTE[6].value;
+    if (/^#[0-9a-fA-F]{6}$/.test(text)) return text.toLowerCase();
+    if (/^[0-9a-fA-F]{6}$/.test(text)) return `#${text.toLowerCase()}`;
+    return null;
+  }
+
+  function normalizeColor(value) {
+    return parseHexColor(value) || ITEM_COLOR_PALETTE[6].value;
+  }
+
+  function normalizeOptionalColor(value) {
+    return parseHexColor(value) || "";
+  }
+
+  function hexToRgb(hex) {
+    const clean = normalizeColor(hex).slice(1);
+    return {
+      red: parseInt(clean.slice(0, 2), 16),
+      green: parseInt(clean.slice(2, 4), 16),
+      blue: parseInt(clean.slice(4, 6), 16),
+    };
+  }
+
+  function rgbToHex(red, green, blue) {
+    return `#${[red, green, blue].map((value) => Math.round(clamp(value, 0, 255)).toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  function hexToHsv(hex) {
+    const { red, green, blue } = hexToRgb(hex);
+    const r = red / 255;
+    const g = green / 255;
+    const b = blue / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    let hue = 0;
+
+    if (delta !== 0) {
+      if (max === r) hue = 60 * (((g - b) / delta) % 6);
+      else if (max === g) hue = 60 * ((b - r) / delta + 2);
+      else hue = 60 * ((r - g) / delta + 4);
+    }
+    if (hue < 0) hue += 360;
+
+    return {
+      h: hue,
+      s: max === 0 ? 0 : (delta / max) * 100,
+      v: max * 100,
+    };
+  }
+
+  function hsvToHex(hue, saturation, value) {
+    const h = ((Number(hue) % 360) + 360) % 360;
+    const s = clamp(Number(saturation), 0, 100) / 100;
+    const v = clamp(Number(value), 0, 100) / 100;
+    const chroma = v * s;
+    const x = chroma * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = v - chroma;
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+
+    if (h < 60) [red, green, blue] = [chroma, x, 0];
+    else if (h < 120) [red, green, blue] = [x, chroma, 0];
+    else if (h < 180) [red, green, blue] = [0, chroma, x];
+    else if (h < 240) [red, green, blue] = [0, x, chroma];
+    else if (h < 300) [red, green, blue] = [x, 0, chroma];
+    else [red, green, blue] = [chroma, 0, x];
+
+    return rgbToHex((red + m) * 255, (green + m) * 255, (blue + m) * 255);
   }
 
   function randomPaletteColor() {

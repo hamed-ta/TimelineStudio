@@ -13,7 +13,7 @@ A horizontal date-based canvas. Time flows left to right.
 ### Line
 
 A named horizontal lane used to group related items, such as School, Home, Work, Family, or Notes.
-Lines can be reordered from the editor or directly from the timeline labels. Items assigned to a line move with that line.
+Lines can be renamed, recolored, added, removed, and reordered directly from the timeline label area. Items assigned to a line move with that line.
 Removing a line removes the items assigned to that line and shifts lower lines upward after confirmation.
 
 ### Event
@@ -39,9 +39,9 @@ A date range with a start date and end date. Period bars should read as colored 
 
 ### Item Color
 
-Items store a hex color in timeline JSON. The editor should provide a curated preset palette for fast selection and keep custom color input available for arbitrary colors.
+Items store a hex color in timeline JSON. The editor should provide a shared color picker with a curated preset palette, hue and saturation controls, and direct hex entry.
 New items should start with a random color from the preset palette so adjacent created items are easier to distinguish.
-The preset palette should include a broad range of modern readable colors, including neutrals, without requiring an external color picker dependency.
+The preset palette should include a broad range of modern readable colors, including neutrals.
 
 ### Text Item
 
@@ -229,10 +229,11 @@ And range items on the same line do not overlap after the drag.
 ### Choose Item Color
 
 Given a timeline item is selected
-When the user picks a preset color swatch
+When the user chooses a preset swatch, adjusts the picker, or enters a valid hex color
 Then the item updates to that color
 And the selected swatch is visibly active
-And the user can still choose a custom color.
+And the same picker pattern is used for line background colors
+And the picker remains fully visible inside the viewport instead of being clipped by the sidebar or timeline panels.
 
 ### Assign New Item Palette Color
 
@@ -304,14 +305,28 @@ And zoom out stops at the readable minimum.
 ### Rename A Line
 
 Given a timeline line exists
-When the user renames the line
+When the user opens line editing from the timeline label and renames the line
 Then the new name is shown on the timeline
 And the name is preserved after save/load.
+
+### Recolor A Line
+
+Given a timeline line exists
+When the user opens line editing from the timeline label and changes the line background color with the shared color picker
+Then the line row uses that background color
+And the color is preserved after save/load.
+
+### Add A Line In Place
+
+Given the timeline has visible line labels
+When the user clicks the single add-line control below the last line
+Then a new line is appended below the existing lines
+And existing item line assignments are preserved.
 
 ### Reorder Lines
 
 Given a timeline has multiple named lines with items on them
-When the user drags a line above or below another line in the editor or from the timeline label
+When the user drags a line above or below another line from the timeline label
 Then the visible line order changes
 And the items assigned to that line move with it
 And the new line order is preserved after save/load.
@@ -319,7 +334,7 @@ And the new line order is preserved after save/load.
 ### Remove A Line
 
 Given a timeline has more than one line
-When the user removes a line and confirms the destructive action
+When the user removes a line from timeline line editing and confirms the destructive action
 Then that line is removed
 And items assigned to that line are removed
 And lower lines shift up without leaving empty lane gaps.

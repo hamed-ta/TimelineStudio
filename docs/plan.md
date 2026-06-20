@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Normalize the app typography with a Persian-capable modern font stack and consistent type scale.
+Move line editing from the sidebar into the timeline label area and improve item/line color picking.
 
 ## Now
 
@@ -29,6 +29,11 @@ Normalize the app typography with a Persian-capable modern font stack and consis
 - Use a Persian-capable modern sans-serif stack without adding a font dependency.
 - Normalize UI font sizes onto a small rem-based type scale.
 - Apply the same font stack to SVG timeline labels.
+- Add timeline-label line rename and background color editing.
+- Add in-place timeline controls for inserting lines.
+- Remove the old Rows / Lines section from the editor sidebar.
+- Replace native color inputs with a shared picker for item colors and line backgrounds.
+- Preserve line reorder, remove, save/load, and item lane assignment behavior.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.

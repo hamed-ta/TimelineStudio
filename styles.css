@@ -704,7 +704,6 @@ p {
   max-height: 2400px;
   opacity: 1;
   overflow: hidden;
-  transform: translateX(0);
   transition:
     max-height 200ms ease,
     opacity 160ms ease,
@@ -784,10 +783,6 @@ textarea {
     box-shadow 140ms ease;
 }
 
-input[type="color"] {
-  padding: 3px;
-}
-
 .field-caption {
   display: block;
 }
@@ -804,32 +799,199 @@ input[type="color"] {
   min-width: 0;
 }
 
-.color-control-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
+.color-picker-field {
+  display: grid;
+  gap: 6px;
   min-width: 0;
 }
 
-.color-control-row input[type="color"] {
-  flex: 0 0 46px;
-  width: 46px;
-  height: 36px;
+.color-picker {
+  position: relative;
+  min-width: 0;
 }
 
-.color-swatch-grid {
+.color-picker-trigger {
   display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.color-picker-trigger:hover:not(:disabled),
+.color-picker-trigger:focus-visible {
+  border-color: var(--accent);
+  background: var(--surface-subtle);
+  box-shadow: 0 0 0 3px var(--focus);
+  outline: none;
+}
+
+.color-picker-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.color-picker-preview {
+  --selected-color: #2563eb;
+  position: relative;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 78%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 34%, var(--selected-color)) 0%,
+      var(--selected-color) 54%,
+      color-mix(in srgb, #000000 15%, var(--selected-color)) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 38%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000000 20%, transparent);
+}
+
+.color-picker-preview.is-empty {
+  background:
+    linear-gradient(135deg, transparent 45%, var(--danger) 46%, var(--danger) 54%, transparent 55%),
+    linear-gradient(45deg, var(--surface-muted) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--surface-muted) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--surface-muted) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--surface-muted) 75%);
+  background-color: var(--surface);
+  background-position:
+    0 0,
+    0 0,
+    0 6px,
+    6px -6px,
+    -6px 0;
+  background-size:
+    100% 100%,
+    12px 12px,
+    12px 12px,
+    12px 12px,
+    12px 12px;
+}
+
+.color-picker-value {
   flex: 1;
-  flex-wrap: wrap;
-  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.color-picker-trigger svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.color-picker-panel {
+  --picker-hue-color: #2563eb;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  display: grid;
+  width: min(304px, calc(100vw - 32px));
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 76%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 98%, transparent);
+  box-shadow:
+    var(--shadow),
+    0 0 0 1px color-mix(in srgb, #ffffff 10%, transparent);
+}
+
+.color-picker-panel[hidden] {
+  display: none;
+}
+
+.color-picker-plane {
+  position: relative;
+  height: 132px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 72%, transparent);
+  border-radius: 7px;
+  background:
+    linear-gradient(0deg, #000000, transparent),
+    linear-gradient(90deg, #ffffff, transparent),
+    var(--picker-hue-color);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.color-picker-plane:focus-visible {
+  box-shadow: 0 0 0 3px var(--focus);
+  outline: none;
+}
+
+.color-picker-plane-marker {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.45),
+    0 3px 8px rgb(0 0 0 / 0.22);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.color-picker-range,
+.color-picker-hex-row {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.color-picker-range input[type="range"] {
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  accent-color: var(--accent);
+  background: linear-gradient(90deg, #ef4444, #f59e0b, #eab308, #22c55e, #06b6d4, #3b82f6, #8b5cf6, #ef4444);
+}
+
+.color-picker-hex-row input {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+}
+
+.color-picker-panel .color-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
   min-width: 0;
 }
 
 .color-swatch-button {
   position: relative;
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
+  width: 100%;
+  height: 28px;
+  min-height: 28px;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -1201,6 +1363,51 @@ button:focus-visible,
   background: linear-gradient(180deg, #fb7185, #e11d48);
 }
 
+.line-editor-popover {
+  position: fixed;
+  z-index: 35;
+  width: min(320px, calc(100vw - 16px));
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 97%, transparent);
+  box-shadow:
+    var(--shadow),
+    0 0 0 1px color-mix(in srgb, #ffffff 8%, transparent);
+}
+
+.line-editor-popover[hidden] {
+  display: none;
+}
+
+.line-editor-popover > form > label,
+.line-editor-popover .color-picker-field {
+  margin-bottom: 10px;
+}
+
+.line-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.line-editor-heading strong {
+  color: var(--text);
+  font-size: var(--font-size-sm);
+}
+
+.line-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.line-editor-actions button {
+  flex: 1 1 auto;
+}
+
 .context-menu {
   position: fixed;
   z-index: 40;
@@ -1409,6 +1616,11 @@ button:focus-visible,
   stroke-width: 1;
 }
 
+.lane-background {
+  opacity: 0.16;
+  pointer-events: none;
+}
+
 .lane-label,
 .axis-label,
 .axis-iranian,
@@ -1439,6 +1651,48 @@ button:focus-visible,
 .lane-label-control:focus-visible .lane-label {
   fill: var(--accent-text);
   font-weight: 700;
+}
+
+.lane-add-control {
+  cursor: pointer;
+}
+
+.lane-add-hit {
+  fill: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  stroke: var(--timeline-rule);
+  stroke-width: 1;
+}
+
+.lane-add-icon {
+  stroke: var(--timeline-label);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.lane-add-label {
+  fill: var(--timeline-label);
+  font-size: var(--timeline-font-xs);
+  font-weight: 700;
+}
+
+.lane-add-control:hover .lane-add-hit,
+.lane-add-control:focus-visible .lane-add-hit {
+  fill: var(--accent-soft);
+  stroke: var(--accent-text);
+}
+
+.lane-add-control:hover .lane-add-icon,
+.lane-add-control:focus-visible .lane-add-icon {
+  stroke: var(--accent-text);
+}
+
+.lane-add-control:hover .lane-add-label,
+.lane-add-control:focus-visible .lane-add-label {
+  fill: var(--accent-text);
+}
+
+.lane-add-control:focus-visible {
+  outline: none;
 }
 
 .lane-label-grip {

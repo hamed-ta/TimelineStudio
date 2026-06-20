@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Normalize app typography with a Persian-capable modern font stack and consistent type scale.
+Move line editing into the timeline and replace weak native color inputs with a shared modern color picker for items and line backgrounds.
 
 ## Last Known State
 
@@ -20,6 +20,8 @@ The React shell now owns UI layout preferences for editor sidebar collapse and t
 
 Timeline lines can now be reordered from the editor sidebar or from the timeline label area. Items assigned to a line move with that line. Lines can be removed after confirmation; items on the removed line are deleted and lower lines shift upward.
 
+Line rename, background color, add, and remove controls now live in the timeline label area. Right-clicking or pressing Enter on a line label opens the line editor popover. The old Rows / Lines sidebar section has been removed. The timeline has one add-line control below the last line instead of a plus control on every line.
+
 Timeline items now include a marker type for global reference dates. Markers render as vertical lines across all visible timeline lines, use a single date, ignore lane assignment, and are available from the toolbar and item type selector.
 
 Timeline items now include a birth type for a person's birthdate. Birth items render as prominent vertical all-line markers, place their label on the left side of the birthdate line when possible, ignore lane assignment, and can be created from the toolbar or item type selector.
@@ -36,7 +38,7 @@ Fit now respects a readable zoom floor. Short timelines still fit into the viewp
 
 Lane-bound items snap to nearby same-line item edges while dragging or resizing. Range items on the same line are prevented from overlapping during those drag interactions.
 
-The item editor now includes an 18-color preset palette next to the custom color input. Selecting a swatch updates the selected item color immediately, and new items start with a random palette color.
+The item editor and line editor use a shared dependency-free color picker with a saturation/value plane, hue slider, hex entry, and the curated preset palette. Item colors remain required `#RRGGBB` values. Line background colors are optional and save as `settings.laneColors` entries, preserving compatibility with older JSON that has no line colors.
 
 The timeline has a custom context menu for item commands. Right-clicking an item selects it and shows Copy, Paste, Duplicate, Lock Items or Unlock Items, Delete, Zoom in, Zoom out, and Fit. Copy and paste use an in-app item clipboard. Keyboard shortcuts support `Ctrl`/`Command+C`, `Ctrl`/`Command+V`, `Ctrl`/`Command+D`, `Delete`/`Backspace`, `Ctrl`/`Command+Shift+L`, `+`, and `-` when focus is not in an editor field.
 
@@ -68,7 +70,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`90f521b feat: improve timeline controls and empty state`
+`b68d6f6 style: normalize app typography`
 
 ## Work Completed This Session
 
@@ -102,6 +104,12 @@ Firebase should wait until the local Vite app is stable.
 - Normalized scattered UI and timeline font sizes onto those tokens.
 - Standardized odd intermediate font weights to common values like 500, 600, 700, and 800.
 - Applied the shared font stack to the timeline SVG labels.
+- Removed the old Rows / Lines editor sidebar section.
+- Added timeline-label line editing with rename, background color, add-below, and remove actions.
+- Replaced per-line plus controls with one add-line control below the last line.
+- Added optional `settings.laneColors` normalization for saved JSON compatibility.
+- Replaced native color inputs with a shared item/line color picker using a color plane, hue slider, hex input, and preset swatches.
+- Made color picker panels flip upward when there is not enough viewport space below the trigger.
 - Updated product notes, changelog, plan, and handoff docs.
 
 ## Files Changed
@@ -126,7 +134,9 @@ Firebase should wait until the local Vite app is stable.
 - Use the default zoom as the Fit readability floor, so Fit does not compress long timelines below `18 px/month`.
 - Snap to same-line item start and end edges within a pixel-derived threshold, capped at `14` days.
 - Treat only range items as overlap blockers so point annotations can still align with nearby edges.
-- Keep the color picker dependency-free with native color input plus curated swatches.
+- Keep the color picker dependency-free for now, but use a custom shared picker instead of the weak native color input UI.
+- Store line background colors as an optional `laneColors` array parallel to `laneLabels`, padding or truncating it during normalization for older saved JSON.
+- Use one add-line control below the last visible line, not one control per line.
 - Use modern Tailwind-style saturated hues for the first palette: red, orange, amber, green, teal, sky, blue, indigo, violet, and pink.
 - Keep context-menu copy/paste in-app for now rather than using the OS clipboard, avoiding browser permissions and preserving full item structure.
 - Treat Lock Items and Unlock Items as commands for the existing global item-lock setting, not as per-item lock state.
@@ -145,6 +155,19 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
+- RED/documented: product scenarios now require line editing from timeline labels, one add-line control below the last line, and a shared item/line color picker with presets, hue/saturation controls, and hex entry.
+- `node --check app.js`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: initial DOM had exactly one `[data-timeline-lane-add]`, no per-line add controls, no Rows / Lines sidebar panel, and both picker panels hidden.
+- Browser smoke: adding an event and choosing the Pink preset from the item picker set `#itemColorInput` to `#ec4899`, showed `#EC4899`, activated one swatch, marked the document dirty, and showed `Item color updated`.
+- Browser smoke: right-clicking the first line label opened the line editor; opening its color picker flipped the panel upward within the viewport and choosing Teal set `#lineColorInput` to `#14b8a6`, activated one swatch, rendered one `.lane-background`, and showed `Line color updated`.
+- Browser smoke: Clear color emptied `#lineColorInput`, showed `No color`, removed lane backgrounds, and showed `Line color cleared`.
+- Browser smoke: with the line editor closed, the single add-line control appended `Line 6` while keeping one add-line control and no per-line add controls.
+- Browser smoke in a fresh local tab: app loaded with one item picker trigger, one line picker trigger, one add-line control, no Rows / Lines sidebar panel, and no console warnings or errors.
+- Browser smoke: opening the item color picker in the left sidebar rendered it as a fixed overlay fully inside the viewport (`left 29`, `right 333`, viewport width `1280`) while extending past the sidebar boundary instead of being clipped.
+- Browser smoke: clicking the Teal swatch after the fixed-overlay change set the item color to `#14b8a6`, activated one swatch, showed `Item color updated`, and produced no console warnings or errors.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
 - `git diff --check`: passed.
@@ -249,8 +272,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`style: normalize app typography`
+`feat: move line editing into timeline`
 
 ## Next Safe Step
 
-Review the normalized typography in the real UI, especially mixed English/Persian labels, then commit if acceptable.
+Review the in-timeline line editor and shared color picker in the real UI, then commit if acceptable.

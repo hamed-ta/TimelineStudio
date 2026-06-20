@@ -14,6 +14,7 @@ import {
   LockKeyholeOpen,
   Maximize2,
   Minus,
+  Palette,
   PanelLeftClose,
   PanelLeftOpen,
   PanelTopClose,
@@ -22,6 +23,7 @@ import {
   StickyNote,
   Trash2,
   Type,
+  X,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -38,6 +40,63 @@ const THEME_LABELS: Record<ThemeMode, string> = {
   light: "Light",
   dark: "Dark",
 };
+
+function ColorPickerField({ label, prefix, paletteLabel }: { label: string; prefix: "item" | "line"; paletteLabel: string }) {
+  const inputId = `${prefix}ColorInput`;
+  const triggerId = `${prefix}ColorTrigger`;
+  const previewId = `${prefix}ColorPreview`;
+  const valueId = `${prefix}ColorValue`;
+  const panelId = `${prefix}ColorPanel`;
+  const planeId = `${prefix}ColorPlane`;
+  const markerId = `${prefix}ColorPlaneMarker`;
+  const hueId = `${prefix}ColorHueInput`;
+  const hexId = `${prefix}ColorHexInput`;
+  const paletteId = `${prefix}ColorPalette`;
+
+  return (
+    <div className="color-picker-field">
+      <span className="field-caption">{label}</span>
+      <div className="color-picker" data-color-picker={prefix}>
+        <input id={inputId} type="hidden" />
+        <button
+          type="button"
+          className="color-picker-trigger"
+          id={triggerId}
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls={panelId}
+        >
+          <span className="color-picker-preview" id={previewId} aria-hidden="true"></span>
+          <span className="color-picker-value" id={valueId}>#2563EB</span>
+          <Palette size={15} aria-hidden="true" />
+        </button>
+        <div className="color-picker-panel" id={panelId} role="dialog" aria-label={`${label} picker`} hidden>
+          <div
+            className="color-picker-plane"
+            id={planeId}
+            role="slider"
+            tabIndex={0}
+            aria-label={`${label} saturation and brightness`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={100}
+          >
+            <span className="color-picker-plane-marker" id={markerId}></span>
+          </div>
+          <label className="color-picker-range">
+            Hue
+            <input id={hueId} type="range" min={0} max={360} defaultValue={220} aria-label={`${label} hue`} />
+          </label>
+          <label className="color-picker-hex-row">
+            Hex
+            <input id={hexId} type="text" inputMode="text" maxLength={7} spellCheck={false} aria-label={`${label} hex color`} />
+          </label>
+          <div className="color-swatch-grid" id={paletteId} role="group" aria-label={paletteLabel}></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function readStoredTheme(): ThemeMode {
   try {
@@ -229,16 +288,6 @@ export function App() {
 
               <section className="panel">
                 <div className="panel-heading">
-                  <h2>Rows / Lines</h2>
-                  <button type="button" className="quiet-button" id="addLaneButton">
-                    Add
-                  </button>
-                </div>
-                <div className="lane-list" id="laneList"></div>
-              </section>
-
-              <section className="panel">
-                <div className="panel-heading">
                   <h2>Item</h2>
                   <button type="button" className="quiet-button danger" id="deleteItemButton">
                     Delete
@@ -270,11 +319,7 @@ export function App() {
                       <input id="itemLaneInput" type="number" min="0" max="20" step="1" />
                     </label>
                     <div className="color-field">
-                      <span className="field-caption">Color</span>
-                      <div className="color-control-row">
-                        <input id="itemColorInput" type="color" aria-label="Custom item color" />
-                        <div className="color-swatch-grid" id="itemColorPalette" role="group" aria-label="Preset item colors"></div>
-                      </div>
+                      <ColorPickerField label="Color" prefix="item" paletteLabel="Preset item colors" />
                     </div>
                     <label>
                       Start date
@@ -455,6 +500,27 @@ export function App() {
                 <strong>No timeline items yet</strong>
                 <p>Create an event, period, note, marker, birthdate, line, or text item.</p>
               </div>
+            </div>
+            <div className="line-editor-popover" id="lineEditorPopover" hidden>
+              <form id="lineEditorForm">
+                <div className="line-editor-heading">
+                  <strong id="lineEditorTitle">Line</strong>
+                  <button type="button" className="icon-button line-editor-close" id="lineEditorCloseButton" aria-label="Close line editor">
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                </div>
+                <label>
+                  Name
+                  <input id="lineNameInput" type="text" autoComplete="off" />
+                </label>
+                <ColorPickerField label="Background" prefix="line" paletteLabel="Preset line background colors" />
+                <div className="line-editor-actions">
+                  <button type="submit" className="primary-button">Apply</button>
+                  <button type="button" className="secondary-button" id="lineColorClearButton">Clear color</button>
+                  <button type="button" className="secondary-button" id="lineAddBelowButton">Add below</button>
+                  <button type="button" className="quiet-button danger" id="lineRemoveButton">Remove</button>
+                </div>
+              </form>
             </div>
             <div className="context-menu" id="timelineContextMenu" role="menu" aria-label="Timeline item actions" hidden>
               <button type="button" role="menuitem" data-context-action="copy">
