@@ -6,18 +6,18 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Extract browser media helpers into TypeScript while preserving the current local timeline editor behavior.
+Finish the current behavior-preserving export helper extraction and prepare for UI work.
 
 ## Now
 
-- Keep the media helper extraction behavior-preserving: the app should still run locally, edit timelines, and export PNG/PDF.
-- Manually verify loading an existing local JSON file in the Vite app.
+- Keep the SVG export helper extraction behavior-preserving: the app should still run locally, edit timelines, and export SVG/PNG/PDF.
+- Manually verify loading an existing local JSON file in the Vite app before the first UI polish slice.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
 ## Next
 
-- Move more legacy behavior behind typed module boundaries in small testable steps.
-- Verify local JSON load, edit, save, pan, zoom, fit, and export before adding backend features.
+- Start small UI polish slices in React while preserving the element IDs and behavior expected by `app.js`.
+- Verify local JSON load, edit, save, pan, zoom, fit, and export before adding Firebase.
 - Add Firebase only after the local app migration is stable.
 
 ## Later
@@ -56,6 +56,7 @@ Extract browser media helpers into TypeScript while preserving the current local
 - Extracted browser download and save-picker helpers into `src/platform/files.ts`.
 - Extracted PDF byte generation into `src/timeline/pdf.ts`.
 - Extracted image loading and canvas-to-blob helpers into `src/platform/media.ts`.
+- Extracted SVG export serialization and export CSS into `src/timeline/svgExport.ts`.
 
 ## Risks
 
@@ -65,6 +66,7 @@ Extract browser media helpers into TypeScript while preserving the current local
 - Workflow docs can drift if `/closeup` is not used consistently.
 - Personal JSON files should stay in ignored `user-data/`.
 - The framework migration can accidentally change timeline behavior if it is done as a rewrite instead of small preservation steps.
+- UI changes must preserve the DOM IDs and data attributes that legacy `app.js` still binds to until the controller is migrated.
 - Firebase read/write patterns can create avoidable cost if autosave and realtime listeners are not scoped carefully.
 
 ## Verification Checklist

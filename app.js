@@ -35,6 +35,9 @@ import {
   buildPdfFromJpeg,
 } from "./src/timeline/pdf";
 import {
+  serializeTimelineSvg,
+} from "./src/timeline/svgExport";
+import {
   downloadBlob,
   saveBlobWithPicker,
 } from "./src/platform/files";
@@ -120,23 +123,6 @@ import {
   let zoom = clamp(Number(localStorage.getItem(ZOOM_KEY)) || DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM);
   let suppressControlEvents = false;
   let dragState = null;
-
-  const EXPORT_CSS = `
-    .axis-band{fill:#f8fafc}
-    .canvas-bg{fill:#ffffff}
-    .grid-major{stroke:#cbd5e1;stroke-width:1}
-    .grid-minor{stroke:#e6ebf0;stroke-width:1}
-    .grid-day{stroke:#f1f4f7;stroke-width:1}
-    .lane-rule{stroke:#d9e0e7;stroke-width:1}
-    .lane-label,.axis-label,.axis-iranian,.age-label,.axis-month,.axis-day{fill:#667586;font-size:12px}
-    .axis-year{fill:#1d2732;font-size:13px;font-weight:700}
-    .title-label{font-size:13px;font-weight:700}
-    .note-label{font-size:13px;font-weight:650}
-    .period-body{stroke:rgba(0,0,0,.18);stroke-width:1}
-    .event-stem{stroke-width:2;stroke-linecap:round}
-    .event-marker{stroke:#fff;stroke-width:2}
-    .range-line{fill:none;stroke-width:4;stroke-linecap:round}
-  `;
 
   init();
 
@@ -856,7 +842,7 @@ import {
   }
 
   function exportSvgFile() {
-    const svgText = serializeTimelineSvg();
+    const svgText = serializeTimelineSvg(dom.timelineSvg);
     downloadBlob(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }), `${filenameBase()}.svg`);
     setStatus("SVG exported");
   }
@@ -891,19 +877,8 @@ import {
     }
   }
 
-  function serializeTimelineSvg() {
-    const clone = dom.timelineSvg.cloneNode(true);
-    clone.setAttribute("xmlns", NS);
-    clone.querySelectorAll(".selection-outline,.resize-handle").forEach((node) => node.remove());
-    clone.querySelectorAll(".selected").forEach((node) => node.classList.remove("selected"));
-    const style = document.createElementNS(NS, "style");
-    style.textContent = EXPORT_CSS;
-    clone.insertBefore(style, clone.firstChild);
-    return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(clone)}`;
-  }
-
   async function timelineToCanvas(type) {
-    const svgText = serializeTimelineSvg();
+    const svgText = serializeTimelineSvg(dom.timelineSvg);
     const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
     const svgWidth = Number(dom.timelineSvg.getAttribute("width"));
