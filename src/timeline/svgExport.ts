@@ -11,6 +11,7 @@ export const TIMELINE_EXPORT_CSS = `
   .note-label{font-size:13px;font-weight:650}
   .period-body{stroke-width:1}
   .period-shadow{opacity:.12}
+  .period-derived-label{font-size:10px;font-weight:750;opacity:.86}
   .event-stem{stroke-width:3;stroke-linecap:round;opacity:.82}
   .event-marker{stroke:#fff;stroke-width:1}
   .event-marker-shadow{opacity:.2}

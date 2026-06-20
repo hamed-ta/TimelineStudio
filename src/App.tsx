@@ -257,6 +257,17 @@ export function App() {
                   </div>
                   <p className="calendar-preview" id="itemCalendarPreview"></p>
 
+                  <div className="derived-label-options" id="itemDerivedLabelsField">
+                    <label className="check-row">
+                      <input id="itemAgeLabelsInput" type="checkbox" defaultChecked />
+                      Show age at start and end
+                    </label>
+                    <label className="check-row">
+                      <input id="itemDurationLabelInput" type="checkbox" defaultChecked />
+                      Show duration
+                    </label>
+                  </div>
+
                   <label>
                     Notes
                     <textarea id="itemNotesInput" rows={4}></textarea>
@@ -347,6 +358,7 @@ export function App() {
 
             <div className="timeline-viewport" id="timelineViewport" tabIndex={0}>
               <svg id="timelineSvg" role="img" aria-labelledby="stageTitle stageMeta"></svg>
+              <div className="timeline-hover-readout" id="timelineHoverReadout" hidden></div>
             </div>
           </section>
         </main>

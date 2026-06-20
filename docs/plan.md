@@ -6,13 +6,11 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add birthdate timeline support, then layer live age and duration calculations on top.
+Review birthdate age and period duration context before the next UI slice.
 
 ## Now
 
-- Add a saved birth item type that draws a prominent all-line vertical date marker.
-- Add live hover age readout from the birthdate.
-- Add optional derived age and duration labels on wide-enough period items.
+- Manually review hover age placement and period label readability on real timelines.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
@@ -70,6 +68,8 @@ Add birthdate timeline support, then layer live age and duration calculations on
 - Added softer period bar backgrounds.
 - Added current-file JSON save behavior where browser file handles are available.
 - Added visible unsaved-change state and `Ctrl+S` / `Command+S` JSON saving.
+- Added saved birthdate items with prominent all-line rendering.
+- Added live age hover readouts and derived period age/duration labels.
 
 ## Risks
 

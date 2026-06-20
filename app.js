@@ -92,6 +92,9 @@ import {
     itemStartInput: document.getElementById("itemStartInput"),
     itemEndInput: document.getElementById("itemEndInput"),
     itemEndField: document.getElementById("itemEndField"),
+    itemDerivedLabelsField: document.getElementById("itemDerivedLabelsField"),
+    itemAgeLabelsInput: document.getElementById("itemAgeLabelsInput"),
+    itemDurationLabelInput: document.getElementById("itemDurationLabelInput"),
     itemCalendarPreview: document.getElementById("itemCalendarPreview"),
     itemNotesInput: document.getElementById("itemNotesInput"),
     deleteItemButton: document.getElementById("deleteItemButton"),
@@ -109,6 +112,7 @@ import {
     fitButton: document.getElementById("fitButton"),
     timelineViewport: document.getElementById("timelineViewport"),
     timelineSvg: document.getElementById("timelineSvg"),
+    timelineHoverReadout: document.getElementById("timelineHoverReadout"),
     stageTitle: document.getElementById("stageTitle"),
     stageMeta: document.getElementById("stageMeta"),
     fileNameLabel: document.getElementById("fileNameLabel"),
@@ -158,6 +162,7 @@ import {
     dom.itemTypeInput.addEventListener("change", () => {
       const type = dom.itemTypeInput.value;
       dom.itemEndField.hidden = !hasEndYear(type);
+      dom.itemDerivedLabelsField.hidden = type !== "period";
       dom.itemLaneInput.disabled = isGlobalTimelineItemType(type);
       if (isGlobalTimelineItemType(type)) dom.itemLaneInput.value = "0";
       updateItemCalendarPreviewFromInputs();
@@ -196,6 +201,8 @@ import {
 
     dom.timelineViewport.addEventListener("pointerdown", beginPointerDrag);
     dom.timelineViewport.addEventListener("pointermove", movePointerDrag);
+    dom.timelineViewport.addEventListener("pointermove", updateHoverReadout);
+    dom.timelineViewport.addEventListener("pointerleave", hideHoverReadout);
     dom.timelineViewport.addEventListener("pointerup", endPointerDrag);
     dom.timelineViewport.addEventListener("pointercancel", endPointerDrag);
   }
@@ -400,16 +407,125 @@ import {
       }),
     );
 
+    const periodMeta = getPeriodDerivedMeta(item, width);
+    const titleY = periodMeta ? y - 2 : y + 5;
     const label = fitText(item.title, width - 16);
     group.append(
       svgEl("text", {
         class: "title-label",
         x: x1 + width / 2,
-        y: y + 5,
+        y: titleY,
         "text-anchor": "middle",
         fill: readableTextColor(item.color),
       }, label),
     );
+    if (periodMeta) drawPeriodDerivedLabels(group, periodMeta, item, x1, width, y);
+  }
+
+  function drawPeriodDerivedLabels(group, meta, item, x, width, y) {
+    const fill = readableTextColor(item.color);
+    const labelY = y + 12;
+    if (meta.startAge) {
+      group.append(svgEl("text", {
+        class: "period-derived-label",
+        x: x + 8,
+        y: labelY,
+        fill,
+      }, meta.startAge));
+    }
+    if (meta.duration) {
+      group.append(svgEl("text", {
+        class: "period-derived-label",
+        x: x + width / 2,
+        y: labelY,
+        "text-anchor": "middle",
+        fill,
+      }, meta.duration));
+    }
+    if (meta.endAge) {
+      group.append(svgEl("text", {
+        class: "period-derived-label",
+        x: x + width - 8,
+        y: labelY,
+        "text-anchor": "end",
+        fill,
+      }, meta.endAge));
+    }
+  }
+
+  function getPeriodDerivedMeta(item, width) {
+    if (item.type !== "period") return null;
+    const showAges = item.showAgeLabels !== false && width >= 230;
+    const showDuration = item.showDurationLabel !== false && width >= 150;
+    if (!showAges && !showDuration) return null;
+    const birthItem = getPrimaryBirthItem();
+    const meta = {
+      startAge: showAges && birthItem ? formatAgeAtDate(birthItem.startDate, item.startDate) : "",
+      endAge: showAges && birthItem ? formatAgeAtDate(birthItem.startDate, item.endDate) : "",
+      duration: showDuration ? formatCompactDateSpan(item.startDate, item.endDate) : "",
+    };
+    return meta.startAge || meta.endAge || meta.duration ? meta : null;
+  }
+
+  function getPrimaryBirthItem() {
+    return timeline.items
+      .filter((item) => item.type === "birth")
+      .sort((a, b) => compareIso(a.startDate, b.startDate))[0] || null;
+  }
+
+  function formatAgeAtDate(birthDate, targetDate) {
+    if (compareIso(targetDate, birthDate) < 0) return "Before birth";
+    return `Age ${formatCompactDateSpan(birthDate, targetDate)}`;
+  }
+
+  function formatCompactDateSpan(startDate, endDate) {
+    if (compareIso(endDate, startDate) < 0) return "before";
+    const span = getDateSpanParts(startDate, endDate);
+    const parts = [];
+    if (span.years) parts.push(`${span.years}y`);
+    if (span.months) parts.push(`${span.months}m`);
+    if (span.days || parts.length === 0) parts.push(`${span.days}d`);
+    return parts.join(" ");
+  }
+
+  function getDateSpanParts(startDate, endDate) {
+    let years = isoYear(endDate) - isoYear(startDate);
+    let months = isoMonth(endDate) - isoMonth(startDate);
+    let days = isoDay(endDate) - isoDay(startDate);
+    if (days < 0) {
+      months -= 1;
+      days += daysInIsoMonth(isoYear(endDate), isoMonth(endDate) - 1);
+    }
+    if (months < 0) {
+      years -= 1;
+      months += 12;
+    }
+    return { years: Math.max(0, years), months: Math.max(0, months), days: Math.max(0, days) };
+  }
+
+  function daysInIsoMonth(year, monthIndex) {
+    return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  }
+
+  function updateHoverReadout(event) {
+    if (!dom.timelineHoverReadout) return;
+    const birthItem = getPrimaryBirthItem();
+    if (!birthItem || dragState) {
+      hideHoverReadout();
+      return;
+    }
+    const rect = dom.timelineViewport.getBoundingClientRect();
+    const pointerX = dom.timelineViewport.scrollLeft + event.clientX - rect.left;
+    const hoverDate = clampIso(xToDate(pointerX), timeline.settings.startDate, timeline.settings.endDate);
+    dom.timelineHoverReadout.textContent = `${formatAgeAtDate(birthItem.startDate, hoverDate)} on ${formatDisplayDate(hoverDate)}`;
+    dom.timelineHoverReadout.style.left = `${event.clientX + 14}px`;
+    dom.timelineHoverReadout.style.top = `${event.clientY + 14}px`;
+    dom.timelineHoverReadout.hidden = false;
+  }
+
+  function hideHoverReadout() {
+    if (!dom.timelineHoverReadout) return;
+    dom.timelineHoverReadout.hidden = true;
   }
 
   function drawLine(group, defs, item, x1, x2, y) {
@@ -666,6 +782,8 @@ import {
       dom.itemColorInput,
       dom.itemStartInput,
       dom.itemEndInput,
+      dom.itemAgeLabelsInput,
+      dom.itemDurationLabelInput,
       dom.itemNotesInput,
       dom.deleteItemButton,
       dom.duplicateItemButton,
@@ -683,9 +801,12 @@ import {
       dom.itemColorInput.value = TYPE_COLORS.event;
       dom.itemStartInput.value = "";
       dom.itemEndInput.value = "";
+      dom.itemAgeLabelsInput.checked = true;
+      dom.itemDurationLabelInput.checked = true;
       dom.itemNotesInput.value = "";
       dom.itemCalendarPreview.textContent = "Select an item to see Gregorian and Iranian dates.";
       dom.itemEndField.hidden = true;
+      dom.itemDerivedLabelsField.hidden = true;
       dom.itemForm.classList.add("empty-selection");
       suppressControlEvents = false;
       return;
@@ -698,8 +819,11 @@ import {
     dom.itemColorInput.value = item.color;
     dom.itemStartInput.value = item.startDate;
     dom.itemEndInput.value = item.endDate;
+    dom.itemAgeLabelsInput.checked = item.showAgeLabels !== false;
+    dom.itemDurationLabelInput.checked = item.showDurationLabel !== false;
     dom.itemNotesInput.value = item.notes;
     dom.itemEndField.hidden = !hasEndYear(item.type);
+    dom.itemDerivedLabelsField.hidden = item.type !== "period";
     dom.itemLaneInput.disabled = isGlobalTimelineItemType(item.type);
     updateItemCalendarPreview(item);
     suppressControlEvents = false;
@@ -978,6 +1102,8 @@ import {
     item.startDate = normalizeDateInput(dom.itemStartInput.value, item.startDate);
     item.endDate = hasEndYear(type) ? normalizeDateInput(dom.itemEndInput.value, addDaysIso(item.startDate, 1)) : item.startDate;
     if (hasEndYear(type) && compareIso(item.endDate, item.startDate) <= 0) item.endDate = addDaysIso(item.startDate, 1);
+    item.showAgeLabels = dom.itemAgeLabelsInput.checked;
+    item.showDurationLabel = dom.itemDurationLabelInput.checked;
     item.notes = dom.itemNotesInput.value;
 
     const changed = renderAllAfterMaybeChange(previousSnapshot);
@@ -998,6 +1124,8 @@ import {
       title: titleForType(type),
       color: TYPE_COLORS[type],
       notes: "",
+      showAgeLabels: true,
+      showDurationLabel: true,
     });
 
     timeline.items.push(item);

@@ -48,6 +48,8 @@ export interface TimelineItem {
   title: string;
   color: string;
   notes: string;
+  showAgeLabels: boolean;
+  showDurationLabel: boolean;
 }
 
 export interface TimelineDocument {
@@ -78,6 +80,8 @@ interface LegacyItemInput {
   title?: unknown;
   color?: unknown;
   notes?: unknown;
+  showAgeLabels?: unknown;
+  showDurationLabel?: unknown;
 }
 
 export function createEmptyTimeline(): TimelineDocument {
@@ -188,6 +192,8 @@ export function normalizeItem(item: unknown, defaultStartDate = todayIso()): Tim
     title: String(source.title || titleForType(type)),
     color: normalizeColor(source.color || TYPE_COLORS[type]),
     notes: String(source.notes || ""),
+    showAgeLabels: source.showAgeLabels !== false,
+    showDurationLabel: source.showDurationLabel !== false,
   };
 }
 

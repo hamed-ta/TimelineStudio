@@ -51,6 +51,8 @@ When items are locked, dragging the canvas should pan the timeline and should no
 - Saved data should preserve exact dates.
 - The timeline should support year, month, and day precision.
 - The app should not show `AD` after Gregorian date labels.
+- Age and duration text should be calculated live from saved Gregorian dates, not stored as generated text.
+- A birth item is the source date for age calculations. If multiple birth items exist, the earliest birth item is used.
 
 ## Data Behavior
 
@@ -63,6 +65,7 @@ When items are locked, dragging the canvas should pan the timeline and should no
 - When no writable file handle is available, saving should download a JSON copy instead of silently claiming direct file access.
 - The app should show whether the current timeline has unsaved edits.
 - `Ctrl+S` on Windows/Linux and `Command+S` on macOS should save the current timeline instead of opening the browser page-save flow.
+- Period item display preferences for age and duration labels should be saved, but the calculated label text should remain derived.
 - In the planned account-based app, signed-in users should be able to store private timeline data in cloud storage.
 - Cloud storage should not replace JSON import/export; JSON remains the portable user-owned format.
 
@@ -131,6 +134,13 @@ When the user creates a birth item on `2001-03-04`
 Then a prominent vertical line appears at the correct date position across all visible lines
 And the birth item is still present after save/load.
 
+### Show Hover Age
+
+Given a timeline has a birth item on `2001-03-04`
+When the user hovers over a date on the timeline
+Then the app shows the age calculated from the birth item to the hovered date
+And the calculated age text is not saved into the timeline JSON.
+
 ### Create A Note
 
 Given a timeline has a line with events
@@ -151,6 +161,13 @@ Given a timeline has a period
 When the period is rendered on the timeline
 Then the period bar uses a soft colored background with a light shadow
 And the period keeps a moderate corner radius rather than becoming a fully rounded pill.
+
+### Show Period Age And Duration Labels
+
+Given a timeline has a birth item and a wide period item
+When the period item renders with age and duration labels enabled
+Then the period can show age at the start, age at the end, and period duration
+And those values are calculated from the saved dates.
 
 ### Rename A Line
 
