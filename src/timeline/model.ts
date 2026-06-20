@@ -15,6 +15,19 @@ import {
 
 const DEFAULT_ROW_HEIGHT = 68;
 
+export const ITEM_COLOR_PALETTE = [
+  { name: "Red", value: "#ef4444" },
+  { name: "Orange", value: "#f97316" },
+  { name: "Amber", value: "#f59e0b" },
+  { name: "Green", value: "#22c55e" },
+  { name: "Teal", value: "#14b8a6" },
+  { name: "Sky", value: "#0ea5e9" },
+  { name: "Blue", value: "#3b82f6" },
+  { name: "Indigo", value: "#6366f1" },
+  { name: "Violet", value: "#8b5cf6" },
+  { name: "Pink", value: "#ec4899" },
+] as const;
+
 export const TYPE_COLORS: Record<TimelineItemType, string> = {
   birth: "#dc2626",
   event: "#d97706",
@@ -227,7 +240,7 @@ function isTimelineItemType(value: unknown): value is TimelineItemType {
 
 function normalizeColor(value: unknown): string {
   const text = String(value || "").trim();
-  return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "#2563eb";
+  return /^#[0-9a-fA-F]{6}$/.test(text) ? text : ITEM_COLOR_PALETTE[6].value;
 }
 
 function createId(prefix: string): string {

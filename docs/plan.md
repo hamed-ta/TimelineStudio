@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Tune item dragging and timeline readability after real UI review.
+Add better item color controls after real UI review.
 
 ## Now
 
@@ -18,6 +18,8 @@ Tune item dragging and timeline readability after real UI review.
 - Stack, simplify, or skip month and day labels so axis date text does not overlap at crowded zoom levels.
 - Keep Fit from zooming out below a readable minimum on long timelines.
 - Snap lane-bound items to nearby same-line item edges and prevent same-line range overlap while dragging.
+- Add a curated item color palette beside the custom color input.
+- Assign new items a random color from the curated palette.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
@@ -36,7 +38,6 @@ Tune item dragging and timeline readability after real UI review.
 - Add optional Google Drive import/export as a user-owned backup path.
 - Add a lightweight automated browser test harness when the user wants true test-first red/green UI checks.
 - Add validation for malformed imported JSON.
-- Add item color controls.
 - Add richer PDF export options.
 - Add Playwright tests for save/load, pan, zoom, lock, fit, and export flows.
 
@@ -78,6 +79,7 @@ Tune item dragging and timeline readability after real UI review.
 - Added visible unsaved-change state and `Ctrl+S` / `Command+S` JSON saving.
 - Added saved birthdate items with prominent all-line rendering.
 - Added live age hover readouts and derived period age/duration labels.
+- Added same-line item edge snapping and readable fit/axis behavior.
 
 ## Risks
 

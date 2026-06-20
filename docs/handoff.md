@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add same-line item edge snapping.
+Add better item color controls.
 
 ## Last Known State
 
@@ -34,6 +34,8 @@ Fit now respects a readable zoom floor. Short timelines still fit into the viewp
 
 Lane-bound items snap to nearby same-line item edges while dragging or resizing. Range items on the same line are prevented from overlapping during those drag interactions.
 
+The item editor now includes a curated 10-color preset palette next to the custom color input. Selecting a swatch updates the selected item color immediately, and new items start with a random palette color.
+
 Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
@@ -54,7 +56,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`1396a63 fix: keep fit and axis labels readable`
+`e83672f feat: snap same-line item edges`
 
 ## Work Completed This Session
 
@@ -66,6 +68,8 @@ Firebase should wait until the local Vite app is stable.
 - Made month and day axis labels adaptive so crowded timelines avoid overlapping date text.
 - Prevented Fit from zooming out below the readable zoom floor on long timelines.
 - Added same-line item edge snapping and overlap prevention for lane-bound range items.
+- Added a curated item color palette beside the custom color input.
+- Changed new item creation to use a random palette color instead of a fixed type color.
 - Updated product notes, changelog, plan, and handoff docs.
 
 ## Files Changed
@@ -75,6 +79,9 @@ Firebase should wait until the local Vite app is stable.
 - `docs/plan.md`
 - `docs/product.md`
 - `app.js`
+- `src/App.tsx`
+- `src/timeline/model.ts`
+- `styles.css`
 
 ## Decisions
 
@@ -87,6 +94,8 @@ Firebase should wait until the local Vite app is stable.
 - Use the default zoom as the Fit readability floor, so Fit does not compress long timelines below `18 px/month`.
 - Snap to same-line item start and end edges within a pixel-derived threshold, capped at `14` days.
 - Treat only range items as overlap blockers so point annotations can still align with nearby edges.
+- Keep the color picker dependency-free with native color input plus curated swatches.
+- Use modern Tailwind-style saturated hues for the first palette: red, orange, amber, green, teal, sky, blue, indigo, violet, and pink.
 
 ## Verification
 
@@ -110,6 +119,17 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke: dragging `Second` further into `First` kept the periods at `0` px gap with no overlap.
 - Browser smoke: resizing `First` toward `Second` snapped `First` to end on `2026-03-01`; the two periods had `0` px gap and no overlap.
 - Browser smoke: no console warnings or errors were reported.
+- RED: the previous item editor only had a native color input, no preset palette group, and new items used the fixed `TYPE_COLORS[type]` default.
+- `node --check app.js`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: palette rendered 10 preset swatches, all disabled before an item was selected.
+- Browser smoke: adding a new event assigned `#8b5cf6` from the palette and activated its matching swatch.
+- Browser smoke: clicking the blue swatch changed the selected item color to `#3b82f6`, activated that swatch, marked the document dirty, and showed `Item color updated`.
+- Browser smoke: entering custom color `#111827` kept the custom color value and left no preset swatch active.
+- Browser smoke: adding a new period assigned `#ec4899` from the palette and activated its matching swatch.
+- Browser smoke: no console warnings or errors were reported for color palette interactions.
 
 ## Open Issues
 
@@ -121,8 +141,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: snap same-line item edges`
+`feat: add item color palette`
 
 ## Next Safe Step
 
-Review same-line item edge snapping with a real JSON file, then commit if acceptable.
+Review the item color palette in the real UI, then commit if acceptable.

@@ -37,6 +37,11 @@ A point-in-time annotation with a straight leader arrow pointing to a date and a
 
 A date range with a start date and end date. Period bars should read as colored timeline sections with a soft background treatment.
 
+### Item Color
+
+Items store a hex color in timeline JSON. The editor should provide a curated preset palette for fast selection and keep custom color input available for arbitrary colors.
+New items should start with a random color from the preset palette so adjacent created items are easier to distinguish.
+
 ### Text Item
 
 A freeform note attached to the timeline.
@@ -199,6 +204,20 @@ Given two range items are on the same line
 When the user drags or resizes one item close to the other item's edge
 Then the moving edge snaps to the nearby item edge
 And range items on the same line do not overlap after the drag.
+
+### Choose Item Color
+
+Given a timeline item is selected
+When the user picks a preset color swatch
+Then the item updates to that color
+And the selected swatch is visibly active
+And the user can still choose a custom color.
+
+### Assign New Item Palette Color
+
+Given the user creates a new timeline item
+When the item is added
+Then its initial color is selected from the preset palette.
 
 ### Rename A Line
 

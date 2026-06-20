@@ -29,6 +29,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Made timeline month and day labels adaptive so crowded zoom levels stack, simplify, or skip labels instead of overlapping.
 - Prevented Fit from zooming out below a readable minimum on long timelines.
 - Added same-line item edge snapping while dragging or resizing, with range overlap prevention.
+- Added a curated item color palette with random palette colors for newly created items.
 
 ### Documentation
 

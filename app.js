@@ -18,6 +18,7 @@ import {
   yearStartIso,
 } from "./src/timeline/dates";
 import {
+  ITEM_COLOR_PALETTE,
   TYPE_COLORS,
   createEmptyTimeline,
   hasEndYear,
@@ -95,6 +96,7 @@ import {
     itemTitleInput: document.getElementById("itemTitleInput"),
     itemLaneInput: document.getElementById("itemLaneInput"),
     itemColorInput: document.getElementById("itemColorInput"),
+    itemColorPalette: document.getElementById("itemColorPalette"),
     itemStartInput: document.getElementById("itemStartInput"),
     itemEndInput: document.getElementById("itemEndInput"),
     itemEndField: document.getElementById("itemEndField"),
@@ -143,6 +145,7 @@ import {
   let currentFileName = "";
   let hasUnsavedChanges = false;
   let hoverDate = null;
+  let lastPaletteColorIndex = -1;
 
   init();
 
@@ -155,6 +158,8 @@ import {
   }
 
   function bindEvents() {
+    renderItemColorPalette();
+
     document.querySelectorAll("[data-add]").forEach((button) => {
       button.addEventListener("click", () => addItem(button.dataset.add));
     });
@@ -182,6 +187,8 @@ import {
       if (isGlobalTimelineItemType(type)) dom.itemLaneInput.value = "0";
       updateItemCalendarPreviewFromInputs();
     });
+    dom.itemColorInput.addEventListener("input", handleItemColorInput);
+    dom.itemColorInput.addEventListener("change", handleItemColorInput);
 
     dom.itemForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -988,6 +995,7 @@ import {
       dom.itemCalendarPreview.textContent = "Select an item to see Gregorian and Iranian dates.";
       dom.itemEndField.hidden = true;
       dom.itemDerivedLabelsField.hidden = true;
+      updateColorPaletteState("", { disabled: true });
       dom.itemForm.classList.add("empty-selection");
       suppressControlEvents = false;
       return;
@@ -1006,8 +1014,65 @@ import {
     dom.itemEndField.hidden = !hasEndYear(item.type);
     dom.itemDerivedLabelsField.hidden = item.type !== "period";
     dom.itemLaneInput.disabled = isGlobalTimelineItemType(item.type);
+    updateColorPaletteState(item.color, { disabled: false });
     updateItemCalendarPreview(item);
     suppressControlEvents = false;
+  }
+
+  function renderItemColorPalette() {
+    if (!dom.itemColorPalette) return;
+    dom.itemColorPalette.replaceChildren();
+    ITEM_COLOR_PALETTE.forEach((swatch) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "color-swatch-button";
+      button.dataset.color = swatch.value;
+      button.style.setProperty("--swatch-color", swatch.value);
+      button.setAttribute("aria-label", `Use ${swatch.name} item color`);
+      button.title = swatch.name;
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", selectPresetColor);
+      dom.itemColorPalette.append(button);
+    });
+  }
+
+  function selectPresetColor(event) {
+    if (suppressControlEvents) return;
+    const color = event.currentTarget.dataset.color;
+    if (!color) return;
+    dom.itemColorInput.value = normalizeColor(color);
+    applyItemColorFromControl();
+  }
+
+  function handleItemColorInput() {
+    if (suppressControlEvents) return;
+    applyItemColorFromControl();
+  }
+
+  function applyItemColorFromControl() {
+    const item = getItem(selectedId);
+    if (!item) return;
+    const color = normalizeColor(dom.itemColorInput.value || item.color);
+    dom.itemColorInput.value = color;
+    updateColorPaletteState(color, { disabled: false });
+    if (item.color === color) return;
+
+    const previousSnapshot = timelineDataSnapshot();
+    item.color = color;
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Item color updated");
+  }
+
+  function updateColorPaletteState(activeColor, options = {}) {
+    if (!dom.itemColorPalette) return;
+    const disabled = options.disabled === true;
+    const normalized = activeColor ? normalizeColor(activeColor).toLowerCase() : "";
+    dom.itemColorPalette.querySelectorAll(".color-swatch-button").forEach((button) => {
+      const isActive = !disabled && button.dataset.color?.toLowerCase() === normalized;
+      button.disabled = disabled;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
   }
 
   function renderLaneControls() {
@@ -1303,7 +1368,7 @@ import {
       startDate,
       endDate: clampIso(endDate, addDaysIso(startDate, 1), addDaysIso(timeline.settings.endDate, 1)),
       title: titleForType(type),
-      color: TYPE_COLORS[type],
+      color: randomPaletteColor(),
       notes: "",
       showAgeLabels: true,
       showDurationLabel: true,
@@ -1920,7 +1985,26 @@ import {
 
   function normalizeColor(value) {
     const text = String(value || "").trim();
-    return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "#2563eb";
+    return /^#[0-9a-fA-F]{6}$/.test(text) ? text : ITEM_COLOR_PALETTE[6].value;
+  }
+
+  function randomPaletteColor() {
+    if (!ITEM_COLOR_PALETTE.length) return TYPE_COLORS.event;
+    let index = randomIndex(ITEM_COLOR_PALETTE.length);
+    if (ITEM_COLOR_PALETTE.length > 1 && index === lastPaletteColorIndex) {
+      index = (index + 1) % ITEM_COLOR_PALETTE.length;
+    }
+    lastPaletteColorIndex = index;
+    return ITEM_COLOR_PALETTE[index].value;
+  }
+
+  function randomIndex(max) {
+    if (window.crypto?.getRandomValues) {
+      const values = new Uint32Array(1);
+      window.crypto.getRandomValues(values);
+      return values[0] % max;
+    }
+    return Math.floor(Math.random() * max);
   }
 
   function pixelsPerDay() {

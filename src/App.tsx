@@ -242,10 +242,13 @@ export function App() {
                       Lane
                       <input id="itemLaneInput" type="number" min="0" max="20" step="1" />
                     </label>
-                    <label>
-                      Color
-                      <input id="itemColorInput" type="color" />
-                    </label>
+                    <div className="color-field">
+                      <span className="field-caption">Color</span>
+                      <div className="color-control-row">
+                        <input id="itemColorInput" type="color" aria-label="Custom item color" />
+                        <div className="color-swatch-grid" id="itemColorPalette" role="group" aria-label="Preset item colors"></div>
+                      </div>
+                    </div>
                     <label>
                       Start date
                       <input id="itemStartInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
