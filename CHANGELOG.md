@@ -30,6 +30,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Prevented Fit from zooming out below a readable minimum on long timelines.
 - Added same-line item edge snapping while dragging or resizing, with range overlap prevention.
 - Added a curated item color palette with random palette colors for newly created items.
+- Added a timeline context menu and keyboard shortcuts for item copy, paste, duplicate, delete, and item locking.
 
 ### Documentation
 

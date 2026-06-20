@@ -120,6 +120,7 @@ import {
     fitButton: document.getElementById("fitButton"),
     timelineViewport: document.getElementById("timelineViewport"),
     timelineSvg: document.getElementById("timelineSvg"),
+    timelineContextMenu: document.getElementById("timelineContextMenu"),
     timelineInfoPanel: document.getElementById("timelineInfoPanel"),
     hoverDateLabel: document.getElementById("hoverDateLabel"),
     hoverIranianLabel: document.getElementById("hoverIranianLabel"),
@@ -146,6 +147,8 @@ import {
   let hasUnsavedChanges = false;
   let hoverDate = null;
   let lastPaletteColorIndex = -1;
+  let copiedItem = null;
+  let contextMenuTarget = null;
 
   init();
 
@@ -198,11 +201,14 @@ import {
     dom.deleteItemButton.addEventListener("click", deleteSelectedItem);
     dom.duplicateItemButton.addEventListener("click", duplicateSelectedItem);
     dom.addLaneButton.addEventListener("click", addLane);
+    dom.timelineContextMenu.addEventListener("click", handleContextMenuClick);
 
     dom.saveJsonButton.addEventListener("click", saveJsonFile);
     dom.loadJsonButton.addEventListener("click", openJsonFile);
     dom.fileInput.addEventListener("change", loadJsonFile);
     document.addEventListener("keydown", handleGlobalKeydown);
+    document.addEventListener("copy", handleGlobalCopy);
+    document.addEventListener("paste", handleGlobalPaste);
 
     dom.exportSvgButton.addEventListener("click", exportSvgFile);
     dom.exportPngButton.addEventListener("click", exportPngFile);
@@ -214,6 +220,7 @@ import {
     dom.fitButton.addEventListener("click", fitTimelineToViewport);
 
     dom.timelineViewport.addEventListener("wheel", handleViewportWheel, { passive: false });
+    dom.timelineViewport.addEventListener("contextmenu", openTimelineContextMenu);
     dom.timelineViewport.addEventListener("keydown", (event) => {
       if ((event.key === "Delete" || event.key === "Backspace") && selectedId) {
         event.preventDefault();
@@ -227,6 +234,8 @@ import {
     dom.timelineViewport.addEventListener("pointerleave", hideHoverReadout);
     dom.timelineViewport.addEventListener("pointerup", endPointerDrag);
     dom.timelineViewport.addEventListener("pointercancel", endPointerDrag);
+    document.addEventListener("pointerdown", closeContextMenuFromPointer, true);
+    window.addEventListener("resize", closeContextMenu);
   }
 
   function renderAll(options = {}) {
@@ -1330,9 +1339,66 @@ import {
   }
 
   function handleGlobalKeydown(event) {
-    if ((!event.ctrlKey && !event.metaKey) || event.key.toLowerCase() !== "s") return;
-    event.preventDefault();
-    saveJsonFile();
+    if (event.defaultPrevented) return;
+    const key = event.key.toLowerCase();
+    const hasShortcutModifier = (event.ctrlKey || event.metaKey) && !event.altKey;
+
+    if (hasShortcutModifier && !event.shiftKey && key === "s") {
+      event.preventDefault();
+      saveJsonFile();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      closeContextMenu();
+      return;
+    }
+
+    if (isEditableShortcutTarget(event.target)) return;
+
+    if (hasShortcutModifier && !event.shiftKey && key === "c") {
+      event.preventDefault();
+      copySelectedItem();
+      return;
+    }
+
+    if (hasShortcutModifier && !event.shiftKey && key === "v") {
+      event.preventDefault();
+      pasteCopiedItem();
+      return;
+    }
+
+    if (hasShortcutModifier && !event.shiftKey && key === "d") {
+      event.preventDefault();
+      duplicateSelectedItem();
+      return;
+    }
+
+    if (hasShortcutModifier && event.shiftKey && key === "l") {
+      event.preventDefault();
+      setItemsLocked(!timeline.settings.itemsLocked);
+      return;
+    }
+
+    if ((event.key === "Delete" || event.key === "Backspace") && selectedId) {
+      event.preventDefault();
+      deleteSelectedItem();
+    }
+  }
+
+  function handleGlobalCopy(event) {
+    if (event.defaultPrevented || isEditableShortcutTarget(event.target)) return;
+    if (copySelectedItem()) event.preventDefault();
+  }
+
+  function handleGlobalPaste(event) {
+    if (event.defaultPrevented || isEditableShortcutTarget(event.target)) return;
+    if (pasteCopiedItem()) event.preventDefault();
+  }
+
+  function isEditableShortcutTarget(target) {
+    return target instanceof Element
+      && Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
   }
 
   function applyItemForm() {
@@ -1392,6 +1458,57 @@ import {
     setStatus("Item deleted");
   }
 
+  function copySelectedItem() {
+    const item = getItem(selectedId);
+    if (!item) {
+      setStatus("Select an item to copy");
+      return false;
+    }
+    copiedItem = { ...item };
+    updateContextMenuItems();
+    setStatus("Item copied");
+    return true;
+  }
+
+  function pasteCopiedItem(target = {}) {
+    if (!copiedItem) {
+      setStatus("Copy an item before pasting");
+      updateContextMenuItems();
+      return false;
+    }
+    const copy = createPastedItem(copiedItem, target);
+    timeline.items.push(copy);
+    selectedId = copy.id;
+    renderAll();
+    setStatus("Item pasted");
+    return true;
+  }
+
+  function createPastedItem(source, target = {}) {
+    const maxRangeEnd = addDaysIso(timeline.settings.endDate, 1);
+    const originalDuration = hasEndYear(source.type)
+      ? Math.max(minDurationDays(), daysBetween(source.startDate, source.endDate))
+      : 0;
+    const maxDuration = Math.max(minDurationDays(), daysBetween(timeline.settings.startDate, maxRangeEnd));
+    const duration = Math.min(originalDuration, maxDuration);
+    let startDate = snapDate(clampIso(target.date || getViewportCenterDate(), timeline.settings.startDate, timeline.settings.endDate));
+    let endDate = hasEndYear(source.type) ? addDaysIso(startDate, duration) : startDate;
+
+    if (hasEndYear(source.type) && compareIso(endDate, maxRangeEnd) > 0) {
+      endDate = maxRangeEnd;
+      startDate = clampIso(addDaysIso(endDate, -duration), timeline.settings.startDate, timeline.settings.endDate);
+    }
+
+    return normalizeItem({
+      ...source,
+      id: createId(source.type),
+      title: `${source.title} copy`,
+      lane: isGlobalTimelineItemType(source.type) ? 0 : clamp(Math.round(toNumber(target.lane, source.lane)), 0, 20),
+      startDate,
+      endDate,
+    });
+  }
+
   function duplicateSelectedItem() {
     const item = getItem(selectedId);
     if (!item) return;
@@ -1407,7 +1524,128 @@ import {
     setStatus("Item duplicated");
   }
 
+  function setItemsLocked(locked) {
+    const nextLocked = Boolean(locked);
+    if (timeline.settings.itemsLocked === nextLocked) {
+      setStatus(nextLocked ? "Items already locked" : "Items already unlocked");
+      updateContextMenuItems();
+      return;
+    }
+
+    const previousSnapshot = timelineDataSnapshot();
+    timeline.settings.itemsLocked = nextLocked;
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    updateContextMenuItems();
+    if (changed) setStatus(nextLocked ? "Items locked" : "Items unlocked");
+  }
+
+  function openTimelineContextMenu(event) {
+    event.preventDefault();
+    const itemNode = event.target.closest("[data-item-id]");
+    const item = itemNode ? getItem(itemNode.dataset.itemId) : null;
+    const point = svgPoint(event);
+    const date = snapDate(clampIso(xToDate(point.x), timeline.settings.startDate, timeline.settings.endDate));
+    const lane = item && !isGlobalTimelineItemType(item.type)
+      ? item.lane
+      : laneIndexFromPointer(event);
+
+    contextMenuTarget = {
+      date,
+      lane,
+      itemId: item ? item.id : null,
+    };
+
+    if (item && selectedId !== item.id) {
+      selectedId = item.id;
+      renderAll({ save: false });
+    }
+
+    updateContextMenuItems();
+    showContextMenuAt(event.clientX, event.clientY);
+  }
+
+  function handleContextMenuClick(event) {
+    const button = event.target.closest("[data-context-action]");
+    if (!button || button.disabled) return;
+    const action = button.dataset.contextAction;
+    const target = contextMenuTarget ? { ...contextMenuTarget } : {};
+    closeContextMenu();
+
+    if (action === "copy") {
+      copySelectedItem();
+    } else if (action === "paste") {
+      pasteCopiedItem(target);
+    } else if (action === "duplicate") {
+      duplicateSelectedItem();
+    } else if (action === "lock") {
+      setItemsLocked(true);
+    } else if (action === "unlock") {
+      setItemsLocked(false);
+    } else if (action === "delete") {
+      deleteSelectedItem();
+    }
+  }
+
+  function updateContextMenuItems() {
+    if (!dom.timelineContextMenu) return;
+    const hasSelection = Boolean(getItem(selectedId));
+    setContextMenuActionState("copy", { disabled: !hasSelection });
+    setContextMenuActionState("paste", { disabled: !copiedItem });
+    setContextMenuActionState("duplicate", { disabled: !hasSelection });
+    setContextMenuActionState("delete", { disabled: !hasSelection });
+    setContextMenuActionState("lock", {
+      disabled: false,
+      hidden: timeline.settings.itemsLocked,
+    });
+    setContextMenuActionState("unlock", {
+      disabled: false,
+      hidden: !timeline.settings.itemsLocked,
+    });
+  }
+
+  function setContextMenuActionState(action, options = {}) {
+    const button = dom.timelineContextMenu.querySelector(`[data-context-action="${action}"]`);
+    if (!button) return;
+    const disabled = options.disabled === true;
+    button.disabled = disabled;
+    button.hidden = options.hidden === true;
+    button.setAttribute("aria-disabled", String(disabled));
+  }
+
+  function showContextMenuAt(clientX, clientY) {
+    const menu = dom.timelineContextMenu;
+    menu.hidden = false;
+    menu.style.visibility = "hidden";
+    menu.style.left = "0px";
+    menu.style.top = "0px";
+    const rect = menu.getBoundingClientRect();
+    const left = clamp(clientX, 8, Math.max(8, window.innerWidth - rect.width - 8));
+    const top = clamp(clientY, 8, Math.max(8, window.innerHeight - rect.height - 8));
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.style.visibility = "";
+    focusFirstContextMenuAction();
+  }
+
+  function focusFirstContextMenuAction() {
+    const firstAction = dom.timelineContextMenu.querySelector("button:not([hidden]):not(:disabled)");
+    if (firstAction) firstAction.focus();
+  }
+
+  function closeContextMenuFromPointer(event) {
+    if (!dom.timelineContextMenu || dom.timelineContextMenu.hidden) return;
+    if (dom.timelineContextMenu.contains(event.target)) return;
+    closeContextMenu();
+  }
+
+  function closeContextMenu() {
+    if (!dom.timelineContextMenu) return;
+    dom.timelineContextMenu.hidden = true;
+    contextMenuTarget = null;
+  }
+
   function beginPointerDrag(event) {
+    closeContextMenu();
     if (event.button !== 0) return;
     const laneNode = event.target.closest("[data-timeline-lane-index]");
     if (laneNode) {

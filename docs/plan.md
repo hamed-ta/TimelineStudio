@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add better item color controls after real UI review.
+Add timeline context menu commands and keyboard shortcuts.
 
 ## Now
 
@@ -18,8 +18,8 @@ Add better item color controls after real UI review.
 - Stack, simplify, or skip month and day labels so axis date text does not overlap at crowded zoom levels.
 - Keep Fit from zooming out below a readable minimum on long timelines.
 - Snap lane-bound items to nearby same-line item edges and prevent same-line range overlap while dragging.
-- Add a curated item color palette beside the custom color input.
-- Assign new items a random color from the curated palette.
+- Add a context menu for selected item commands.
+- Add keyboard shortcuts for copy, paste, duplicate, delete, and item lock toggling.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
@@ -80,6 +80,7 @@ Add better item color controls after real UI review.
 - Added saved birthdate items with prominent all-line rendering.
 - Added live age hover readouts and derived period age/duration labels.
 - Added same-line item edge snapping and readable fit/axis behavior.
+- Added a curated item color palette and random palette colors for new items.
 
 ## Risks
 

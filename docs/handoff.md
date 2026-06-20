@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add better item color controls.
+Add timeline context menu commands and keyboard shortcuts.
 
 ## Last Known State
 
@@ -36,6 +36,8 @@ Lane-bound items snap to nearby same-line item edges while dragging or resizing.
 
 The item editor now includes a curated 10-color preset palette next to the custom color input. Selecting a swatch updates the selected item color immediately, and new items start with a random palette color.
 
+The timeline has a custom context menu for item commands. Right-clicking an item selects it and shows Copy, Paste, Duplicate, Lock Items or Unlock Items, and Delete. Copy and paste use an in-app item clipboard. Keyboard shortcuts support `Ctrl`/`Command+C`, `Ctrl`/`Command+V`, `Ctrl`/`Command+D`, `Delete`/`Backspace`, and `Ctrl`/`Command+Shift+L` when focus is not in an editor field.
+
 Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
@@ -56,7 +58,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`e83672f feat: snap same-line item edges`
+`5fc7cf3 feat: add item color palette`
 
 ## Work Completed This Session
 
@@ -70,6 +72,9 @@ Firebase should wait until the local Vite app is stable.
 - Added same-line item edge snapping and overlap prevention for lane-bound range items.
 - Added a curated item color palette beside the custom color input.
 - Changed new item creation to use a random palette color instead of a fixed type color.
+- Added a custom context menu for selected timeline item commands.
+- Added an in-app item clipboard for copy and paste.
+- Added keyboard shortcuts for copy, paste, duplicate, delete, and lock/unlock.
 - Updated product notes, changelog, plan, and handoff docs.
 
 ## Files Changed
@@ -80,7 +85,6 @@ Firebase should wait until the local Vite app is stable.
 - `docs/product.md`
 - `app.js`
 - `src/App.tsx`
-- `src/timeline/model.ts`
 - `styles.css`
 
 ## Decisions
@@ -96,6 +100,9 @@ Firebase should wait until the local Vite app is stable.
 - Treat only range items as overlap blockers so point annotations can still align with nearby edges.
 - Keep the color picker dependency-free with native color input plus curated swatches.
 - Use modern Tailwind-style saturated hues for the first palette: red, orange, amber, green, teal, sky, blue, indigo, violet, and pink.
+- Keep context-menu copy/paste in-app for now rather than using the OS clipboard, avoiding browser permissions and preserving full item structure.
+- Treat Lock Items and Unlock Items as commands for the existing global item-lock setting, not as per-item lock state.
+- Ignore item command shortcuts while focus is in editor inputs, selects, textareas, or editable content.
 
 ## Verification
 
@@ -130,6 +137,21 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke: entering custom color `#111827` kept the custom color value and left no preset swatch active.
 - Browser smoke: adding a new period assigned `#ec4899` from the palette and activated its matching swatch.
 - Browser smoke: no console warnings or errors were reported for color palette interactions.
+- RED: the previous app had no custom `contextmenu` handler or menu DOM, and shortcuts only covered save plus timeline-focused delete.
+- `node --check app.js`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: right-clicking an event selected it and opened the context menu.
+- Browser smoke: menu state showed Copy, Duplicate, Lock Items, and Delete enabled; Paste disabled before copying; Unlock Items hidden while items were unlocked.
+- Browser smoke: menu Copy set status `Item copied`; menu Paste added a copy with a new item ID and selected `Event: New event copy - Line 3`.
+- Browser smoke: `Ctrl`/`Command+C` copied the selected item and `Ctrl`/`Command+V` pasted a copy with a new item ID.
+- Browser smoke: menu Lock Items set `itemsLocked` true and applied the locked viewport class; reopening the menu showed Unlock Items instead of Lock Items.
+- Browser smoke: menu Unlock Items restored `itemsLocked` false and removed the locked viewport class.
+- Browser smoke: `Ctrl`/`Command+D` duplicated the selected item with a new item ID.
+- Browser smoke: `Ctrl`/`Command+Shift+L` toggled item locking on and off.
+- Browser smoke: `Delete` removed the selected test item; browser automation did not expose the confirm dialog before handling it.
+- Browser smoke: no console warnings or errors were reported for context menu interactions.
 
 ## Open Issues
 
@@ -141,8 +163,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: add item color palette`
+`feat: add timeline context menu commands`
 
 ## Next Safe Step
 
-Review the item color palette in the real UI, then commit if acceptable.
+Review the timeline context menu and shortcuts in the real UI, then commit if acceptable.

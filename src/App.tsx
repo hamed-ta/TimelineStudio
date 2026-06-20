@@ -362,6 +362,32 @@ export function App() {
             <div className="timeline-viewport" id="timelineViewport" tabIndex={0}>
               <svg id="timelineSvg" role="img" aria-labelledby="stageTitle stageMeta"></svg>
             </div>
+            <div className="context-menu" id="timelineContextMenu" role="menu" aria-label="Timeline item actions" hidden>
+              <button type="button" role="menuitem" data-context-action="copy">
+                <span>Copy</span>
+                <kbd>Ctrl/Cmd C</kbd>
+              </button>
+              <button type="button" role="menuitem" data-context-action="paste">
+                <span>Paste</span>
+                <kbd>Ctrl/Cmd V</kbd>
+              </button>
+              <button type="button" role="menuitem" data-context-action="duplicate">
+                <span>Duplicate</span>
+                <kbd>Ctrl/Cmd D</kbd>
+              </button>
+              <button type="button" role="menuitem" data-context-action="lock">
+                <span>Lock items</span>
+                <kbd>Ctrl/Cmd Shift L</kbd>
+              </button>
+              <button type="button" role="menuitem" data-context-action="unlock">
+                <span>Unlock items</span>
+                <kbd>Ctrl/Cmd Shift L</kbd>
+              </button>
+              <button type="button" role="menuitem" className="danger" data-context-action="delete">
+                <span>Delete</span>
+                <kbd>Del</kbd>
+              </button>
+            </div>
             <div className="timeline-info-panel" id="timelineInfoPanel" aria-live="polite">
               <div className="timeline-info-block">
                 <span className="timeline-info-kicker">Pointer</span>

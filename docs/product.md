@@ -50,6 +50,11 @@ A freeform note attached to the timeline.
 
 When items are locked, dragging the canvas should pan the timeline and should not accidentally move items.
 
+### Item Commands
+
+Selected timeline items can be copied, pasted, duplicated, and deleted from the timeline context menu or keyboard shortcuts.
+Copy and paste use an in-app item clipboard. Pasted items should receive a new ID and should preserve the copied item's type, color, dates, notes, and display settings unless a timeline click location supplies a new start date or lane.
+
 ## Date Behavior
 
 - Gregorian ISO dates are the internal source of truth.
@@ -218,6 +223,29 @@ And the user can still choose a custom color.
 Given the user creates a new timeline item
 When the item is added
 Then its initial color is selected from the preset palette.
+
+### Use Timeline Context Menu
+
+Given a timeline item exists
+When the user opens the context menu on the item
+Then the app selects that item
+And the menu offers Copy, Paste, Duplicate, Lock Items or Unlock Items, and Delete
+And unavailable commands are disabled.
+
+### Use Timeline Command Shortcuts
+
+Given a timeline item is selected
+When the user presses `Ctrl+C` or `Command+C`
+Then the item is copied to the app clipboard
+When the user presses `Ctrl+V` or `Command+V`
+Then a pasted copy is added with a new ID
+When the user presses `Ctrl+D` or `Command+D`
+Then the selected item is duplicated
+When the user presses `Delete` or `Backspace`
+Then the app asks before deleting the selected item
+When the user presses `Ctrl+Shift+L` or `Command+Shift+L`
+Then item locking toggles
+And command shortcuts do not run while the user is typing in an editor field.
 
 ### Rename A Line
 

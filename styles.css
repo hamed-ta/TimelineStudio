@@ -915,6 +915,68 @@ button:focus-visible,
   box-shadow: var(--shadow);
 }
 
+.context-menu {
+  position: fixed;
+  z-index: 40;
+  width: min(240px, calc(100vw - 16px));
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow:
+    var(--shadow),
+    0 0 0 1px color-mix(in srgb, #ffffff 8%, transparent);
+}
+
+.context-menu[hidden] {
+  display: none;
+}
+
+.context-menu button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.context-menu button:hover:not(:disabled),
+.context-menu button:focus-visible {
+  background: var(--accent-soft);
+  color: var(--text);
+  outline: none;
+}
+
+.context-menu button.danger {
+  color: var(--danger);
+}
+
+.context-menu button:disabled {
+  color: var(--text-subtle);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.context-menu kbd {
+  min-width: 0;
+  color: var(--text-subtle);
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
 .timeline-info-panel {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
