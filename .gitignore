@@ -1,4 +1,7 @@
 # user data
 user-data/
+# dependencies and build output
+node_modules/
+dist/
 # macOS
 .DS_Store

@@ -1,10 +1,27 @@
 # Timeline Studio
 
-A dependency-free local web app for building horizontal personal timelines.
+A local-first web app for building horizontal personal timelines.
 
 ## Run
 
-Open `index.html` in a browser.
+Install dependencies and start the Vite dev server:
+
+```sh
+npm install
+npm run dev -- --port 8765
+```
+
+Open:
+
+```text
+http://127.0.0.1:8765/
+```
+
+Build:
+
+```sh
+npm run build
+```
 
 ## What it supports
 

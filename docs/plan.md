@@ -6,19 +6,18 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Document the migration direction before changing runtime code.
+Add the first Vite, React, and TypeScript shell while preserving the current local timeline editor behavior.
 
 ## Now
 
-- Record the stack decision: Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting.
-- Keep the first implementation slice behavior-preserving: the app should still run locally, load JSON, edit timelines, and save JSON.
+- Keep the Vite shell behavior-preserving: the app should still run locally, edit timelines, and save JSON.
+- Manually verify loading an existing local JSON file in the Vite app.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
 ## Next
 
-- Add a minimal Vite + React + TypeScript shell without changing user-visible behavior.
-- Move the existing app behavior into the new shell in small testable steps.
 - Verify local JSON load, edit, save, pan, zoom, fit, and export before adding backend features.
+- Move more legacy behavior behind typed module boundaries in small testable steps.
 - Add Firebase only after the local app migration is stable.
 
 ## Later
@@ -49,6 +48,8 @@ Document the migration direction before changing runtime code.
 - Committed the agentic workflow docs in `e3ef60b`.
 - Added `.gitignore` rules for `user-data/` and `.DS_Store`.
 - Committed ignored user data and handoff cleanup in `ca4bd12`.
+- Committed the modern web app migration plan in `4f95f80`.
+- Added a minimal Vite, React, and TypeScript shell that bootstraps the existing `app.js` behavior.
 
 ## Risks
 
@@ -62,10 +63,12 @@ Document the migration direction before changing runtime code.
 
 ## Verification Checklist
 
-During the current static-app phase:
+During the current legacy-app phase:
 
 - `node --check app.js`
-- App loads at `http://127.0.0.1:8765/index.html`
+- `npm run typecheck`
+- `npm run build`
+- App loads at `http://127.0.0.1:8765/`
 - Create event
 - Create period
 - Rename line
@@ -76,9 +79,4 @@ During the current static-app phase:
 - Load JSON
 - Export SVG/PNG/PDF
 
-After the Vite migration starts:
-
-- `npm run typecheck`
-- `npm run build`
-- App loads from the Vite dev server
 - Existing local JSON can be loaded, edited, and saved

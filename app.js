@@ -1086,10 +1086,16 @@
 
   async function saveBlobWithPicker(blob, filename, fileType) {
     if (!window.showSaveFilePicker) return false;
-    const handle = await window.showSaveFilePicker({
-      suggestedName: filename,
-      types: [fileType],
-    });
+    let handle;
+    try {
+      handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [fileType],
+      });
+    } catch (error) {
+      if (error && (error.name === "SecurityError" || error.name === "NotAllowedError")) return false;
+      throw error;
+    }
     const writable = await handle.createWritable();
     await writable.write(blob);
     await writable.close();
@@ -1374,3 +1380,5 @@
     dom.statusText.textContent = message;
   }
 })();
+
+export {};

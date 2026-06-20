@@ -7,13 +7,13 @@ Use this checklist for UI behavior changes until automated browser tests exist.
 1. Start the local server:
 
 ```sh
-python3 -m http.server 8765 --bind 127.0.0.1
+npm run dev -- --port 8765
 ```
 
 2. Open:
 
 ```text
-http://127.0.0.1:8765/index.html
+http://127.0.0.1:8765/
 ```
 
 ## Core Checks

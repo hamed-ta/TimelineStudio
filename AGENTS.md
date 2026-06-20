@@ -2,15 +2,17 @@
 
 ## Project
 
-Timeline Studio is a dependency-free static web app for building personal horizontal timelines.
+Timeline Studio is a Vite, React, and TypeScript web app for building personal horizontal timelines.
 
 Main files:
 - `index.html`: app shell
+- `src/App.tsx`: React-rendered legacy DOM shell
+- `src/main.tsx`: React entrypoint and legacy app bootstrap
 - `styles.css`: layout and visual design
 - `app.js`: timeline state, rendering, import/export, and interactions
 - `README.md`: user-facing project notes
 
-Avoid adding dependencies unless the user explicitly asks or an ADR accepts the change.
+Avoid adding dependencies unless the user explicitly asks or an ADR accepts the change. ADR 0005 accepts the Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting direction.
 
 ## Project Documents
 
@@ -25,22 +27,29 @@ Avoid adding dependencies unless the user explicitly asks or an ADR accepts the 
 
 ## Commands
 
-Check JavaScript syntax:
+Install dependencies:
+
+```sh
+npm install
+```
+
+Check JavaScript syntax and TypeScript:
 
 ```sh
 node --check app.js
+npm run typecheck
 ```
 
 Run locally:
 
 ```sh
-python3 -m http.server 8765 --bind 127.0.0.1
+npm run dev -- --port 8765
 ```
 
 Open:
 
 ```text
-http://127.0.0.1:8765/index.html
+http://127.0.0.1:8765/
 ```
 
 ## Session Commands
