@@ -6,12 +6,12 @@ Make Timeline Studio easier to develop with coding agents through small behavior
 
 ## Current Slice
 
-Set up the agentic development workflow documents.
+Close out the agentic workflow setup and prepare the next feature slice.
 
 ## Now
 
-- Review the workflow documentation changes.
-- Commit the workflow documentation changes if requested.
+- Commit `.gitignore`, `docs/handoff.md`, and `docs/plan.md` if requested.
+- Keep personal timeline JSON files in ignored `user-data/`.
 
 ## Next
 
@@ -37,6 +37,8 @@ Set up the agentic development workflow documents.
 - Added missing workflow files referenced by `AGENTS.md`.
 - Turned `docs/handoff.md` into a real current-state handoff.
 - Added initial ADRs for decisions already made.
+- Committed the agentic workflow docs in `e3ef60b`.
+- Added `.gitignore` rules for `user-data/` and `.DS_Store`.
 
 ## Risks
 
@@ -44,6 +46,7 @@ Set up the agentic development workflow documents.
 - Export behavior may differ across browsers.
 - Manual testing is still doing work that automated browser tests should eventually cover.
 - Workflow docs can drift if `/closeup` is not used consistently.
+- Personal JSON files should stay in ignored `user-data/`.
 
 ## Verification Checklist
 

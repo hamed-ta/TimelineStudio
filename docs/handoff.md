@@ -2,39 +2,51 @@
 
 ## Current Goal
 
-Set up a lightweight agentic development workflow for Timeline Studio.
+Close the current documentation/setup session cleanly and leave the repo ready for the next feature slice.
 
 ## Last Known State
 
 Timeline Studio is a static web app with timeline pan, zoom, fit, lock state, line renaming, JSON save/load, and SVG/PNG/PDF export.
 
-The app starts with empty data. Personal timeline JSON files are local user data and should not be treated as default seed data.
+The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
+
+Agent workflow documents are in place and committed. `AGENTS.md` points to the detailed workflow docs instead of duplicating the full red/green/refactor process.
 
 ## Last Commit
 
-`c1adfc7 Add JSON save picker`
+`e3ef60b docs(docs): add agentic workflow documentations`
+
+## Work Completed This Session
+
+- Added `.gitignore` rules for `user-data/` and `.DS_Store`.
+- Confirmed `user-data/` and `.DS_Store` no longer appear in `git status`.
+- Confirmed personal timeline JSON files are in `user-data/`.
+- Ran the closeup verification workflow.
+
+## Files Changed
+
+- `.gitignore`
+- `docs/handoff.md`
+- `docs/plan.md`
 
 ## Decisions
 
-- Keep the app as a dependency-free static web app for now.
-- Use JSON as the primary save/load format.
-- Store dates internally as Gregorian ISO dates and derive Iranian date labels for display.
-- Use BDD plus red/green/refactor for behavior changes.
+- Keep personal timeline files out of default app state.
+- Use `user-data/` for local user-owned data that should not be committed.
 - Keep detailed red/green/refactor instructions in `docs/workflows/red-green-refactor.md`; keep `AGENTS.md` as a concise rule and pointer.
-- Use `/startup` and `/closeup` as session-boundary workflows.
 
 ## Verification
 
 - `node --check app.js`: passed.
-- Documentation reference sanity check completed with `rg`.
-- `AGENTS.md` now points to `docs/workflows/red-green-refactor.md` instead of duplicating the full workflow.
+- `git status --short`: checked.
 
 ## Open Issues
 
+- `.gitignore` is currently untracked.
+- `docs/handoff.md` and `docs/plan.md` are modified by this closeup.
 - No automated browser test harness exists yet.
 - Browser smoke checks are manual until a test harness such as Playwright is added.
-- `personal-timeline.json` files appear to be local user data and are currently untracked.
 
 ## Next Safe Step
 
-Review and commit the workflow documentation changes if requested. After that, the next engineering improvement is adding an automated browser test harness for true red/green UI checks.
+Commit the closeup documentation updates and `.gitignore` if requested. Then choose the next small feature slice, preferably automated browser tests, malformed JSON validation, or an unsaved-change indicator.
