@@ -31,6 +31,8 @@ This project follows semantic versioning once releases begin. The current packag
 - Added same-line item edge snapping while dragging or resizing, with range overlap prevention.
 - Added a curated item color palette with random palette colors for newly created items.
 - Added a timeline context menu and keyboard shortcuts for item copy, paste, duplicate, delete, and item locking.
+- Expanded the item color palette and reorganized the timeline toolbar with colored icons, action groups, and a lock toggle.
+- Added colored context menu icons, context menu zoom commands, a readable manual zoom-out minimum, and an empty timeline state.
 
 ### Documentation
 

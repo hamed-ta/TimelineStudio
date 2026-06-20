@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add timeline context menu commands and keyboard shortcuts.
+Improve the timeline toolbar, zoom controls, and empty timeline presentation.
 
 ## Now
 
@@ -18,8 +18,14 @@ Add timeline context menu commands and keyboard shortcuts.
 - Stack, simplify, or skip month and day labels so axis date text does not overlap at crowded zoom levels.
 - Keep Fit from zooming out below a readable minimum on long timelines.
 - Snap lane-bound items to nearby same-line item edges and prevent same-line range overlap while dragging.
-- Add a context menu for selected item commands.
-- Add keyboard shortcuts for copy, paste, duplicate, delete, and item lock toggling.
+- Expand the preset color palette beyond the first 10 colors.
+- Add recognizable icons to timeline action buttons.
+- Use colored icon treatments for toolbar and context menu actions without adding another icon dependency.
+- Group create, file, and export toolbar actions.
+- Move item locking into a dedicated icon toggle instead of a checkbox inside the action row.
+- Keep manual zoom-out from going below the readable minimum.
+- Add zoom actions to the timeline context menu.
+- Show a centered empty state when the timeline has no items.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
@@ -81,6 +87,7 @@ Add timeline context menu commands and keyboard shortcuts.
 - Added live age hover readouts and derived period age/duration labels.
 - Added same-line item edge snapping and readable fit/axis behavior.
 - Added a curated item color palette and random palette colors for new items.
+- Added a context menu and shortcuts for timeline item commands.
 
 ## Risks
 

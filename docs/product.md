@@ -41,6 +41,7 @@ A date range with a start date and end date. Period bars should read as colored 
 
 Items store a hex color in timeline JSON. The editor should provide a curated preset palette for fast selection and keep custom color input available for arbitrary colors.
 New items should start with a random color from the preset palette so adjacent created items are easier to distinguish.
+The preset palette should include a broad range of modern readable colors, including neutrals, without requiring an external color picker dependency.
 
 ### Text Item
 
@@ -103,9 +104,15 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 - The timeline action toolbar should stay near the top of the timeline stage.
 - The current timeline title, date range, and Fit action should stay in the main app header.
 - The timeline action toolbar should not duplicate the timeline title or date range.
-- Collapse and expand controls should use recognizable icon buttons rather than text characters.
+- Timeline action buttons should use recognizable icons with short labels.
+- Timeline action icons should use distinct accent color treatment while preserving text contrast.
+- Create-item actions should be grouped separately from file and export actions.
+- Item locking should be an icon toggle near toolbar controls instead of a checkbox mixed into create-item actions.
+- Zoom controls should use recognizable icon buttons and should not allow the timeline to zoom out below the readable minimum.
+- Collapse and expand controls should use panel-specific recognizable icon buttons rather than text characters or generic arrows.
 - Collapse and expand transitions should be animated.
 - The timeline viewport height should fit the rendered axis, lines, and note area instead of stretching to fill unused workspace height.
+- Empty timelines should show a clear centered empty state instead of a visually unbalanced blank canvas.
 - Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
 - Layout preferences should be remembered in the browser.
 - Layout changes should not alter saved timeline data.
@@ -118,6 +125,13 @@ Given the user opens the app for the first time
 When no timeline file has been loaded
 Then the timeline starts empty
 And no personal sample data is displayed.
+
+### Show Empty Timeline State
+
+Given the timeline has no items
+When the timeline renders
+Then the empty canvas shows a clear centered empty state
+And the timeline grid is not visually stretched or pushed to one side.
 
 ### Create An Event
 
@@ -224,6 +238,22 @@ Given the user creates a new timeline item
 When the item is added
 Then its initial color is selected from the preset palette.
 
+### Use Expanded Color Palette
+
+Given an item is selected
+When the editor renders the color presets
+Then the user can choose from at least 18 preset colors
+And the presets include warm, cool, accent, and neutral choices.
+
+### Use Icon Toolbar
+
+Given the timeline action toolbar is visible
+When the user reviews available actions
+Then create-item buttons show icons with short labels
+And toolbar icons use distinct accent colors
+And create, file, and export groups have visible titles and separators
+And item locking is available as a lock/unlock icon toggle outside the create-item button group.
+
 ### Use Timeline Context Menu
 
 Given a timeline item exists
@@ -231,6 +261,13 @@ When the user opens the context menu on the item
 Then the app selects that item
 And the menu offers Copy, Paste, Duplicate, Lock Items or Unlock Items, and Delete
 And unavailable commands are disabled.
+
+### Use Context Menu Zoom Commands
+
+Given the user opens the timeline context menu
+When the menu appears
+Then Zoom in, Zoom out, and Fit commands are available with recognizable icons
+And zoom out respects the readable minimum zoom.
 
 ### Use Timeline Command Shortcuts
 
@@ -246,6 +283,13 @@ Then the app asks before deleting the selected item
 When the user presses `Ctrl+Shift+L` or `Command+Shift+L`
 Then item locking toggles
 And command shortcuts do not run while the user is typing in an editor field.
+
+### Use Zoom Shortcuts
+
+Given focus is not inside an editor field
+When the user presses `+` or `-`
+Then the timeline zooms in or out
+And zoom out stops at the readable minimum.
 
 ### Rename A Line
 
@@ -282,6 +326,13 @@ And no item changes date or line.
 Given the user zooms into a timeline
 When the zoom level is high enough for day-level detail
 Then day ticks or day labels are visible.
+
+### Keep Zoom Readable
+
+Given the user repeatedly zooms out
+When the readable minimum zoom is reached
+Then the app stops zooming out
+And axis labels and timeline items remain readable.
 
 ### Fit Timeline
 

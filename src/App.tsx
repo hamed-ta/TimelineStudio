@@ -1,4 +1,30 @@
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import {
+  Baby,
+  Calendar,
+  Clipboard,
+  CircleDot,
+  Copy,
+  FileCode2,
+  FileText,
+  Flag,
+  FolderOpen,
+  Files,
+  ImageDown,
+  LockKeyhole,
+  LockKeyholeOpen,
+  Maximize2,
+  Minus,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelTopClose,
+  PanelTopOpen,
+  Save,
+  StickyNote,
+  Trash2,
+  Type,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 type ThemeMode = "system" | "light" | "dark";
@@ -106,8 +132,9 @@ export function App() {
                 </span>
               </p>
             </div>
-            <button type="button" className="secondary-button" id="fitButton">
-              Fit
+            <button type="button" className="secondary-button fit-button" id="fitButton">
+              <Maximize2 size={16} aria-hidden="true" />
+              <span>Fit</span>
             </button>
           </div>
 
@@ -124,14 +151,14 @@ export function App() {
               <span>{THEME_LABELS[themeMode]}</span>
             </button>
             <span className="separator" aria-hidden="true"></span>
-            <button type="button" className="icon-button" id="zoomOutButton" aria-label="Zoom out">
-              -
+            <button type="button" className="icon-button zoom-icon-button" id="zoomOutButton" aria-label="Zoom out" title="Zoom out">
+              <ZoomOut size={18} aria-hidden="true" />
             </button>
             <label htmlFor="zoomRange">Zoom</label>
-            <input id="zoomRange" type="range" min="0.5" max="360" step="0.5" defaultValue="18" />
+            <input id="zoomRange" type="range" min="18" max="360" step="0.5" defaultValue="18" />
             <span id="zoomLabel">18 px/month</span>
-            <button type="button" className="icon-button" id="zoomInButton" aria-label="Zoom in">
-              +
+            <button type="button" className="icon-button zoom-icon-button" id="zoomInButton" aria-label="Zoom in" title="Zoom in">
+              <ZoomIn size={18} aria-hidden="true" />
             </button>
           </div>
         </header>
@@ -155,8 +182,8 @@ export function App() {
                   onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
                 >
                   <span className="toggle-icon-stack" aria-hidden="true">
-                    <ChevronLeft className="toggle-icon-state" data-active={!sidebarCollapsed} size={18} />
-                    <ChevronRight className="toggle-icon-state" data-active={sidebarCollapsed} size={18} />
+                    <PanelLeftClose className="toggle-icon-state" data-active={!sidebarCollapsed} size={18} />
+                    <PanelLeftOpen className="toggle-icon-state" data-active={sidebarCollapsed} size={18} />
                   </span>
                 </button>
               </div>
@@ -296,6 +323,19 @@ export function App() {
                 <div className="tool-dock-actions">
                   <button
                     type="button"
+                    className="icon-button lock-toggle-button"
+                    id="itemsLockedButton"
+                    aria-pressed="false"
+                    aria-label="Lock items"
+                    title="Lock items"
+                  >
+                    <span className="toggle-icon-stack" aria-hidden="true">
+                      <LockKeyholeOpen className="toggle-icon-state" data-lock-state="unlocked" data-active="true" size={17} />
+                      <LockKeyhole className="toggle-icon-state" data-lock-state="locked" data-active="false" size={17} />
+                    </span>
+                  </button>
+                  <button
+                    type="button"
                     className="icon-button panel-toggle-button"
                     data-collapsed={toolbarCollapsed ? "true" : "false"}
                     aria-expanded={!toolbarCollapsed}
@@ -305,86 +345,181 @@ export function App() {
                     onClick={() => setToolbarCollapsed((collapsed) => !collapsed)}
                   >
                     <span className="toggle-icon-stack" aria-hidden="true">
-                      <ChevronUp className="toggle-icon-state" data-active={!toolbarCollapsed} size={18} />
-                      <ChevronDown className="toggle-icon-state" data-active={toolbarCollapsed} size={18} />
+                      <PanelTopClose className="toggle-icon-state" data-active={!toolbarCollapsed} size={18} />
+                      <PanelTopOpen className="toggle-icon-state" data-active={toolbarCollapsed} size={18} />
                     </span>
                   </button>
                 </div>
               </div>
 
               <div id="timelineActionToolbar" className="toolbar" role="toolbar" aria-label="Timeline actions">
-                <button type="button" className="toolbar-button" data-add="birth">
-                  Birth
-                </button>
-                <button type="button" className="toolbar-button" data-add="event">
-                  Event
-                </button>
-                <button type="button" className="toolbar-button" data-add="marker">
-                  Marker
-                </button>
-                <button type="button" className="toolbar-button" data-add="note">
-                  Note
-                </button>
-                <button type="button" className="toolbar-button" data-add="period">
-                  Period
-                </button>
-                <button type="button" className="toolbar-button" data-add="line">
-                  Line
-                </button>
-                <button type="button" className="toolbar-button" data-add="text">
-                  Text
-                </button>
-                <span className="separator" aria-hidden="true"></span>
-                <label className="toolbar-check">
-                  <input id="itemsLockedInput" type="checkbox" />
-                  Lock items
-                </label>
-                <span className="separator" aria-hidden="true"></span>
-                <button type="button" className="toolbar-button" id="saveJsonButton">
-                  Save JSON
-                </button>
-                <button type="button" className="toolbar-button" id="loadJsonButton">
-                  Load JSON
-                </button>
-                <span className="separator" aria-hidden="true"></span>
-                <button type="button" className="toolbar-button" id="exportSvgButton">
-                  SVG
-                </button>
-                <button type="button" className="toolbar-button" id="exportPngButton">
-                  PNG
-                </button>
-                <button type="button" className="toolbar-button" id="exportPdfButton">
-                  PDF
-                </button>
+                <input id="itemsLockedInput" type="checkbox" hidden />
+                <div className="toolbar-group" aria-label="Create items">
+                  <span className="toolbar-group-title">Create</span>
+                  <div className="toolbar-group-actions">
+                    <button type="button" className="toolbar-button" data-tone="event" data-add="event" title="Add event">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <CircleDot size={15} />
+                      </span>
+                      <span>Event</span>
+                    </button>
+                    <button type="button" className="toolbar-button" data-tone="period" data-add="period" title="Add period">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <Calendar size={15} />
+                      </span>
+                      <span>Period</span>
+                    </button>
+                    <button type="button" className="toolbar-button" data-tone="note" data-add="note" title="Add note">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <StickyNote size={15} />
+                      </span>
+                      <span>Note</span>
+                    </button>
+                    <button type="button" className="toolbar-button" data-tone="marker" data-add="marker" title="Add marker">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <Flag size={15} />
+                      </span>
+                      <span>Marker</span>
+                    </button>
+                    <button type="button" className="toolbar-button" data-tone="birth" data-add="birth" title="Add birthdate">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <Baby size={15} />
+                      </span>
+                      <span>Birth</span>
+                    </button>
+                    <button type="button" className="toolbar-button" data-tone="line" data-add="line" title="Add line item">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <Minus size={15} />
+                      </span>
+                      <span>Line</span>
+                    </button>
+                    <button type="button" className="toolbar-button" data-tone="text" data-add="text" title="Add text">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <Type size={15} />
+                      </span>
+                      <span>Text</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="toolbar-group" aria-label="File actions">
+                  <span className="toolbar-group-title">File</span>
+                  <div className="toolbar-group-actions">
+                    <button type="button" className="toolbar-button" data-tone="save" id="saveJsonButton" title="Save JSON">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <Save size={15} />
+                      </span>
+                      <span>Save</span>
+                    </button>
+                    <button type="button" className="toolbar-button" data-tone="load" id="loadJsonButton" title="Load JSON">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <FolderOpen size={15} />
+                      </span>
+                      <span>Load</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="toolbar-group" aria-label="Export actions">
+                  <span className="toolbar-group-title">Export</span>
+                  <div className="toolbar-group-actions">
+                    <button type="button" className="toolbar-button" data-tone="svg" id="exportSvgButton" title="Export SVG">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <FileCode2 size={15} />
+                      </span>
+                      <span>SVG</span>
+                    </button>
+                    <button type="button" className="toolbar-button" data-tone="png" id="exportPngButton" title="Export PNG">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <ImageDown size={15} />
+                      </span>
+                      <span>PNG</span>
+                    </button>
+                    <button type="button" className="toolbar-button" data-tone="pdf" id="exportPdfButton" title="Export PDF">
+                      <span className="toolbar-icon" aria-hidden="true">
+                        <FileText size={15} />
+                      </span>
+                      <span>PDF</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="timeline-viewport" id="timelineViewport" tabIndex={0}>
               <svg id="timelineSvg" role="img" aria-labelledby="stageTitle stageMeta"></svg>
+              <div className="timeline-empty-state" id="timelineEmptyState" hidden>
+                <div className="empty-state-mark" aria-hidden="true">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <strong>No timeline items yet</strong>
+                <p>Create an event, period, note, marker, birthdate, line, or text item.</p>
+              </div>
             </div>
             <div className="context-menu" id="timelineContextMenu" role="menu" aria-label="Timeline item actions" hidden>
               <button type="button" role="menuitem" data-context-action="copy">
-                <span>Copy</span>
+                <span className="context-menu-label">
+                  <Copy size={15} aria-hidden="true" />
+                  <span>Copy</span>
+                </span>
                 <kbd>Ctrl/Cmd C</kbd>
               </button>
               <button type="button" role="menuitem" data-context-action="paste">
-                <span>Paste</span>
+                <span className="context-menu-label">
+                  <Clipboard size={15} aria-hidden="true" />
+                  <span>Paste</span>
+                </span>
                 <kbd>Ctrl/Cmd V</kbd>
               </button>
               <button type="button" role="menuitem" data-context-action="duplicate">
-                <span>Duplicate</span>
+                <span className="context-menu-label">
+                  <Files size={15} aria-hidden="true" />
+                  <span>Duplicate</span>
+                </span>
                 <kbd>Ctrl/Cmd D</kbd>
               </button>
               <button type="button" role="menuitem" data-context-action="lock">
-                <span>Lock items</span>
+                <span className="context-menu-label">
+                  <LockKeyhole size={15} aria-hidden="true" />
+                  <span>Lock items</span>
+                </span>
                 <kbd>Ctrl/Cmd Shift L</kbd>
               </button>
               <button type="button" role="menuitem" data-context-action="unlock">
-                <span>Unlock items</span>
+                <span className="context-menu-label">
+                  <LockKeyholeOpen size={15} aria-hidden="true" />
+                  <span>Unlock items</span>
+                </span>
                 <kbd>Ctrl/Cmd Shift L</kbd>
               </button>
+              <div className="context-menu-separator" role="separator"></div>
+              <button type="button" role="menuitem" data-context-action="zoom-in">
+                <span className="context-menu-label">
+                  <ZoomIn size={15} aria-hidden="true" />
+                  <span>Zoom in</span>
+                </span>
+                <kbd>+</kbd>
+              </button>
+              <button type="button" role="menuitem" data-context-action="zoom-out">
+                <span className="context-menu-label">
+                  <ZoomOut size={15} aria-hidden="true" />
+                  <span>Zoom out</span>
+                </span>
+                <kbd>-</kbd>
+              </button>
+              <button type="button" role="menuitem" data-context-action="fit">
+                <span className="context-menu-label">
+                  <Maximize2 size={15} aria-hidden="true" />
+                  <span>Fit</span>
+                </span>
+                <span aria-hidden="true"></span>
+              </button>
+              <div className="context-menu-separator" role="separator"></div>
               <button type="button" role="menuitem" className="danger" data-context-action="delete">
-                <span>Delete</span>
+                <span className="context-menu-label">
+                  <Trash2 size={15} aria-hidden="true" />
+                  <span>Delete</span>
+                </span>
                 <kbd>Del</kbd>
               </button>
             </div>

@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add timeline context menu commands and keyboard shortcuts.
+Improve the timeline toolbar, context menu, zoom controls, and empty timeline presentation.
 
 ## Last Known State
 
@@ -34,9 +34,17 @@ Fit now respects a readable zoom floor. Short timelines still fit into the viewp
 
 Lane-bound items snap to nearby same-line item edges while dragging or resizing. Range items on the same line are prevented from overlapping during those drag interactions.
 
-The item editor now includes a curated 10-color preset palette next to the custom color input. Selecting a swatch updates the selected item color immediately, and new items start with a random palette color.
+The item editor now includes an 18-color preset palette next to the custom color input. Selecting a swatch updates the selected item color immediately, and new items start with a random palette color.
 
-The timeline has a custom context menu for item commands. Right-clicking an item selects it and shows Copy, Paste, Duplicate, Lock Items or Unlock Items, and Delete. Copy and paste use an in-app item clipboard. Keyboard shortcuts support `Ctrl`/`Command+C`, `Ctrl`/`Command+V`, `Ctrl`/`Command+D`, `Delete`/`Backspace`, and `Ctrl`/`Command+Shift+L` when focus is not in an editor field.
+The timeline has a custom context menu for item commands. Right-clicking an item selects it and shows Copy, Paste, Duplicate, Lock Items or Unlock Items, Delete, Zoom in, Zoom out, and Fit. Copy and paste use an in-app item clipboard. Keyboard shortcuts support `Ctrl`/`Command+C`, `Ctrl`/`Command+V`, `Ctrl`/`Command+D`, `Delete`/`Backspace`, `Ctrl`/`Command+Shift+L`, `+`, and `-` when focus is not in an editor field.
+
+The timeline toolbar uses existing `lucide-react` icons with distinct accent colors. Create, file, and export actions are visually grouped with visible group titles and separators, and item locking is a dedicated icon toggle in the toolbar header instead of a checkbox in the action row.
+
+The editor sidebar and action toolbar collapse controls use panel-specific open/close icons instead of generic chevrons. The lock toggle and context menu lock actions use keyhole lock icons.
+
+Zoom controls now use Lucide icons. Manual zoom-out, wheel zoom-out, Fit, and context-menu zoom-out all respect the same readable `18 px/month` minimum.
+
+Empty timelines show a centered non-interactive empty state overlay, and the timeline SVG/grid expands to at least the visible viewport width so the empty canvas does not look pushed to one side.
 
 Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
 
@@ -58,7 +66,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`5fc7cf3 feat: add item color palette`
+`7ab83db feat: add timeline context menu commands`
 
 ## Work Completed This Session
 
@@ -75,6 +83,18 @@ Firebase should wait until the local Vite app is stable.
 - Added a custom context menu for selected timeline item commands.
 - Added an in-app item clipboard for copy and paste.
 - Added keyboard shortcuts for copy, paste, duplicate, delete, and lock/unlock.
+- Expanded the preset item color palette from 10 to 18 colors.
+- Reordered and grouped toolbar actions into create, file, and export groups with visible titles and separators.
+- Added colored Lucide icons to toolbar actions.
+- Replaced the toolbar lock checkbox with a dedicated lock/unlock icon toggle in the toolbar header.
+- Added icons to context menu actions and added context menu Zoom in, Zoom out, and Fit commands.
+- Added plus and minus zoom shortcuts outside editor fields.
+- Raised the global minimum zoom to the readable `18 px/month` floor.
+- Added a centered empty timeline state and ensured short timeline SVGs fill the viewport width.
+- Removed the beveled square treatment around toolbar and lock-toggle icons while keeping colored icon strokes.
+- Replaced sidebar and toolbar collapse chevrons with panel open/close icons.
+- Replaced lock/unlock icons with keyhole lock variants in the toolbar header and context menu.
+- Centered toolbar, zoom, panel, lock, and context-menu SVG icons by using grid-centered icon buttons and block-level SVG layout.
 - Updated product notes, changelog, plan, and handoff docs.
 
 ## Files Changed
@@ -85,6 +105,7 @@ Firebase should wait until the local Vite app is stable.
 - `docs/product.md`
 - `app.js`
 - `src/App.tsx`
+- `src/timeline/model.ts`
 - `styles.css`
 
 ## Decisions
@@ -103,6 +124,14 @@ Firebase should wait until the local Vite app is stable.
 - Keep context-menu copy/paste in-app for now rather than using the OS clipboard, avoiding browser permissions and preserving full item structure.
 - Treat Lock Items and Unlock Items as commands for the existing global item-lock setting, not as per-item lock state.
 - Ignore item command shortcuts while focus is in editor inputs, selects, textareas, or editable content.
+- Reuse `lucide-react` for toolbar iconography instead of adding Font Awesome or another icon dependency.
+- Use colored Lucide icons instead of adding a multicolor icon dependency.
+- Use panel-specific Lucide icons for panel collapse and expand controls so the icon communicates the affected area.
+- Use keyhole lock icons for item lock state so the toolbar and context menu share the same lock metaphor.
+- Keep create-item actions first, followed by file actions, then export actions.
+- Keep the hidden lock checkbox only as a compatibility bridge for existing legacy `app.js` state syncing.
+- Keep `18 px/month` as both the Fit readability floor and the global manual zoom minimum.
+- Keep the empty-state overlay non-interactive so it does not block panning, context menus, or item creation.
 
 ## Verification
 
@@ -152,6 +181,42 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke: `Ctrl`/`Command+Shift+L` toggled item locking on and off.
 - Browser smoke: `Delete` removed the selected test item; browser automation did not expose the confirm dialog before handling it.
 - Browser smoke: no console warnings or errors were reported for context menu interactions.
+- RED: the previous toolbar used text-only buttons in one row, mixed the lock checkbox into the action buttons, and the palette had only 10 presets.
+- `node --check app.js`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: toolbar rendered three groups with visible titles `Create`, `File`, and `Export`.
+- Browser smoke: Create and File groups showed `1px` right separators, and the final Export group had no trailing separator.
+- Browser smoke: every visible toolbar action rendered one Lucide SVG icon.
+- Browser smoke: item lock is now an icon button in the toolbar header; the legacy checkbox is hidden.
+- Browser smoke: clicking the lock icon set `itemsLocked` true, updated `aria-pressed` to `true`, changed the title to `Unlock items`, and applied the locked viewport class.
+- Browser smoke: clicking the lock icon again restored `itemsLocked` false, `aria-pressed` false, title `Lock items`, and removed the locked viewport class.
+- Browser smoke: the item color palette rendered 18 preset colors, including warm, cool, accent, and neutral choices.
+- Browser smoke: adding an event from the icon toolbar worked, and choosing the Slate preset set the selected item color to `#64748b`.
+- Browser smoke: no console warnings or errors were reported for toolbar and palette interactions.
+- RED: the previous manual zoom range still allowed `0.5 px/month`, zoom controls used text characters, the context menu had no zoom commands or icons, and empty timelines rendered as an unbalanced short SVG in a wide viewport.
+- `node --check app.js`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: empty timeline rendered with the empty state visible, no timeline items, SVG width `911`, and viewport width `911`.
+- Browser smoke: the empty-state panel was centered in the viewport (`dx` 0, `dy` 0).
+- Browser smoke: toolbar action buttons rendered 12 colored icons for event, period, note, marker, birth, line, text, save, load, SVG, PNG, and PDF.
+- Browser smoke: Fit, Zoom in, and Zoom out controls each rendered Lucide SVG icons.
+- Browser smoke: repeated header Zoom out stopped at `18 px/month` and showed `Minimum readable zoom reached`.
+- Browser smoke: the context menu exposed Zoom in, Zoom out, and Fit actions, each with one SVG icon.
+- Browser smoke: context-menu Zoom out at the minimum stayed at `18 px/month`, and context-menu Zoom in moved to `38 px/month`.
+- Browser smoke: pressing `-` zoomed out to `18 px/month`, and pressing `+` zoomed back to `38 px/month` when focus was not in an editor field.
+- Browser smoke: opening the context menu on an empty timeline disabled copy, paste, duplicate, and delete while keeping zoom and lock commands available.
+- Browser smoke: adding an event from the toolbar hid the empty state and removed the `is-empty` viewport class.
+- Browser smoke: the live tab was reset to the empty state at `18 px/month`, and no console warnings or errors were reported.
+- Polish check: toolbar and lock-toggle icons now render as colored strokes without internal beveled square backgrounds.
+- `git diff --check`: passed after removing icon chip styling.
+- `npm run build`: passed after removing icon chip styling.
+- Polish check: icon-only buttons now grid-center their contents, and SVG icons render as block elements to avoid baseline offset.
+- Browser smoke: Zoom out, Zoom in, sidebar collapse, lock, and toolbar collapse icon-only buttons measured centered (`dx` 0, `dy` 0).
+- Browser smoke: every toolbar icon+label group measured centered in its button (`groupDx` 0, `groupDy` 0).
 
 ## Open Issues
 
@@ -163,8 +228,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: add timeline context menu commands`
+`feat: improve timeline controls and empty state`
 
 ## Next Safe Step
 
-Review the timeline context menu and shortcuts in the real UI, then commit if acceptable.
+Review the toolbar icons, context menu zoom actions, readable zoom floor, and empty timeline state in the real UI, then commit if acceptable.

@@ -70,10 +70,10 @@ import {
   const AXIS_LABEL_CHAR_WIDTH = 7.2;
   const AXIS_MONTH_LABEL_GAP = 14;
   const AXIS_DAY_LABEL_GAP = 8;
-  const MIN_ZOOM = 0.5;
+  const MIN_ZOOM = 18;
   const MAX_ZOOM = 360;
   const DEFAULT_ZOOM = 18;
-  const FIT_MIN_ZOOM = DEFAULT_ZOOM;
+  const FIT_MIN_ZOOM = MIN_ZOOM;
   const EDGE_SNAP_PIXELS = 14;
   const EDGE_SNAP_MAX_DAYS = 14;
   const AVG_DAYS_PER_MONTH = 365.2425 / 12;
@@ -88,6 +88,7 @@ import {
     endDateInput: document.getElementById("endDateInput"),
     autoEndDateInput: document.getElementById("autoEndDateInput"),
     itemsLockedInput: document.getElementById("itemsLockedInput"),
+    itemsLockedButton: document.getElementById("itemsLockedButton"),
     snapInput: document.getElementById("snapInput"),
     laneList: document.getElementById("laneList"),
     addLaneButton: document.getElementById("addLaneButton"),
@@ -120,6 +121,7 @@ import {
     fitButton: document.getElementById("fitButton"),
     timelineViewport: document.getElementById("timelineViewport"),
     timelineSvg: document.getElementById("timelineSvg"),
+    timelineEmptyState: document.getElementById("timelineEmptyState"),
     timelineContextMenu: document.getElementById("timelineContextMenu"),
     timelineInfoPanel: document.getElementById("timelineInfoPanel"),
     hoverDateLabel: document.getElementById("hoverDateLabel"),
@@ -175,6 +177,7 @@ import {
     });
     dom.autoEndDateInput.addEventListener("change", updateTimelineFromControls);
     dom.itemsLockedInput.addEventListener("change", updateTimelineFromControls);
+    dom.itemsLockedButton.addEventListener("click", () => setItemsLocked(!timeline.settings.itemsLocked));
     dom.snapInput.addEventListener("change", updateTimelineFromControls);
     [dom.itemStartInput, dom.itemEndInput].forEach((control) => {
       control.addEventListener("input", updateItemCalendarPreviewFromInputs);
@@ -215,8 +218,8 @@ import {
     dom.exportPdfButton.addEventListener("click", exportPdfFile);
 
     dom.zoomRange.addEventListener("input", () => setZoom(Number(dom.zoomRange.value)));
-    dom.zoomInButton.addEventListener("click", () => setZoom(zoom + 20));
-    dom.zoomOutButton.addEventListener("click", () => setZoom(zoom - 20));
+    dom.zoomInButton.addEventListener("click", () => zoomBy(20));
+    dom.zoomOutButton.addEventListener("click", () => zoomBy(-20));
     dom.fitButton.addEventListener("click", fitTimelineToViewport);
 
     dom.timelineViewport.addEventListener("wheel", handleViewportWheel, { passive: false });
@@ -267,7 +270,9 @@ import {
     );
     const rowHeight = settings.rowHeight || DEFAULT_ROW_HEIGHT;
     const contentEndDate = addDaysIso(settings.endDate, 1);
-    const contentWidth = LEFT_GUTTER + daysBetween(settings.startDate, contentEndDate) * pixelsPerDay() + RIGHT_GUTTER;
+    const timelineWidth = LEFT_GUTTER + daysBetween(settings.startDate, contentEndDate) * pixelsPerDay() + RIGHT_GUTTER;
+    const viewportWidth = Math.ceil(dom.timelineViewport.clientWidth || 0);
+    const contentWidth = Math.max(timelineWidth, viewportWidth);
     const laneAreaBottom = AXIS_HEIGHT + laneCount * rowHeight;
     const noteAreaHeight = timeline.items.some((item) => item.type === "note") ? NOTE_AREA_HEIGHT : 0;
     const contentHeight = laneAreaBottom + noteAreaHeight + FOOTER_HEIGHT;
@@ -282,8 +287,12 @@ import {
     svg.append(svgEl("rect", { class: "axis-band", x: 0, y: 0, width: contentWidth, height: AXIS_HEIGHT }));
     svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: contentWidth, y1: AXIS_HEIGHT, y2: AXIS_HEIGHT }));
 
-    drawGrid(svg, settings, laneCount, rowHeight, contentHeight);
+    drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth);
     drawLaneLabels(svg, settings, laneCount, rowHeight);
+
+    const isEmpty = timeline.items.length === 0;
+    dom.timelineViewport.classList.toggle("is-empty", isEmpty);
+    if (dom.timelineEmptyState) dom.timelineEmptyState.hidden = !isEmpty;
 
     const sortedItems = timeline.items
       .slice()
@@ -296,7 +305,7 @@ import {
       .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight));
   }
 
-  function drawGrid(svg, settings, laneCount, rowHeight, contentHeight) {
+  function drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth) {
     const startYear = isoYear(settings.startDate);
     const endYear = isoYear(settings.endDate);
     const yearLabelStep = zoom < 13 ? 5 : zoom < 21 ? 2 : 1;
@@ -335,7 +344,7 @@ import {
 
     for (let lane = 0; lane <= laneCount; lane += 1) {
       const y = AXIS_HEIGHT + lane * rowHeight;
-      svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: dateToX(contentEndDate), y1: y, y2: y }));
+      svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: contentWidth, y1: y, y2: y }));
     }
   }
 
@@ -963,6 +972,7 @@ import {
     dom.endDateInput.disabled = timeline.settings.autoEndDate;
     dom.autoEndDateInput.checked = timeline.settings.autoEndDate;
     dom.itemsLockedInput.checked = timeline.settings.itemsLocked;
+    syncItemsLockedButton();
     dom.timelineViewport.classList.toggle("items-locked", timeline.settings.itemsLocked);
     dom.snapInput.value = String(timeline.settings.snap);
     dom.zoomRange.value = String(zoom);
@@ -1380,6 +1390,18 @@ import {
       return;
     }
 
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && (key === "+" || key === "=")) {
+      event.preventDefault();
+      zoomBy(20);
+      return;
+    }
+
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && key === "-") {
+      event.preventDefault();
+      zoomBy(-20);
+      return;
+    }
+
     if ((event.key === "Delete" || event.key === "Backspace") && selectedId) {
       event.preventDefault();
       deleteSelectedItem();
@@ -1539,6 +1561,18 @@ import {
     if (changed) setStatus(nextLocked ? "Items locked" : "Items unlocked");
   }
 
+  function syncItemsLockedButton() {
+    if (!dom.itemsLockedButton) return;
+    const locked = timeline.settings.itemsLocked;
+    dom.itemsLockedButton.classList.toggle("is-active", locked);
+    dom.itemsLockedButton.setAttribute("aria-pressed", String(locked));
+    dom.itemsLockedButton.setAttribute("aria-label", locked ? "Unlock items" : "Lock items");
+    dom.itemsLockedButton.title = locked ? "Unlock items" : "Lock items";
+    dom.itemsLockedButton.querySelectorAll(".toggle-icon-state").forEach((icon) => {
+      icon.dataset.active = String(icon.dataset.lockState === (locked ? "locked" : "unlocked"));
+    });
+  }
+
   function openTimelineContextMenu(event) {
     event.preventDefault();
     const itemNode = event.target.closest("[data-item-id]");
@@ -1581,6 +1615,12 @@ import {
       setItemsLocked(true);
     } else if (action === "unlock") {
       setItemsLocked(false);
+    } else if (action === "zoom-in") {
+      zoomBy(20);
+    } else if (action === "zoom-out") {
+      zoomBy(-20);
+    } else if (action === "fit") {
+      fitTimelineToViewport();
     } else if (action === "delete") {
       deleteSelectedItem();
     }
@@ -1990,6 +2030,18 @@ import {
     dom.zoomRange.value = String(zoom);
     dom.zoomLabel.textContent = `${formatZoomValue(zoom)} px/month`;
     if (options.render !== false) renderAll({ save: false });
+  }
+
+  function zoomBy(delta) {
+    const requestedZoom = zoom + delta;
+    setZoom(requestedZoom);
+    if (requestedZoom < MIN_ZOOM) {
+      setStatus("Minimum readable zoom reached");
+    } else if (requestedZoom > MAX_ZOOM) {
+      setStatus("Maximum zoom reached");
+    } else {
+      setStatus(delta > 0 ? "Zoomed in" : "Zoomed out");
+    }
   }
 
   function fitTimelineToViewport() {
