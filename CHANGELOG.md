@@ -17,6 +17,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Added marker items that draw a vertical line across all timeline lines.
 - Added note items with a leader arrow and text balloon.
 - Updated event markers with a beveled, glass-like visual treatment.
+- Previewed softer period bar backgrounds with restrained color depth and light shadow.
 
 ### Documentation
 

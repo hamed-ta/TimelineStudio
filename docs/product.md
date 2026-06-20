@@ -30,7 +30,7 @@ A point-in-time annotation with a straight leader arrow pointing to a date and a
 
 ### Period
 
-A date range with a start date and end date.
+A date range with a start date and end date. Period bars should read as colored timeline sections with a soft background treatment.
 
 ### Text Item
 
@@ -129,6 +129,13 @@ And the note is still present after save/load.
 Given a timeline with a School line
 When the user creates a period from `1998-09-01` to `2001-06-30`
 Then the period spans that range horizontally.
+
+### Distinguish Periods Visually
+
+Given a timeline has a period
+When the period is rendered on the timeline
+Then the period bar uses a soft colored background with a light shadow
+And the period keeps a moderate corner radius rather than becoming a fully rounded pill.
 
 ### Rename A Line
 

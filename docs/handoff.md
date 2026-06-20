@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Improve event marker styling with a richer beveled or glass-like appearance.
+Apply a softer colored background treatment for period bars.
 
 ## Last Known State
 
@@ -24,6 +24,8 @@ Timeline items now include a note type for point annotations. Notes render with 
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
 
+Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
+
 Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version remains `0.1.0`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
@@ -32,13 +34,13 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`b3232b9 feat: add annotation note items`
+`3795082 feat: improve event marker styling`
 
 ## Work Completed This Session
 
-- Added product acceptance scenario for visually distinct event markers.
-- Updated event SVG rendering with a per-event gradient, shadow, beveled edge, and glint.
-- Added event export styles so SVG/PNG/PDF output keeps the richer event marker treatment.
+- Added product acceptance scenario for visually distinct period bars.
+- Updated period SVG rendering with a restrained per-period gradient and light shadow.
+- Added period export styles so SVG/PNG/PDF output keeps the softer period bar treatment.
 - Updated `CHANGELOG.md`, plan, and handoff docs.
 
 ## Files Changed
@@ -53,19 +55,18 @@ Firebase should wait until the local Vite app is stable.
 
 ## Decisions
 
-- Keep the event item model unchanged; this slice is purely visual.
+- Keep the period item model unchanged; this preview is purely visual.
 - Use SVG gradients and simple shape layers rather than adding another dependency.
-- Keep the event title and drag target behavior unchanged.
+- Use a moderate period radius (`8` on a 34px-high bar), so the result is soft without becoming a full pill.
 
 ## Verification
 
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
 - `git diff --check`: passed.
-- Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Event in the toolbar.
-- Browser smoke: one selected `.item-event` rendered with gradient-backed marker, shadow, edge, and glint elements.
-- Browser smoke: event marker fill used a generated `event-glass-*` gradient with three stops, marker radius `11`, edge stroke `#b75500`, and visible title `New event`.
-- Browser smoke: console error log was empty during event marker checks.
+- `npm run build`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Period in the toolbar.
+- Browser smoke: one selected `.item-period` rendered with a generated `period-glass-*` two-stop background gradient, radius `8`, shadow opacity `0.12`, no highlight layer, no lower bevel layer, and no console errors.
 
 ## Open Issues
 
@@ -77,8 +78,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: improve event marker styling`
+`feat: soften period bar styling`
 
 ## Next Safe Step
 
-Review the note and event marker visuals in the browser, then continue UI polish or JSON load/save smoke testing before Firebase work.
+Continue visual polish or JSON load/save smoke testing before Firebase work.

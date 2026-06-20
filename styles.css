@@ -887,8 +887,12 @@ button:focus-visible,
 }
 
 .period-body {
-  stroke: color-mix(in srgb, var(--timeline-label-strong) 18%, transparent);
   stroke-width: 1;
+}
+
+.period-shadow {
+  opacity: 0.12;
+  pointer-events: none;
 }
 
 .event-stem {

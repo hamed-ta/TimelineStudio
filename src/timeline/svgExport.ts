@@ -9,7 +9,8 @@ export const TIMELINE_EXPORT_CSS = `
   .axis-year{fill:#1d2732;font-size:13px;font-weight:700}
   .title-label{font-size:13px;font-weight:700}
   .note-label{font-size:13px;font-weight:650}
-  .period-body{stroke:rgba(0,0,0,.18);stroke-width:1}
+  .period-body{stroke-width:1}
+  .period-shadow{opacity:.12}
   .event-stem{stroke-width:3;stroke-linecap:round;opacity:.82}
   .event-marker{stroke:#fff;stroke-width:1}
   .event-marker-shadow{opacity:.2}

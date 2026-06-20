@@ -6,13 +6,14 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Improve event marker styling with a richer beveled or glass-like appearance.
+Apply a softer colored background treatment for period bars.
 
 ## Now
 
-- Keep the event item data model unchanged.
-- Render event markers with a gradient fill, beveled edge, shadow, and highlight.
-- Keep event anchors, drag behavior, save/load, and export behavior unchanged.
+- Keep the period item data model unchanged.
+- Render period bars with a restrained color background and light shadow.
+- Keep period bars only moderately rounded, not fully pill-shaped.
+- Keep period drag/resize, save/load, and export behavior unchanged.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
@@ -69,6 +70,7 @@ Improve event marker styling with a richer beveled or glass-like appearance.
 - Added vertical all-line marker items.
 - Added annotation note items with leader arrows and balloons.
 - Updated event markers with a beveled, glass-like visual treatment.
+- Added softer period bar backgrounds.
 
 ## Risks
 

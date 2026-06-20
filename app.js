@@ -320,7 +320,7 @@ import {
     const x2 = dateToX(hasEndYear(item.type) ? item.endDate : item.startDate);
 
     if (item.type === "period") {
-      drawPeriod(group, item, x1, x2, y);
+      drawPeriod(group, defs, item, x1, x2, y);
     } else if (item.type === "line") {
       drawLine(group, defs, item, x1, x2, y);
     } else if (item.type === "event") {
@@ -337,17 +337,45 @@ import {
     svg.append(group);
   }
 
-  function drawPeriod(group, item, x1, x2, y) {
+  function drawPeriod(group, defs, item, x1, x2, y) {
     const width = Math.max(12, x2 - x1);
+    const height = 34;
+    const radius = 8;
+    const gradientId = `period-glass-${safeSvgId(item.id)}`;
+    if (!document.getElementById(gradientId)) {
+      const gradient = svgEl("linearGradient", {
+        id: gradientId,
+        x1: x1,
+        y1: y - height / 2,
+        x2: x1,
+        y2: y + height / 2,
+        gradientUnits: "userSpaceOnUse",
+      });
+      gradient.append(svgEl("stop", { offset: "0", "stop-color": adjustColor(item.color, 10), "stop-opacity": "1" }));
+      gradient.append(svgEl("stop", { offset: "1", "stop-color": adjustColor(item.color, -6), "stop-opacity": "1" }));
+      defs.append(gradient);
+    }
+    const edgeColor = adjustColor(item.color, -14);
+
+    group.append(svgEl("rect", {
+      class: "period-shadow",
+      x: x1,
+      y: y - height / 2 + 4,
+      width,
+      height,
+      rx: radius,
+      fill: edgeColor,
+    }));
     group.append(
       svgEl("rect", {
         class: "period-body",
         x: x1,
-        y: y - 17,
+        y: y - height / 2,
         width,
-        height: 34,
-        rx: 6,
-        fill: item.color,
+        height,
+        rx: radius,
+        fill: `url(#${gradientId})`,
+        stroke: edgeColor,
       }),
     );
 
