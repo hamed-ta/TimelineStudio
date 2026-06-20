@@ -94,6 +94,8 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 - The user should be able to choose System, Light, or Dark theme from the app UI.
 - The chosen theme preference should be remembered in the browser.
 - The visual theme should use accessible contrast for text, controls, timeline labels, and canvas grid details.
+- The app should use a modern UI font stack that supports Persian text and keeps mixed English/Persian labels visually consistent.
+- UI text sizes should follow a small rem-based type scale instead of scattered one-off values.
 - Theme changes should not alter saved timeline data.
 
 ## Layout Behavior
@@ -253,6 +255,14 @@ Then create-item buttons show icons with short labels
 And toolbar icons use distinct accent colors
 And create, file, and export groups have visible titles and separators
 And item locking is available as a lock/unlock icon toggle outside the create-item button group.
+
+### Use Normalized Typography
+
+Given the app renders English and Persian timeline labels
+When the user views controls, panels, context menus, and timeline text
+Then the UI uses a Persian-capable modern sans-serif font stack
+And text sizes follow a consistent rem-based scale
+And timeline SVG labels use the same font family as the rest of the app.
 
 ### Use Timeline Context Menu
 

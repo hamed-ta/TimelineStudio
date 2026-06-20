@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Improve the timeline toolbar, context menu, zoom controls, and empty timeline presentation.
+Normalize app typography with a Persian-capable modern font stack and consistent type scale.
 
 ## Last Known State
 
@@ -11,6 +11,8 @@ Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `ap
 Typed helper modules own timeline model, dates, formatters, JSON, PDF, SVG export, file, and media helpers.
 
 The stylesheet uses semantic design tokens for light and dark color schemes. The app has a single cycling System/Light/Dark theme button that stores Light/Dark overrides in browser local storage and leaves timeline JSON unchanged.
+
+Typography now uses a dependency-free modern sans-serif stack that prefers Persian-capable fonts (`Vazirmatn`, `Noto Sans Arabic`) before system UI fallbacks. App UI and SVG timeline labels share the same font family, and UI font sizes use a small rem-based scale.
 
 The project no longer treats dependency-free status as absolute. ADR 0006 allows reasonable dependencies when they materially improve accessibility, reliability, maintainability, or complex feature behavior, with documentation requirements based on scope.
 
@@ -66,7 +68,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`7ab83db feat: add timeline context menu commands`
+`90f521b feat: improve timeline controls and empty state`
 
 ## Work Completed This Session
 
@@ -95,6 +97,11 @@ Firebase should wait until the local Vite app is stable.
 - Replaced sidebar and toolbar collapse chevrons with panel open/close icons.
 - Replaced lock/unlock icons with keyhole lock variants in the toolbar header and context menu.
 - Centered toolbar, zoom, panel, lock, and context-menu SVG icons by using grid-centered icon buttons and block-level SVG layout.
+- Added a Persian-capable modern sans-serif font stack without adding a font dependency.
+- Added a small rem-based UI type scale and timeline SVG text scale.
+- Normalized scattered UI and timeline font sizes onto those tokens.
+- Standardized odd intermediate font weights to common values like 500, 600, 700, and 800.
+- Applied the shared font stack to the timeline SVG labels.
 - Updated product notes, changelog, plan, and handoff docs.
 
 ## Files Changed
@@ -132,6 +139,9 @@ Firebase should wait until the local Vite app is stable.
 - Keep the hidden lock checkbox only as a compatibility bridge for existing legacy `app.js` state syncing.
 - Keep `18 px/month` as both the Fit readability floor and the global manual zoom minimum.
 - Keep the empty-state overlay non-interactive so it does not block panning, context menus, or item creation.
+- Keep typography dependency-free for now; prefer locally available Persian-capable fonts and system fallbacks instead of adding a web font package or CDN font.
+- Put `Vazirmatn` and `Noto Sans Arabic` first in the font stack because they support Persian text better than Latin-first UI fonts.
+- Use rem-based UI size tokens for controls, labels, panels, context menus, and info text.
 
 ## Verification
 
@@ -217,6 +227,17 @@ Firebase should wait until the local Vite app is stable.
 - Polish check: icon-only buttons now grid-center their contents, and SVG icons render as block elements to avoid baseline offset.
 - Browser smoke: Zoom out, Zoom in, sidebar collapse, lock, and toolbar collapse icon-only buttons measured centered (`dx` 0, `dy` 0).
 - Browser smoke: every toolbar icon+label group measured centered in its button (`groupDx` 0, `groupDy` 0).
+- RED: the previous typography used an Inter-first stack without Persian-capable fonts up front and scattered one-off font sizes.
+- `node --check app.js`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: body computed the Persian-capable stack `Vazirmatn, Noto Sans Arabic, Noto Sans, ...`.
+- Browser smoke: body text computed to `14px` with `21px` line height, toolbar buttons to `14px`, labels and the info panel to `12px`.
+- Browser smoke: `#timelineSvg` inherited the same Persian-capable font stack.
+- Browser smoke: timeline SVG axis labels rendered with normalized sizes (`13px` year label, `12px` Iranian/lane labels).
+- Browser smoke: a temporary Persian SVG label `تست فارسی` rendered with the same font stack and `13px` timeline label size, then the tab was reset to empty.
+- Browser smoke: no console warnings or errors were reported for typography verification.
 
 ## Open Issues
 
@@ -228,8 +249,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: improve timeline controls and empty state`
+`style: normalize app typography`
 
 ## Next Safe Step
 
-Review the toolbar icons, context menu zoom actions, readable zoom floor, and empty timeline state in the real UI, then commit if acceptable.
+Review the normalized typography in the real UI, especially mixed English/Persian labels, then commit if acceptable.

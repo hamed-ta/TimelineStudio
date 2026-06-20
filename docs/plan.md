@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Improve the timeline toolbar, zoom controls, and empty timeline presentation.
+Normalize the app typography with a Persian-capable modern font stack and consistent type scale.
 
 ## Now
 
@@ -26,6 +26,9 @@ Improve the timeline toolbar, zoom controls, and empty timeline presentation.
 - Keep manual zoom-out from going below the readable minimum.
 - Add zoom actions to the timeline context menu.
 - Show a centered empty state when the timeline has no items.
+- Use a Persian-capable modern sans-serif stack without adding a font dependency.
+- Normalize UI font sizes onto a small rem-based type scale.
+- Apply the same font stack to SVG timeline labels.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.

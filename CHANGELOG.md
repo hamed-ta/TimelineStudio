@@ -33,6 +33,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Added a timeline context menu and keyboard shortcuts for item copy, paste, duplicate, delete, and item locking.
 - Expanded the item color palette and reorganized the timeline toolbar with colored icons, action groups, and a lock toggle.
 - Added colored context menu icons, context menu zoom commands, a readable manual zoom-out minimum, and an empty timeline state.
+- Normalized app typography with a Persian-capable modern font stack and rem-based type scale.
 
 ### Documentation
 
