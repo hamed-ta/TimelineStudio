@@ -243,6 +243,41 @@ p {
   white-space: nowrap;
 }
 
+.timeline-context .file-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin-top: 3px;
+  white-space: normal;
+}
+
+.file-state span {
+  min-width: 0;
+}
+
+.dirty-indicator {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  color: var(--danger);
+  font-weight: 750;
+}
+
+.dirty-indicator::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.dirty-indicator[hidden] {
+  display: none;
+}
+
 .toolbar {
   flex-wrap: wrap;
   justify-content: flex-start;

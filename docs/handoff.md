@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Apply a softer colored background treatment for period bars.
+Improve local JSON save ergonomics with current-file saving, dirty state, and keyboard save.
 
 ## Last Known State
 
@@ -26,6 +26,10 @@ Event markers now use a richer visual treatment with a gradient fill, shadow, be
 
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
+The app now tracks a current JSON file when the browser grants a File System Access handle from loading or saving. Save and `Ctrl+S` / `Command+S` write to that handle when available. Browsers without writable file-handle access still download a JSON copy and the header labels that state as a copy.
+
+The main header shows the current file/copy state and an unsaved changes indicator. Timeline data mutations mark the document dirty; saving or loading clears the indicator.
+
 Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version remains `0.1.0`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
@@ -34,13 +38,15 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`3795082 feat: improve event marker styling`
+`d67a9f9 feat: soften period bar styling`
 
 ## Work Completed This Session
 
-- Added product acceptance scenario for visually distinct period bars.
-- Updated period SVG rendering with a restrained per-period gradient and light shadow.
-- Added period export styles so SVG/PNG/PDF output keeps the softer period bar treatment.
+- Added product acceptance scenarios for current-file saving, download fallback behavior, and unsaved changes.
+- Added browser file-open picker support so a loaded JSON file can become the current writable save target when supported.
+- Changed save behavior to reuse the current file handle, fall back to Save As, and then fall back to JSON download.
+- Added visible file/copy state and unsaved-change state in the top header.
+- Added `Ctrl+S` / `Command+S` handling for JSON save.
 - Updated `CHANGELOG.md`, plan, and handoff docs.
 
 ## Files Changed
@@ -50,14 +56,15 @@ Firebase should wait until the local Vite app is stable.
 - `docs/plan.md`
 - `docs/product.md`
 - `app.js`
-- `src/timeline/svgExport.ts`
+- `src/App.tsx`
+- `src/platform/files.ts`
 - `styles.css`
 
 ## Decisions
 
-- Keep the period item model unchanged; this preview is purely visual.
-- Use SVG gradients and simple shape layers rather than adding another dependency.
-- Use a moderate period radius (`8` on a 34px-high bar), so the result is soft without becoming a full pill.
+- Same-file local saving depends on the browser File System Access API; standard file inputs remain read-only by design.
+- Keep download fallback behavior so Safari/Firefox-style environments still support local JSON export.
+- Mark timeline data mutations dirty through the existing `renderAll()` paths, while zoom, pan, selection, Fit, and other view-only updates stay clean.
 
 ## Verification
 
@@ -65,21 +72,21 @@ Firebase should wait until the local Vite app is stable.
 - `npm run typecheck`: passed.
 - `git diff --check`: passed.
 - `npm run build`: passed.
-- Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Period in the toolbar.
-- Browser smoke: one selected `.item-period` rendered with a generated `period-glass-*` two-stop background gradient, radius `8`, shadow opacity `0.12`, no highlight layer, no lower bevel layer, and no console errors.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: initial header showed `No file selected`.
+- Browser smoke: clicked Event in the toolbar; header showed `Unsaved changes`, one timeline item rendered, status was `New event added`, and no console errors were reported.
 
 ## Open Issues
 
 - No automated browser test harness exists yet.
-- Manual JSON load verification is still needed in the Vite app because the available browser automation surface did not expose file upload.
+- Manual native file picker verification is still needed for accepting the browser write prompt and confirming an actual same-file save on disk.
 - Firebase is not installed or configured yet.
 - Rendering and interaction behavior still lives in legacy `app.js`.
 - `npm audit` reports one low-severity transitive `esbuild` advisory for Windows dev-server use.
 
 ## Suggested Commit Message
 
-`feat: soften period bar styling`
+`feat: improve local JSON save workflow`
 
 ## Next Safe Step
 
-Continue visual polish or JSON load/save smoke testing before Firebase work.
+Manually load or save a JSON file in a Chromium-based browser, edit the timeline, press `Ctrl+S` or `Command+S`, and confirm the same file updates before committing.

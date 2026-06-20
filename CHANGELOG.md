@@ -18,6 +18,7 @@ This project follows semantic versioning once releases begin. The current packag
 - Added note items with a leader arrow and text balloon.
 - Updated event markers with a beveled, glass-like visual treatment.
 - Previewed softer period bar backgrounds with restrained color depth and light shadow.
+- Added current-file save behavior where supported, an unsaved-changes indicator, and `Ctrl`/`Command` + `S` JSON saving.
 
 ### Documentation
 

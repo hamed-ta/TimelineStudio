@@ -55,6 +55,10 @@ When items are locked, dragging the canvas should pan the timeline and should no
 - The project should not include personal sample data as default app state.
 - JSON is the primary save/load format.
 - During the modern web app migration, local JSON load/edit/save behavior should remain available.
+- When browser support allows a writable file handle, loading or saving a JSON file should make that file the current save target.
+- When no writable file handle is available, saving should download a JSON copy instead of silently claiming direct file access.
+- The app should show whether the current timeline has unsaved edits.
+- `Ctrl+S` on Windows/Linux and `Command+S` on macOS should save the current timeline instead of opening the browser page-save flow.
 - In the planned account-based app, signed-in users should be able to store private timeline data in cloud storage.
 - Cloud storage should not replace JSON import/export; JSON remains the portable user-owned format.
 
@@ -185,6 +189,28 @@ Given the user has created timeline data
 When the user saves the timeline as JSON
 And later loads the JSON file
 Then the title, date range, lines, events, periods, and text items are restored.
+
+### Save Current File
+
+Given the browser grants writable access to a loaded or saved JSON file
+When the user edits the timeline
+And clicks Save or presses `Ctrl+S` or `Command+S`
+Then the app writes the current timeline JSON to that same file
+And the unsaved changes indicator clears.
+
+### Download When Direct File Save Is Unavailable
+
+Given the browser does not grant writable access to a loaded JSON file
+When the user saves the timeline
+Then the app downloads a JSON copy
+And the file state makes clear that direct file saving is not active.
+
+### Show Unsaved Changes
+
+Given a timeline has no unsaved edits
+When the user changes timeline data
+Then the app shows that there are unsaved changes
+And saving the timeline clears that indicator.
 
 ### Preserve Local Editing During Framework Migration
 

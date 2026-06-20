@@ -99,6 +99,12 @@ export function App() {
             <div>
               <h2 id="stageTitle">New Timeline</h2>
               <p id="stageMeta">Create or load a timeline</p>
+              <p className="file-state" id="fileState" aria-live="polite">
+                <span id="fileNameLabel">No file selected</span>
+                <span className="dirty-indicator" id="dirtyIndicator" hidden>
+                  Unsaved changes
+                </span>
+              </p>
             </div>
             <button type="button" className="secondary-button" id="fitButton">
               Fit

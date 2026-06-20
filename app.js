@@ -45,7 +45,10 @@ import {
   serializeTimelineSvg,
 } from "./src/timeline/svgExport";
 import {
+  canPickFileWithPicker,
   downloadBlob,
+  pickFileWithPicker,
+  saveBlobToHandle,
   saveBlobWithPicker,
 } from "./src/platform/files";
 import {
@@ -66,6 +69,10 @@ import {
   const MAX_ZOOM = 360;
   const DEFAULT_ZOOM = 18;
   const AVG_DAYS_PER_MONTH = 365.2425 / 12;
+  const TIMELINE_JSON_FILE_TYPE = {
+    description: "Timeline JSON",
+    accept: { "application/json": [".json"] },
+  };
   const dom = {
     statusText: document.getElementById("statusText"),
     timelineTitleInput: document.getElementById("timelineTitleInput"),
@@ -103,6 +110,8 @@ import {
     timelineSvg: document.getElementById("timelineSvg"),
     stageTitle: document.getElementById("stageTitle"),
     stageMeta: document.getElementById("stageMeta"),
+    fileNameLabel: document.getElementById("fileNameLabel"),
+    dirtyIndicator: document.getElementById("dirtyIndicator"),
   };
 
   let timeline = createEmptyTimeline();
@@ -111,6 +120,9 @@ import {
   let suppressControlEvents = false;
   let dragState = null;
   let sidebarLanePointerDrag = null;
+  let currentFileHandle = null;
+  let currentFileName = "";
+  let hasUnsavedChanges = false;
 
   init();
 
@@ -160,8 +172,9 @@ import {
     dom.addLaneButton.addEventListener("click", addLane);
 
     dom.saveJsonButton.addEventListener("click", saveJsonFile);
-    dom.loadJsonButton.addEventListener("click", () => dom.fileInput.click());
+    dom.loadJsonButton.addEventListener("click", openJsonFile);
     dom.fileInput.addEventListener("change", loadJsonFile);
+    document.addEventListener("keydown", handleGlobalKeydown);
 
     dom.exportSvgButton.addEventListener("click", exportSvgFile);
     dom.exportPngButton.addEventListener("click", exportPngFile);
@@ -195,6 +208,11 @@ import {
     renderLaneControls();
     renderTimeline();
     updateMeta();
+    if (options.save !== false) {
+      markDirty();
+    } else {
+      updateFileState();
+    }
   }
 
   function renderTimeline() {
@@ -556,6 +574,51 @@ import {
     dom.stageMeta.textContent = `${formatDisplayDate(settings.startDate)} / ${formatIranianDate(settings.startDate)} to ${formatDisplayDate(settings.endDate)} / ${formatIranianDate(settings.endDate)}`;
   }
 
+  function setCurrentFile(handle, name) {
+    currentFileHandle = handle || null;
+    currentFileName = name || (handle && handle.name) || "";
+    updateFileState();
+  }
+
+  function markDirty() {
+    if (hasUnsavedChanges) return;
+    hasUnsavedChanges = true;
+    updateFileState();
+  }
+
+  function setDirty(value) {
+    hasUnsavedChanges = Boolean(value);
+    updateFileState();
+  }
+
+  function updateFileState() {
+    if (!dom.fileNameLabel || !dom.dirtyIndicator) return;
+    if (currentFileHandle) {
+      dom.fileNameLabel.textContent = `File: ${currentFileName || currentFileHandle.name || "selected file"}`;
+      dom.fileNameLabel.title = "Save writes to this file.";
+    } else if (currentFileName) {
+      dom.fileNameLabel.textContent = `Copy: ${currentFileName}`;
+      dom.fileNameLabel.title = "This browser did not grant write access; Save downloads a JSON copy.";
+    } else {
+      dom.fileNameLabel.textContent = "No file selected";
+      dom.fileNameLabel.title = "Save will ask for a file location or download a JSON copy.";
+    }
+    dom.dirtyIndicator.hidden = !hasUnsavedChanges;
+  }
+
+  function timelineDataSnapshot() {
+    return JSON.stringify({
+      settings: timeline.settings,
+      items: timeline.items,
+    });
+  }
+
+  function renderAllAfterMaybeChange(previousSnapshot) {
+    const changed = timelineDataSnapshot() !== previousSnapshot;
+    renderAll({ save: changed });
+    return changed;
+  }
+
   function syncTimelineControls() {
     suppressControlEvents = true;
     dom.timelineTitleInput.value = timeline.settings.title;
@@ -684,15 +747,17 @@ import {
   function updateLaneLabel(event) {
     const index = Number(event.currentTarget.dataset.laneIndex);
     if (!Number.isInteger(index)) return;
+    const previousSnapshot = timelineDataSnapshot();
     timeline.settings.laneLabels[index] = event.currentTarget.value.trim() || `Line ${index + 1}`;
-    renderAll();
-    setStatus("Line renamed");
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Line renamed");
   }
 
   function updateLaneLabelDraft(event) {
     const index = Number(event.currentTarget.dataset.laneIndex);
     if (!Number.isInteger(index)) return;
     timeline.settings.laneLabels[index] = event.currentTarget.value;
+    markDirty();
   }
 
   function addLane() {
@@ -839,6 +904,7 @@ import {
 
   function updateTimelineFromControls(event) {
     if (suppressControlEvents) return;
+    const previousSnapshot = timelineDataSnapshot();
     const settings = timeline.settings;
     settings.title = dom.timelineTitleInput.value.trim() || "New Timeline";
     settings.startDate = normalizeDateInput(dom.startDateInput.value, settings.startDate);
@@ -852,8 +918,8 @@ import {
     if (compareIso(settings.endDate, settings.startDate) < 0) settings.endDate = settings.startDate;
     settings.itemsLocked = dom.itemsLockedInput.checked;
     settings.snap = normalizeSnap(dom.snapInput.value);
-    renderAll();
-    setStatus("Timeline updated");
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Timeline updated");
   }
 
   function handleTimelineDateKeydown(event) {
@@ -870,10 +936,17 @@ import {
     event.currentTarget.blur();
   }
 
+  function handleGlobalKeydown(event) {
+    if ((!event.ctrlKey && !event.metaKey) || event.key.toLowerCase() !== "s") return;
+    event.preventDefault();
+    saveJsonFile();
+  }
+
   function applyItemForm() {
     const item = getItem(selectedId);
     if (!item) return;
 
+    const previousSnapshot = timelineDataSnapshot();
     const type = dom.itemTypeInput.value;
     item.type = type;
     item.title = dom.itemTitleInput.value.trim() || titleForType(type);
@@ -884,8 +957,8 @@ import {
     if (hasEndYear(type) && compareIso(item.endDate, item.startDate) <= 0) item.endDate = addDaysIso(item.startDate, 1);
     item.notes = dom.itemNotesInput.value;
 
-    renderAll();
-    setStatus("Item updated");
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Item updated");
   }
 
   function addItem(type) {
@@ -1008,7 +1081,10 @@ import {
       const targetLane = laneIndexFromPointer(event);
       if (targetLane !== dragState.laneIndex) {
         const moved = moveLane(dragState.laneIndex, targetLane, { announce: false });
-        if (moved) dragState.laneIndex = targetLane;
+        if (moved) {
+          dragState.laneIndex = targetLane;
+          dragState.moved = true;
+        }
       }
       event.preventDefault();
       return;
@@ -1056,9 +1132,11 @@ import {
 
   function endPointerDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
-    const wasPan = dragState.mode === "pan";
-    const wasLaneReorder = dragState.mode === "lane";
-    const panMoved = Boolean(dragState.moved);
+    const endedDrag = dragState;
+    const wasPan = endedDrag.mode === "pan";
+    const wasLaneReorder = endedDrag.mode === "lane";
+    const panMoved = Boolean(endedDrag.moved);
+    const dataMoved = hasDraggedItemChanged(endedDrag);
     try {
       dom.timelineViewport.releasePointerCapture(event.pointerId);
     } catch {
@@ -1072,12 +1150,21 @@ import {
       return;
     }
     if (wasLaneReorder) {
-      renderAll();
-      setStatus("Line moved");
+      renderAll({ save: Boolean(endedDrag.moved) });
+      if (endedDrag.moved) setStatus("Line moved");
       return;
     }
-    renderAll();
-    setStatus("Item moved");
+    renderAll({ save: dataMoved });
+    setStatus(dataMoved ? "Item moved" : "Item selected");
+  }
+
+  function hasDraggedItemChanged(endedDrag) {
+    if (!endedDrag || !endedDrag.original || !endedDrag.itemId) return false;
+    const item = getItem(endedDrag.itemId);
+    if (!item) return false;
+    return item.startDate !== endedDrag.original.startDate
+      || item.endDate !== endedDrag.original.endDate
+      || item.lane !== endedDrag.original.lane;
   }
 
   function handleViewportWheel(event) {
@@ -1141,15 +1228,29 @@ import {
 
   async function saveJsonFile() {
     const blob = new Blob([serializeTimelineJson(timeline)], { type: TIMELINE_JSON_MIME });
-    const filename = `${filenameBase()}.json`;
+    const filename = currentFileName || `${filenameBase()}.json`;
 
     try {
-      const savedWithPicker = await saveBlobWithPicker(blob, filename, {
-        description: "Timeline JSON",
-        accept: { "application/json": [".json"] },
-      });
-      if (!savedWithPicker) downloadBlob(blob, filename);
-      setStatus("JSON saved");
+      if (currentFileHandle) {
+        await saveBlobToHandle(blob, currentFileHandle);
+        setDirty(false);
+        setStatus(`Saved ${currentFileName || "current file"}`);
+        return;
+      }
+
+      const handle = await saveBlobWithPicker(blob, filename, TIMELINE_JSON_FILE_TYPE);
+      if (handle) {
+        const savedName = handle.name || filename;
+        setCurrentFile(handle, savedName);
+        setDirty(false);
+        setStatus(`Saved ${savedName}`);
+        return;
+      }
+
+      downloadBlob(blob, filename);
+      setCurrentFile(null, filename);
+      setDirty(false);
+      setStatus("JSON downloaded");
     } catch (error) {
       if (error && error.name === "AbortError") {
         setStatus("Save canceled");
@@ -1157,7 +1258,29 @@ import {
       }
       console.error(error);
       downloadBlob(blob, filename);
+      setCurrentFile(null, filename);
+      setDirty(false);
       setStatus("JSON downloaded");
+    }
+  }
+
+  async function openJsonFile() {
+    if (!canPickFileWithPicker()) {
+      dom.fileInput.click();
+      return;
+    }
+
+    try {
+      const picked = await pickFileWithPicker(TIMELINE_JSON_FILE_TYPE);
+      await loadTimelineFromFile(picked.file, picked.handle);
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        setStatus("Load canceled");
+        return;
+      }
+      console.error(error);
+      setStatus("Could not load JSON");
+      window.alert("The selected file is not a valid timeline JSON file.");
     }
   }
 
@@ -1165,11 +1288,7 @@ import {
     const file = dom.fileInput.files && dom.fileInput.files[0];
     if (!file) return;
     try {
-      const text = await file.text();
-      timeline = parseTimelineJson(text);
-      selectedId = null;
-      renderAll();
-      setStatus("JSON loaded");
+      await loadTimelineFromFile(file, null);
     } catch (error) {
       console.error(error);
       setStatus("Could not load JSON");
@@ -1177,6 +1296,16 @@ import {
     } finally {
       dom.fileInput.value = "";
     }
+  }
+
+  async function loadTimelineFromFile(file, handle) {
+    const text = await file.text();
+    timeline = parseTimelineJson(text);
+    selectedId = null;
+    setCurrentFile(handle, file.name);
+    renderAll({ save: false });
+    setDirty(false);
+    setStatus(handle ? `Loaded ${file.name}` : "JSON loaded; Save downloads a copy");
   }
 
   function exportSvgFile() {

@@ -6,14 +6,12 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Apply a softer colored background treatment for period bars.
+Review local JSON save ergonomics before committing.
 
 ## Now
 
-- Keep the period item data model unchanged.
-- Render period bars with a restrained color background and light shadow.
-- Keep period bars only moderately rounded, not fully pill-shaped.
-- Keep period drag/resize, save/load, and export behavior unchanged.
+- Manually verify a real native file-picker save/load flow in a supported browser.
+- Confirm the same-file save behavior feels right before committing.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
@@ -31,8 +29,6 @@ Apply a softer colored background treatment for period bars.
 - Add optional Google Drive import/export as a user-owned backup path.
 - Add a lightweight automated browser test harness when the user wants true test-first red/green UI checks.
 - Add validation for malformed imported JSON.
-- Add a visible unsaved-change indicator.
-- Add keyboard shortcuts.
 - Add item color controls.
 - Add richer PDF export options.
 - Add Playwright tests for save/load, pan, zoom, lock, fit, and export flows.
@@ -71,6 +67,8 @@ Apply a softer colored background treatment for period bars.
 - Added annotation note items with leader arrows and balloons.
 - Updated event markers with a beveled, glass-like visual treatment.
 - Added softer period bar backgrounds.
+- Added current-file JSON save behavior where browser file handles are available.
+- Added visible unsaved-change state and `Ctrl+S` / `Command+S` JSON saving.
 
 ## Risks
 
