@@ -26,6 +26,8 @@ This project follows semantic versioning once releases begin. The current packag
 - Added selected-item details to the timeline info panel, including dates, duration, line, and age context where available.
 - Simplified selected-item details into separate readable rows in the timeline info panel.
 - Sized the timeline viewport to the rendered timeline content instead of stretching it to fill unused workspace height.
+- Made timeline month and day labels adaptive so crowded zoom levels stack, simplify, or skip labels instead of overlapping.
+- Prevented Fit from zooming out below a readable minimum on long timelines.
 
 ### Documentation
 

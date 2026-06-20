@@ -961,6 +961,11 @@ button:focus-visible,
   font-weight: 700;
 }
 
+.axis-month-iranian,
+.axis-month-compact {
+  opacity: 0.82;
+}
+
 .title-label {
   font-size: 13px;
   font-weight: 700;

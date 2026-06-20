@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Tune birthdate, timeline context panel, and viewport height after real UI review.
+Tune timeline readability after real UI review.
 
 ## Now
 
@@ -15,6 +15,8 @@ Tune birthdate, timeline context panel, and viewport height after real UI review
 - Show selected item dates, duration, line, and age context in the same info panel.
 - Split selected item details into short readable lines instead of one dense metadata sentence.
 - Size the timeline viewport to the rendered axis, lines, and note area instead of stretching into unused workspace height.
+- Stack, simplify, or skip month and day labels so axis date text does not overlap at crowded zoom levels.
+- Keep Fit from zooming out below a readable minimum on long timelines.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.

@@ -66,9 +66,13 @@ import {
   const FOOTER_HEIGHT = 34;
   const NOTE_AREA_HEIGHT = 76;
   const DEFAULT_ROW_HEIGHT = 68;
+  const AXIS_LABEL_CHAR_WIDTH = 7.2;
+  const AXIS_MONTH_LABEL_GAP = 14;
+  const AXIS_DAY_LABEL_GAP = 8;
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 360;
   const DEFAULT_ZOOM = 18;
+  const FIT_MIN_ZOOM = DEFAULT_ZOOM;
   const AVG_DAYS_PER_MONTH = 365.2425 / 12;
   const TIMELINE_JSON_FILE_TYPE = {
     description: "Timeline JSON",
@@ -279,15 +283,17 @@ import {
     const endYear = isoYear(settings.endDate);
     const yearLabelStep = zoom < 13 ? 5 : zoom < 21 ? 2 : 1;
     const contentEndDate = addDaysIso(settings.endDate, 1);
+    let lastMonthLabelEnd = -Infinity;
+    let lastDayLabelEnd = -Infinity;
+    const showDayLabels = zoom >= 180;
 
     if (zoom >= 92) {
-      const dayLabelStep = zoom >= 280 ? 1 : zoom >= 180 ? 5 : 0;
       for (let date = settings.startDate; compareIso(date, contentEndDate) <= 0; date = addDaysIso(date, 1)) {
         const x = dateToX(date);
         svg.append(svgEl("line", { class: "grid-day", x1: x, x2: x, y1: AXIS_HEIGHT, y2: contentHeight }));
         const day = isoDay(date);
-        if (dayLabelStep && (day === 1 || day % dayLabelStep === 0)) {
-          svg.append(svgEl("text", { class: "axis-day", x: x + 3, y: 104 }, String(day)));
+        if (showDayLabels && isDayLabelCandidate(day)) {
+          lastDayLabelEnd = drawDayAxisLabel(svg, date, x, contentEndDate, lastDayLabelEnd);
         }
       }
     }
@@ -304,7 +310,7 @@ import {
           svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: 24 }, formatDisplayDate(date)));
           svg.append(svgEl("text", { class: "axis-iranian", x: x + 8, y: 47 }, formatIranianDate(date)));
         } else if (!isYearStart && zoom >= 42) {
-          svg.append(svgEl("text", { class: "axis-month", x: x + 5, y: 84 }, `${monthName(date)} / ${iranianMonthName(date)}`));
+          lastMonthLabelEnd = drawMonthAxisLabel(svg, date, x, contentEndDate, lastMonthLabelEnd, showDayLabels);
         }
       }
     }
@@ -313,6 +319,55 @@ import {
       const y = AXIS_HEIGHT + lane * rowHeight;
       svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: dateToX(contentEndDate), y1: y, y2: y }));
     }
+  }
+
+  function isDayLabelCandidate(day) {
+    return zoom >= 300 || day === 1 || day % 5 === 0;
+  }
+
+  function drawDayAxisLabel(svg, date, x, contentEndDate, lastLabelEnd) {
+    const nextDate = addDaysIso(date, 1);
+    const cellEndDate = compareIso(nextDate, contentEndDate) < 0 ? nextDate : contentEndDate;
+    const cellWidth = Math.max(0, dateToX(cellEndDate) - x);
+    const centerX = x + cellWidth / 2;
+    const label = String(isoDay(date));
+    const width = estimateSvgTextWidth(label);
+    if (cellWidth >= 4 && canPlaceAxisLabel(centerX, width, lastLabelEnd, AXIS_DAY_LABEL_GAP)) {
+      svg.append(svgEl("text", { class: "axis-day", x: centerX, y: 105, "text-anchor": "middle" }, label));
+      return centerX + width / 2;
+    }
+    return lastLabelEnd;
+  }
+
+  function drawMonthAxisLabel(svg, date, x, contentEndDate, lastLabelEnd, hasDayLabels) {
+    const nextDate = addMonthsIso(date, 1);
+    const cellEndDate = compareIso(nextDate, contentEndDate) < 0 ? nextDate : contentEndDate;
+    const cellWidth = Math.max(0, dateToX(cellEndDate) - x);
+    const centerX = x + cellWidth / 2;
+    const gregorian = monthName(date);
+    const iranian = iranianMonthName(date);
+    const stackedWidth = Math.max(estimateSvgTextWidth(gregorian), estimateSvgTextWidth(iranian));
+    const gregorianY = hasDayLabels ? 58 : 78;
+    const iranianY = hasDayLabels ? 74 : 96;
+    const compactY = hasDayLabels ? 72 : 88;
+
+    if (cellWidth >= stackedWidth + 18 && canPlaceAxisLabel(centerX, stackedWidth, lastLabelEnd, AXIS_MONTH_LABEL_GAP)) {
+      svg.append(svgEl("text", { class: "axis-month axis-month-gregorian", x: centerX, y: gregorianY, "text-anchor": "middle" }, gregorian));
+      svg.append(svgEl("text", { class: "axis-month axis-month-iranian", x: centerX, y: iranianY, "text-anchor": "middle" }, iranian));
+      return centerX + stackedWidth / 2;
+    }
+
+    const compactWidth = estimateSvgTextWidth(gregorian);
+    if (cellWidth >= compactWidth + 12 && canPlaceAxisLabel(centerX, compactWidth, lastLabelEnd, AXIS_MONTH_LABEL_GAP)) {
+      svg.append(svgEl("text", { class: "axis-month axis-month-compact", x: centerX, y: compactY, "text-anchor": "middle" }, gregorian));
+      return centerX + compactWidth / 2;
+    }
+
+    return lastLabelEnd;
+  }
+
+  function canPlaceAxisLabel(centerX, width, lastLabelEnd, gap) {
+    return centerX - width / 2 >= lastLabelEnd + gap;
   }
 
   function drawLaneLabels(svg, settings, laneCount, rowHeight) {
@@ -1465,9 +1520,11 @@ import {
   function fitTimelineToViewport() {
     const months = Math.max(1, monthsBetween(timeline.settings.startDate, addDaysIso(timeline.settings.endDate, 1)));
     const available = Math.max(200, dom.timelineViewport.clientWidth - LEFT_GUTTER - RIGHT_GUTTER - 24);
-    setZoom(clamp(available / months, MIN_ZOOM, MAX_ZOOM));
+    const fittedZoom = clamp(available / months, MIN_ZOOM, MAX_ZOOM);
+    const readableZoom = Math.max(fittedZoom, FIT_MIN_ZOOM);
+    setZoom(readableZoom);
     dom.timelineViewport.scrollLeft = 0;
-    setStatus("Fit applied");
+    setStatus(fittedZoom < FIT_MIN_ZOOM ? "Fit applied at readable zoom" : "Fit applied");
   }
 
   function getViewportCenterDate() {
@@ -1662,10 +1719,14 @@ import {
   function fitText(text, maxWidth) {
     const value = String(text || "");
     if (maxWidth <= 0) return "";
-    const estimatedWidth = value.length * 7.2;
+    const estimatedWidth = estimateSvgTextWidth(value);
     if (estimatedWidth <= maxWidth) return value;
-    const maxChars = Math.max(3, Math.floor(maxWidth / 7.2) - 3);
+    const maxChars = Math.max(3, Math.floor(maxWidth / AXIS_LABEL_CHAR_WIDTH) - 3);
     return `${value.slice(0, maxChars)}...`;
+  }
+
+  function estimateSvgTextWidth(text) {
+    return String(text || "").length * AXIS_LABEL_CHAR_WIDTH;
   }
 
   function readableTextColor(hex) {

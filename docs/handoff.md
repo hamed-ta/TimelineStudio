@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Tune birthdate, timeline context panel, and viewport height.
+Tune timeline axis label readability.
 
 ## Last Known State
 
@@ -28,6 +28,10 @@ Selecting a timeline item updates the same info panel with the item type, title,
 
 The timeline viewport sizes to the rendered SVG content height for the axis, visible lines, footer spacing, and note area. It no longer stretches vertically just because the workspace has extra unused height.
 
+Timeline month and day labels adapt to available horizontal space. Month labels stack Gregorian and Iranian names when there is room, fall back to compact Gregorian labels when space is tighter, and skip labels that would collide. Day labels are centered in their day cells and skipped when they would collide.
+
+Fit now respects a readable zoom floor. Short timelines still fit into the viewport, while long timelines reset to the beginning at the minimum readable zoom instead of compressing every item into an unreadable view.
+
 Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
@@ -48,7 +52,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`0efd3a9 feat: show age and duration context`
+`ea3309f fix: simplify timeline context panel`
 
 ## Work Completed This Session
 
@@ -57,6 +61,8 @@ Firebase should wait until the local Vite app is stable.
 - Added selected-item date, duration, line, and age context to the timeline info panel.
 - Split selected item context into separate readable rows and softened the secondary text weight.
 - Sized the timeline viewport to the rendered timeline content instead of unused workspace height.
+- Made month and day axis labels adaptive so crowded timelines avoid overlapping date text.
+- Prevented Fit from zooming out below the readable zoom floor on long timelines.
 - Updated product notes, changelog, plan, and handoff docs.
 
 ## Files Changed
@@ -76,6 +82,8 @@ Firebase should wait until the local Vite app is stable.
 - Keep age and selection feedback in a stable fixed-height panel so hover updates do not move the timeline viewport.
 - Use separate selection rows for start date, end date, duration, and age so longer item details remain readable.
 - Let the SVG's computed content height control the timeline viewport height; only notes add the extra note area.
+- Keep all month and day grid lines, but only render axis label text when the measured label width fits without colliding with the previous visible label.
+- Use the default zoom as the Fit readability floor, so Fit does not compress long timelines below `18 px/month`.
 
 ## Verification
 
@@ -90,6 +98,11 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke: hover updates did not move the timeline viewport and the panel stayed fixed at `132px` high with internal overflow.
 - Browser smoke: the default 5-line timeline viewport matched the SVG content height (`clientHeight` 486, SVG height 486) with no vertical overflow.
 - Browser smoke: adding a note increased the viewport only for the note area (`clientHeight` 562, SVG height 562) with no vertical overflow.
+- Browser smoke: with range `1989-01-01` to `1990-01-01`, stacked month labels rendered 11 Gregorian and 11 Iranian labels with no measured overlaps.
+- Browser smoke: at `42 px/month`, month labels rendered 10 compact labels and one stacked `Jul` / `Tir` label pair with no measured overlaps.
+- Browser smoke: with range `1989-10-01` to `1990-01-25` at `300 px/month`, the axis rendered 46 day labels and 6 month labels with no measured overlaps across month or day labels.
+- Browser smoke: with range `1987-01-01` to `2022-01-01`, clicking Fit set zoom to `18 px/month`, reset horizontal scroll to `0`, and showed status `Fit applied at readable zoom`.
+- Browser smoke: with the default short range, clicking Fit still fit the timeline into the viewport at `110 px/month` and showed status `Fit applied`.
 - Browser smoke: no console warnings or errors were reported.
 
 ## Open Issues
@@ -102,8 +115,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`fix: simplify timeline context panel`
+`fix: keep fit and axis labels readable`
 
 ## Next Safe Step
 
-Review the adjusted birth label, simplified timeline info panel, and content-sized timeline height with a real JSON file, then commit if acceptable.
+Review adaptive axis labels and readable Fit behavior with a real JSON file, then commit if acceptable.

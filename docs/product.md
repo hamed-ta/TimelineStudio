@@ -96,6 +96,7 @@ When items are locked, dragging the canvas should pan the timeline and should no
 - Collapse and expand controls should use recognizable icon buttons rather than text characters.
 - Collapse and expand transitions should be animated.
 - The timeline viewport height should fit the rendered axis, lines, and note area instead of stretching to fill unused workspace height.
+- Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
 - Layout preferences should be remembered in the browser.
 - Layout changes should not alter saved timeline data.
 
@@ -154,6 +155,15 @@ Given the timeline has named lines
 When the timeline renders
 Then the viewport height fits the axis, visible lines, footer spacing, and note area when notes exist
 And the viewport does not stretch vertically just because the workspace has extra height.
+
+### Avoid Axis Label Collisions
+
+Given the timeline spans many months
+When the zoom level does not leave enough space for every full month label
+Then the app stacks Gregorian and Iranian month names when there is room
+And it simplifies or skips month labels when needed
+And day labels are skipped when there is not enough horizontal room
+And visible axis labels do not overlap.
 
 ### Create A Note
 
@@ -223,7 +233,9 @@ Then day ticks or day labels are visible.
 
 Given the timeline contains items across a date range
 When the user clicks Fit
-Then the visible viewport adjusts to show the full timeline range.
+Then the visible viewport adjusts to show the full timeline range when that can be done at a readable zoom
+And long timelines do not zoom out below the readable Fit minimum
+And the viewport resets to the beginning of the timeline when the full range cannot fit readably.
 
 ### Save And Load Timeline
 
