@@ -21,6 +21,7 @@ Avoid adding dependencies unless the user explicitly asks or an ADR accepts the 
 - `docs/handoff.md`: current state for session handoff
 - `docs/startup.md`: `/startup` workflow
 - `docs/closeup.md`: `/closeup` workflow
+- `docs/versioning.md`: version and changelog policy
 - `docs/workflows/red-green-refactor.md`: required feature workflow
 - `docs/workflows/browser-smoke.md`: manual browser verification checklist
 - `docs/adr/`: accepted long-lived decisions
@@ -76,6 +77,7 @@ Do not consider a feature complete unless the behavior scenario, verification re
 - Update `docs/product.md` when intended user-visible behavior changes.
 - Update `docs/plan.md` when priorities or task status changes.
 - Update `docs/handoff.md` before ending a meaningful work session.
+- Update `CHANGELOG.md` for notable user-facing changes, releases, or documented project/process changes.
 - Add an ADR only for lasting decisions that affect future development.
 - Keep documentation concise and specific to this project.
 

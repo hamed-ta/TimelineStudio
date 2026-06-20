@@ -6,11 +6,11 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Finish the current behavior-preserving export helper extraction and prepare for UI work.
+Extract display formatting into TypeScript and add versioning/changelog documentation.
 
 ## Now
 
-- Keep the SVG export helper extraction behavior-preserving: the app should still run locally, edit timelines, and export SVG/PNG/PDF.
+- Keep the display formatter extraction behavior-preserving: the app should still run locally, show Gregorian/Iranian labels, edit timelines, and export files.
 - Manually verify loading an existing local JSON file in the Vite app before the first UI polish slice.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
@@ -57,6 +57,8 @@ Finish the current behavior-preserving export helper extraction and prepare for 
 - Extracted PDF byte generation into `src/timeline/pdf.ts`.
 - Extracted image loading and canvas-to-blob helpers into `src/platform/media.ts`.
 - Extracted SVG export serialization and export CSS into `src/timeline/svgExport.ts`.
+- Extracted display date, Iranian date, month, and zoom formatting into `src/timeline/formatters.ts`.
+- Added `CHANGELOG.md` and `docs/versioning.md` without bumping the package version.
 
 ## Risks
 
@@ -67,6 +69,7 @@ Finish the current behavior-preserving export helper extraction and prepare for 
 - Personal JSON files should stay in ignored `user-data/`.
 - The framework migration can accidentally change timeline behavior if it is done as a rewrite instead of small preservation steps.
 - UI changes must preserve the DOM IDs and data attributes that legacy `app.js` still binds to until the controller is migrated.
+- Version changes should be intentional and documented in `CHANGELOG.md`; do not bump `package.json` during routine migration slices.
 - Firebase read/write patterns can create avoidable cost if autosave and realtime listeners are not scoped carefully.
 
 ## Verification Checklist

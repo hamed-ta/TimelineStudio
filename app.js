@@ -5,7 +5,6 @@ import {
   clamp,
   clampIso,
   compareIso,
-  dateFromIso,
   daysBetween,
   isoDay,
   isoFromParts,
@@ -31,6 +30,14 @@ import {
   parseTimelineJson,
   serializeTimelineJson,
 } from "./src/timeline/json";
+import {
+  formatDatePair,
+  formatDisplayDate,
+  formatIranianDate,
+  formatZoomValue,
+  iranianMonthName,
+  monthName,
+} from "./src/timeline/formatters";
 import {
   buildPdfFromJpeg,
 } from "./src/timeline/pdf";
@@ -58,27 +65,6 @@ import {
   const MAX_ZOOM = 360;
   const DEFAULT_ZOOM = 18;
   const AVG_DAYS_PER_MONTH = 365.2425 / 12;
-  const EN_DATE_FORMAT = new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  const EN_MONTH_FORMAT = new Intl.DateTimeFormat("en", {
-    month: "short",
-    timeZone: "UTC",
-  });
-  const IRANIAN_DATE_FORMAT = new Intl.DateTimeFormat("en-US-u-ca-persian", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  const IRANIAN_MONTH_FORMAT = new Intl.DateTimeFormat("en-US-u-ca-persian", {
-    month: "short",
-    timeZone: "UTC",
-  });
-
   const dom = {
     statusText: document.getElementById("statusText"),
     timelineTitleInput: document.getElementById("timelineTitleInput"),
@@ -977,36 +963,6 @@ import {
     if (timeline.settings.snap === "week") return addDaysIso(startDate, 7);
     if (timeline.settings.snap === "day") return addDaysIso(startDate, 1);
     return addMonthsIso(startDate, 1);
-  }
-
-  function formatDisplayDate(isoDate) {
-    return EN_DATE_FORMAT.format(dateFromIso(isoDate));
-  }
-
-  function formatIranianDate(isoDate) {
-    const parts = IRANIAN_DATE_FORMAT
-      .formatToParts(dateFromIso(isoDate))
-      .reduce((result, part) => {
-        if (part.type !== "literal" && part.type !== "era") result[part.type] = part.value;
-        return result;
-      }, {});
-    return `${parts.day} ${parts.month} ${parts.year}`;
-  }
-
-  function formatDatePair(isoDate) {
-    return `${formatDisplayDate(isoDate)} / ${formatIranianDate(isoDate)}`;
-  }
-
-  function formatZoomValue(value) {
-    return Number(value) >= 10 ? String(Math.round(value)) : Number(value).toFixed(1).replace(/\.0$/, "");
-  }
-
-  function monthName(isoDate) {
-    return EN_MONTH_FORMAT.format(dateFromIso(isoDate));
-  }
-
-  function iranianMonthName(isoDate) {
-    return IRANIAN_MONTH_FORMAT.format(dateFromIso(isoDate));
   }
 
   function createId(prefix) {

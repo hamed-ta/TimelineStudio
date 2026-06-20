@@ -40,3 +40,7 @@ npm run build
 - SVG, PNG, and single-page PDF export
 
 The app starts with a blank timeline ending at today by default. Use `Load JSON` to open saved timelines.
+
+## Versioning
+
+See `docs/versioning.md` and `CHANGELOG.md`. The current package version remains `0.1.0`.

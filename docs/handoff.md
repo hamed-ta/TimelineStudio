@@ -2,25 +2,24 @@
 
 ## Current Goal
 
-Finish the current behavior-preserving export helper extraction and prepare for UI polish.
+Complete the final small structural cleanup before UI polish: typed display formatting plus versioning/changelog docs.
 
 ## Last Known State
 
 Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, pan, zoom, fit, lock state, and line renaming.
 
-Timeline document types, default timeline creation, item normalization, and timeline normalization live in `src/timeline/model.ts`.
+Typed helper modules now own:
 
-Shared date parsing, ISO date math, snap normalization, clamping, and numeric normalization live in `src/timeline/dates.ts`.
+- timeline model and normalization: `src/timeline/model.ts`
+- date math and snapping: `src/timeline/dates.ts`
+- date/month/zoom display formatting: `src/timeline/formatters.ts`
+- JSON parse/serialize: `src/timeline/json.ts`
+- PDF byte generation: `src/timeline/pdf.ts`
+- SVG export serialization: `src/timeline/svgExport.ts`
+- browser file save/download helpers: `src/platform/files.ts`
+- browser media helpers: `src/platform/media.ts`
 
-Timeline JSON parse/serialize behavior lives in `src/timeline/json.ts`.
-
-Browser download and save-picker helpers live in `src/platform/files.ts`.
-
-PDF byte generation lives in `src/timeline/pdf.ts`.
-
-Image loading and canvas-to-blob conversion live in `src/platform/media.ts`.
-
-SVG export serialization and export CSS now live in `src/timeline/svgExport.ts`. `app.js` still owns live SVG rendering and timeline-to-canvas orchestration.
+Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version remains `0.1.0`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
@@ -28,28 +27,35 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`efd50e4 refactor: extract browser media helpers`
+`566e406 refactor: extract svg export helper`
 
 ## Work Completed This Session
 
-- Added `src/timeline/svgExport.ts`.
-- Moved SVG export CSS into the typed SVG export helper module.
-- Moved export SVG clone cleanup and serialization into the typed SVG export helper module.
-- Updated `app.js` to call `serializeTimelineSvg(dom.timelineSvg)` for SVG, PNG, and PDF export paths.
+- Added `src/timeline/formatters.ts`.
+- Moved Gregorian date, Iranian date, month, and zoom formatting helpers out of `app.js`.
+- Added `CHANGELOG.md`.
+- Added `docs/versioning.md`.
+- Updated README, AGENTS, and closeup workflow docs to reference changelog/versioning rules.
+- Kept `package.json` version at `0.1.0`.
 
 ## Files Changed
 
+- `AGENTS.md`
+- `CHANGELOG.md`
+- `README.md`
 - `app.js`
-- `src/timeline/svgExport.ts`
+- `docs/closeup.md`
 - `docs/handoff.md`
 - `docs/plan.md`
+- `docs/versioning.md`
+- `src/timeline/formatters.ts`
 
 ## Decisions
 
 - Keep this slice behavior-preserving; no UI changes and no Firebase work.
-- Keep live SVG rendering and timeline-to-canvas orchestration in `app.js` for now.
+- Do not bump `package.json` during routine migration slices.
+- Use `CHANGELOG.md` `Unreleased` for notable unreleased changes.
 - UI work can start next, but it must preserve the DOM IDs and data attributes that legacy `app.js` still binds to.
-- Keep JSON import/export as a first-class compatibility path.
 
 ## Verification
 
@@ -57,8 +63,9 @@ Firebase should wait until the local Vite app is stable.
 - `npm run typecheck`: passed.
 - `npm run build`: passed.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: app loaded with no console errors.
-- Browser smoke: created an event, edited the title, applied the item form, and confirmed the SVG contained the new item.
-- Browser smoke: clicked SVG export and confirmed status changed to `SVG exported` with no console errors.
+- Browser smoke: created an event, entered `2026/02/03`, applied the item form, and confirmed the preview showed `Feb 3, 2026 / 14 Bahman 1404`.
+- Browser smoke: confirmed the stage meta still showed Gregorian and Iranian date text.
+- Browser smoke: clicked Save JSON and confirmed status changed to `JSON saved` with no console errors.
 
 ## Open Issues
 
@@ -70,7 +77,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract svg export helper`
+`refactor: extract timeline formatters`
 
 ## Next Safe Step
 
