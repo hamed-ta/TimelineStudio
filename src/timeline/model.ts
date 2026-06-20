@@ -1,5 +1,19 @@
+import {
+  addDaysIso,
+  clamp,
+  compareIso,
+  isoFromYearValue,
+  isoYear,
+  normalizeDateInput,
+  normalizeSnap,
+  todayIso,
+  toNumber,
+  yearEndIso,
+  yearStartIso,
+  type TimelineSnap,
+} from "./dates";
+
 const DEFAULT_ROW_HEIGHT = 68;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const TYPE_COLORS: Record<TimelineItemType, string> = {
   event: "#d97706",
@@ -9,7 +23,7 @@ export const TYPE_COLORS: Record<TimelineItemType, string> = {
 };
 
 export type TimelineItemType = "event" | "period" | "line" | "text";
-export type TimelineSnap = "year" | "month" | "week" | "day";
+export type { TimelineSnap };
 
 export interface TimelineSettings {
   title: string;
@@ -185,112 +199,6 @@ function isTimelineItemType(value: unknown): value is TimelineItemType {
 function normalizeColor(value: unknown): string {
   const text = String(value || "").trim();
   return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "#2563eb";
-}
-
-function normalizeDateInput(value: unknown, fallback: unknown): string {
-  const fallbackIso = isIsoDate(fallback) ? fallback : todayIso();
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return isoFromDate(value);
-  const text = String(value || "").trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text) && isValidIsoDate(text)) return text;
-  const parsedTextDate = parseDateText(text);
-  if (parsedTextDate) return parsedTextDate;
-  if (/^\d{4}$/.test(text)) return `${text}-01-01`;
-  return fallbackIso;
-}
-
-function parseDateText(text: string): string | null {
-  const isoLike = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-  if (isoLike) return isoFromYmd(Number(isoLike[1]), Number(isoLike[2]), Number(isoLike[3]));
-
-  const slashDate = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-  if (slashDate) return isoFromYmd(Number(slashDate[3]), Number(slashDate[1]), Number(slashDate[2]));
-
-  return null;
-}
-
-function normalizeSnap(value: unknown): TimelineSnap {
-  if (["year", "month", "week", "day"].includes(String(value))) return value as TimelineSnap;
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return "month";
-  if (numeric >= 1) return "year";
-  if (numeric >= 0.25) return "month";
-  if (numeric >= 0.02) return "week";
-  return "day";
-}
-
-function toNumber(value: unknown, fallback: number): number {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : fallback;
-}
-
-function compareIso(a: unknown, b: unknown): number {
-  return normalizeDateInput(a, todayIso()).localeCompare(normalizeDateInput(b, todayIso()));
-}
-
-function addDaysIso(isoDate: string, days: number): string {
-  const date = dateFromIso(isoDate);
-  date.setUTCDate(date.getUTCDate() + Math.round(days));
-  return isoFromDate(date);
-}
-
-function yearStartIso(year: number): string {
-  return `${String(Math.round(year)).padStart(4, "0")}-01-01`;
-}
-
-function yearEndIso(year: number): string {
-  return `${String(Math.round(year)).padStart(4, "0")}-12-31`;
-}
-
-function isoFromYearValue(value: number): string {
-  const year = Math.floor(value);
-  const fraction = value - year;
-  if (fraction <= 0) return yearStartIso(year);
-  return addDaysIso(yearStartIso(year), Math.round(fraction * daysInYear(year)));
-}
-
-function isoFromYmd(year: number, month: number, day: number): string | null {
-  const iso = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  return isValidIsoDate(iso) ? iso : null;
-}
-
-function todayIso(): string {
-  const today = new Date();
-  return isoFromYmd(today.getFullYear(), today.getMonth() + 1, today.getDate()) || isoFromDate(today);
-}
-
-function dateFromIso(isoDate: string): Date {
-  const [year, month, day] = normalizeDateInput(isoDate, todayIso()).split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day));
-}
-
-function isoFromDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function isIsoDate(value: unknown): value is string {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && isValidIsoDate(value);
-}
-
-function isValidIsoDate(value: string): boolean {
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
-}
-
-function isoYear(isoDate: string): number {
-  return Number(normalizeDateInput(isoDate, todayIso()).slice(0, 4));
-}
-
-function daysInYear(year: number): number {
-  return Math.round((dateFromIso(yearStartIso(year + 1)).getTime() - dateFromIso(yearStartIso(year)).getTime()) / DAY_MS);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 function createId(prefix: string): string {

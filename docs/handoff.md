@@ -2,17 +2,19 @@
 
 ## Current Goal
 
-Continue the React/TypeScript migration by moving timeline data normalization out of legacy `app.js`.
+Continue the React/TypeScript migration by moving shared date utilities out of legacy `app.js` and the model module.
 
 ## Last Known State
 
 Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, import/export, pan, zoom, fit, lock state, line renaming, and SVG/PNG/PDF export.
 
-Timeline document types, default timeline creation, item normalization, and timeline normalization now live in `src/timeline/model.ts`. `app.js` imports those functions and constants instead of keeping local copies.
+Timeline document types, default timeline creation, item normalization, and timeline normalization live in `src/timeline/model.ts`.
+
+Shared date parsing, ISO date math, snap normalization, clamping, and numeric normalization now live in `src/timeline/dates.ts`. Both `app.js` and `src/timeline/model.ts` import those helpers instead of keeping duplicate local copies.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
-The accepted target stack for the next product direction is Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting. Firebase should wait until the local Vite app is stable.
+Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
@@ -20,15 +22,16 @@ The accepted target stack for the next product direction is Vite, React, TypeScr
 
 ## Work Completed This Session
 
-- Added `src/timeline/model.ts`.
-- Defined typed timeline item, settings, and document shapes.
-- Moved `TYPE_COLORS`, `createEmptyTimeline`, `normalizeTimeline`, `normalizeItem`, `hasEndYear`, and `titleForType` into the typed model module.
-- Removed the duplicated legacy versions of those functions from `app.js`.
-- Wired `app.js` to import the typed model functions.
+- Added `src/timeline/dates.ts`.
+- Moved shared date parsing, ISO date math, snap normalization, clamping, and numeric normalization helpers into the typed date module.
+- Updated `src/timeline/model.ts` to import date helpers from `src/timeline/dates.ts`.
+- Updated `app.js` to import date helpers from `src/timeline/dates.ts`.
+- Removed duplicated date helper implementations from `app.js` and `src/timeline/model.ts`.
 
 ## Files Changed
 
 - `app.js`
+- `src/timeline/dates.ts`
 - `src/timeline/model.ts`
 - `docs/handoff.md`
 - `docs/plan.md`
@@ -45,7 +48,8 @@ The accepted target stack for the next product direction is Vite, React, TypeScr
 - `npm run typecheck`: passed.
 - `npm run build`: passed.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: app loaded with no console errors.
-- Browser smoke: created an event, edited the title, applied the item form, and confirmed the SVG contained the new item.
+- Browser smoke: created an event, entered `2026/02/03`, applied the item form, and confirmed the date normalized to `2026-02-03`.
+- Browser smoke: confirmed the SVG contained the new item.
 - Browser smoke: clicked Save JSON and confirmed status changed to `JSON saved` with no console errors.
 
 ## Open Issues
@@ -58,8 +62,8 @@ The accepted target stack for the next product direction is Vite, React, TypeScr
 
 ## Suggested Commit Message
 
-`refactor: extract timeline model to typescript`
+`refactor: extract timeline date utilities`
 
 ## Next Safe Step
 
-Manually run the Vite app, load an existing JSON file from `user-data/`, edit it, save it, and confirm the saved file restores correctly. Then extract the next small boundary, preferably date utilities or JSON repository behavior, before moving renderer/event logic.
+Manually run the Vite app, load an existing JSON file from `user-data/`, edit it, save it, and confirm the saved file restores correctly. Then extract the next small boundary, preferably JSON import/export repository behavior or SVG rendering helpers, before adding Firebase.

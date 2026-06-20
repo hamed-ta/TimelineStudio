@@ -1,4 +1,24 @@
 import {
+  addDaysIso,
+  addMonthsIso,
+  addYearsIso,
+  clamp,
+  clampIso,
+  compareIso,
+  dateFromIso,
+  daysBetween,
+  isoDay,
+  isoFromParts,
+  isoMonth,
+  isoYear,
+  monthsBetween,
+  normalizeDateInput,
+  normalizeSnap,
+  todayIso,
+  toNumber,
+  yearStartIso,
+} from "./src/timeline/dates";
+import {
   TYPE_COLORS,
   createEmptyTimeline,
   hasEndYear,
@@ -18,7 +38,6 @@ import {
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 360;
   const DEFAULT_ZOOM = 18;
-  const DAY_MS = 24 * 60 * 60 * 1000;
   const AVG_DAYS_PER_MONTH = 365.2425 / 12;
   const EN_DATE_FORMAT = new Intl.DateTimeFormat("en", {
     month: "short",
@@ -1031,44 +1050,8 @@ import {
     return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "#2563eb";
   }
 
-  function toNumber(value, fallback) {
-    const number = Number(value);
-    return Number.isFinite(number) ? number : fallback;
-  }
-
   function pixelsPerDay() {
     return zoom / AVG_DAYS_PER_MONTH;
-  }
-
-  function normalizeDateInput(value, fallback) {
-    const fallbackIso = isIsoDate(fallback) ? fallback : todayIso();
-    if (value instanceof Date && !Number.isNaN(value.getTime())) return isoFromDate(value);
-    const text = String(value || "").trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(text) && isValidIsoDate(text)) return text;
-    const parsedTextDate = parseDateText(text);
-    if (parsedTextDate) return parsedTextDate;
-    if (/^\d{4}$/.test(text)) return `${text}-01-01`;
-    return fallbackIso;
-  }
-
-  function parseDateText(text) {
-    const isoLike = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-    if (isoLike) return isoFromYmd(Number(isoLike[1]), Number(isoLike[2]), Number(isoLike[3]));
-
-    const slashDate = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-    if (slashDate) return isoFromYmd(Number(slashDate[3]), Number(slashDate[1]), Number(slashDate[2]));
-
-    return null;
-  }
-
-  function normalizeSnap(value) {
-    if (["year", "month", "week", "day"].includes(value)) return value;
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) return "month";
-    if (numeric >= 1) return "year";
-    if (numeric >= 0.25) return "month";
-    if (numeric >= 0.02) return "week";
-    return "day";
   }
 
   function snapDate(isoDate) {
@@ -1134,124 +1117,6 @@ import {
 
   function iranianMonthName(isoDate) {
     return IRANIAN_MONTH_FORMAT.format(dateFromIso(isoDate));
-  }
-
-  function monthsBetween(startIso, endIso) {
-    const startYear = isoYear(startIso);
-    const startMonth = isoMonth(startIso);
-    const endYear = isoYear(endIso);
-    const endMonth = isoMonth(endIso);
-    return Math.max(1, (endYear - startYear) * 12 + endMonth - startMonth + 1);
-  }
-
-  function daysBetween(startIso, endIso) {
-    return Math.round((dateFromIso(endIso).getTime() - dateFromIso(startIso).getTime()) / DAY_MS);
-  }
-
-  function compareIso(a, b) {
-    return normalizeDateInput(a, todayIso()).localeCompare(normalizeDateInput(b, todayIso()));
-  }
-
-  function clampIso(value, min, max) {
-    if (compareIso(value, min) < 0) return min;
-    if (compareIso(value, max) > 0) return max;
-    return value;
-  }
-
-  function addDaysIso(isoDate, days) {
-    const date = dateFromIso(isoDate);
-    date.setUTCDate(date.getUTCDate() + Math.round(days));
-    return isoFromDate(date);
-  }
-
-  function addMonthsIso(isoDate, months) {
-    const date = dateFromIso(isoDate);
-    const day = date.getUTCDate();
-    date.setUTCDate(1);
-    date.setUTCMonth(date.getUTCMonth() + months);
-    const maxDay = daysInMonth(date.getUTCFullYear(), date.getUTCMonth());
-    date.setUTCDate(Math.min(day, maxDay));
-    return isoFromDate(date);
-  }
-
-  function addYearsIso(isoDate, years) {
-    return addMonthsIso(isoDate, years * 12);
-  }
-
-  function yearStartIso(year) {
-    return `${String(Math.round(year)).padStart(4, "0")}-01-01`;
-  }
-
-  function yearEndIso(year) {
-    return `${String(Math.round(year)).padStart(4, "0")}-12-31`;
-  }
-
-  function isoFromYearValue(value) {
-    const year = Math.floor(value);
-    const fraction = value - year;
-    if (fraction <= 0) return yearStartIso(year);
-    return addDaysIso(yearStartIso(year), Math.round(fraction * daysInYear(year)));
-  }
-
-  function isoFromParts(year, monthIndex, day) {
-    return isoFromDate(new Date(Date.UTC(year, monthIndex, day)));
-  }
-
-  function isoFromYmd(year, month, day) {
-    const iso = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return isValidIsoDate(iso) ? iso : null;
-  }
-
-  function todayIso() {
-    const today = new Date();
-    return isoFromYmd(today.getFullYear(), today.getMonth() + 1, today.getDate());
-  }
-
-  function dateFromIso(isoDate) {
-    const [year, month, day] = normalizeDateInput(isoDate, todayIso()).split("-").map(Number);
-    return new Date(Date.UTC(year, month - 1, day));
-  }
-
-  function isoFromDate(date) {
-    return date.toISOString().slice(0, 10);
-  }
-
-  function isIsoDate(value) {
-    return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && isValidIsoDate(value);
-  }
-
-  function isValidIsoDate(value) {
-    const [year, month, day] = value.split("-").map(Number);
-    const date = new Date(Date.UTC(year, month - 1, day));
-    return (
-      date.getUTCFullYear() === year &&
-      date.getUTCMonth() === month - 1 &&
-      date.getUTCDate() === day
-    );
-  }
-
-  function isoYear(isoDate) {
-    return Number(normalizeDateInput(isoDate, todayIso()).slice(0, 4));
-  }
-
-  function isoMonth(isoDate) {
-    return Number(normalizeDateInput(isoDate, todayIso()).slice(5, 7)) - 1;
-  }
-
-  function isoDay(isoDate) {
-    return Number(normalizeDateInput(isoDate, todayIso()).slice(8, 10));
-  }
-
-  function daysInMonth(year, monthIndex) {
-    return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
-  }
-
-  function daysInYear(year) {
-    return daysBetween(yearStartIso(year), yearStartIso(year + 1));
-  }
-
-  function clamp(value, min, max) {
-    return Math.min(max, Math.max(min, value));
   }
 
   function createId(prefix) {
