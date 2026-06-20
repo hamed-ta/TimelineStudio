@@ -6,12 +6,13 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Apply a modern light/dark visual theme with a UI switcher while preserving current timeline behavior.
+Update the project dependency policy before continuing larger UI layout work.
 
 ## Now
 
-- Keep the theme update behavior-preserving: the app should still run locally, switch themes, show readable controls and timeline labels, edit timelines, and export files.
-- Manually verify loading an existing local JSON file in the Vite app before the first UI polish slice.
+- Allow reasonable dependencies when they materially improve accessibility, reliability, maintainability, or complex UI behavior.
+- Keep dependency additions documented, scoped, and justified.
+- Continue the movable/collapsible sidebar and toolbar UI slice after the dependency policy is documented.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
 ## Next
@@ -60,6 +61,7 @@ Apply a modern light/dark visual theme with a UI switcher while preserving curre
 - Extracted display date, Iranian date, month, and zoom formatting into `src/timeline/formatters.ts`.
 - Added `CHANGELOG.md` and `docs/versioning.md` without bumping the package version.
 - Added system light/dark theme tokens, component styling, and a theme switcher.
+- Added dependency policy guidance in ADR 0006 and agent docs.
 
 ## Risks
 
@@ -72,6 +74,7 @@ Apply a modern light/dark visual theme with a UI switcher while preserving curre
 - UI changes must preserve the DOM IDs and data attributes that legacy `app.js` still binds to until the controller is migrated.
 - Version changes should be intentional and documented in `CHANGELOG.md`; do not bump `package.json` during routine migration slices.
 - Firebase read/write patterns can create avoidable cost if autosave and realtime listeners are not scoped carefully.
+- Dependencies can increase bundle size, audit noise, and maintenance cost if they are not scoped to real feature value.
 
 ## Verification Checklist
 

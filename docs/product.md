@@ -63,6 +63,15 @@ When items are locked, dragging the canvas should pan the timeline and should no
 - The visual theme should use accessible contrast for text, controls, timeline labels, and canvas grid details.
 - Theme changes should not alter saved timeline data.
 
+## Layout Behavior
+
+- The timeline editor sidebar should be collapsible.
+- The timeline editor sidebar should be movable between the left and right sides of the workspace on wider screens.
+- The timeline action toolbar should be collapsible.
+- The timeline action toolbar should be movable between the top and bottom of the timeline stage.
+- Layout preferences should be remembered in the browser.
+- Layout changes should not alter saved timeline data.
+
 ## Acceptance Scenarios
 
 ### Start Empty
@@ -154,3 +163,10 @@ When the app updates the visual theme
 Then the selected theme overrides the system appearance
 And the timeline data is unchanged
 And the theme choice is remembered for the next browser session.
+
+### Layout Preference
+
+Given the user moves or collapses the editor sidebar or timeline toolbar
+When the workspace layout updates
+Then the timeline data is unchanged
+And the layout choice is remembered for the next browser session.

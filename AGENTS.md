@@ -12,7 +12,7 @@ Main files:
 - `app.js`: timeline state, rendering, import/export, and interactions
 - `README.md`: user-facing project notes
 
-Avoid adding dependencies unless the user explicitly asks or an ADR accepts the change. ADR 0005 accepts the Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting direction.
+Dependencies are allowed when they are the reasonable way to deliver a feature safely, accessibly, or maintainably. Prefer native browser APIs and existing project code for small features, but do not preserve dependency-free status at the cost of fragile custom implementations. Document narrow feature dependencies in `docs/plan.md` and `docs/handoff.md`; add an ADR for lasting, cross-cutting, runtime, backend, or architectural dependencies. ADR 0005 accepts the Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting direction. ADR 0006 defines the general dependency policy.
 
 ## Project Documents
 

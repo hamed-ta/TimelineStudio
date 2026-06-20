@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Apply a modern light/dark visual theme with a UI switcher while preserving existing timeline behavior.
+Update dependency policy docs before continuing larger UI layout work.
 
 ## Last Known State
 
@@ -10,7 +10,9 @@ Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `ap
 
 Typed helper modules own timeline model, dates, formatters, JSON, PDF, SVG export, file, and media helpers.
 
-The stylesheet now uses semantic design tokens for light and dark color schemes. The app has a single cycling System/Light/Dark theme button that stores Light/Dark overrides in browser local storage and leaves timeline JSON unchanged.
+The stylesheet uses semantic design tokens for light and dark color schemes. The app has a single cycling System/Light/Dark theme button that stores Light/Dark overrides in browser local storage and leaves timeline JSON unchanged.
+
+The project no longer treats dependency-free status as absolute. ADR 0006 allows reasonable dependencies when they materially improve accessibility, reliability, maintainability, or complex feature behavior, with documentation requirements based on scope.
 
 Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version remains `0.1.0`.
 
@@ -24,42 +26,30 @@ Firebase should wait until the local Vite app is stable.
 
 ## Work Completed This Session
 
-- Researched current design-system color guidance.
-- Added system light/dark theme tokens in `styles.css`.
-- Added a single System/Light/Dark cycling theme button in the React shell.
-- Restyled app surfaces, controls, form fields, focus states, and timeline SVG colors through semantic CSS variables.
-- Updated live SVG note labels to inherit theme-aware CSS colors.
-- Updated product notes with system theme and saved preference behavior.
+- Added layout behavior scenarios for a movable/collapsible editor sidebar and timeline toolbar.
+- Added ADR 0006 for dependency policy.
+- Updated `AGENTS.md` so future work may add justified dependencies.
 - Updated `CHANGELOG.md`, plan, and handoff docs.
 
 ## Files Changed
 
 - `CHANGELOG.md`
-- `app.js`
+- `AGENTS.md`
+- `docs/adr/0006-dependency-policy.md`
 - `docs/handoff.md`
 - `docs/plan.md`
 - `docs/product.md`
-- `index.html`
-- `src/App.tsx`
-- `styles.css`
 
 ## Decisions
 
-- Keep this slice behavior-preserving; no data, DOM hook, or Firebase changes.
-- Use CSS variables and `prefers-color-scheme` instead of adding a component/theme dependency.
-- Store only the UI theme preference in local storage; do not write theme preferences into timeline JSON.
-- Preserve all IDs and `data-*` hooks used by legacy `app.js`.
+- Keep this slice documentation-only; no runtime dependency has been added.
+- Reasonable dependencies are allowed when justified by feature value, but broad/cross-cutting choices need an ADR.
+- Preserve all IDs and `data-*` hooks used by legacy `app.js` when the layout implementation resumes.
 
 ## Verification
 
 - `git diff --check`: passed.
-- `node --check app.js`: passed.
-- `npm run typecheck`: passed.
-- `npm run build`: passed.
-- Browser smoke through Vite at `http://127.0.0.1:8765/`: app loaded with no console errors.
-- Browser smoke: single theme button cycled System -> Light -> Dark -> System, Light and Dark changed rendered theme variables, and Dark persisted across reload.
-- Browser smoke: created an event, entered `2026-02-03`, applied the item form, and clicked Save JSON; status changed to `JSON saved`.
-- Browser smoke: 390px mobile viewport had no horizontal overflow and the theme button remained readable.
+- Runtime checks not required for documentation-only dependency policy update.
 
 ## Open Issues
 
@@ -71,8 +61,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`style: add light and dark theme switcher`
+`docs: add dependency policy`
 
 ## Next Safe Step
 
-If the theme is accepted, start the next small UI polish slice, preserving IDs and data attributes used by `app.js`.
+Resume the movable/collapsible sidebar and toolbar UI slice. Consider a small dependency only if it materially improves accessibility or avoids fragile custom behavior.

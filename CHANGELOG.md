@@ -15,3 +15,4 @@ This project follows semantic versioning once releases begin. The current packag
 ### Documentation
 
 - Added versioning and changelog guidance.
+- Added dependency policy guidance for justified feature and architecture dependencies.
