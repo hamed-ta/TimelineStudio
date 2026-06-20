@@ -6,14 +6,13 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add annotation notes with a leader arrow and text balloon.
+Improve event marker styling with a richer beveled or glass-like appearance.
 
 ## Now
 
-- Add a note item type to the model and JSON normalization.
-- Add Note to the timeline toolbar and item type selector.
-- Render notes as point annotations with an anchor, straight arrow leader, and rounded text balloon below all timeline lines.
-- Keep note items date-based and lane-bound; they should not require a period.
+- Keep the event item data model unchanged.
+- Render event markers with a gradient fill, beveled edge, shadow, and highlight.
+- Keep event anchors, drag behavior, save/load, and export behavior unchanged.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 
@@ -69,6 +68,7 @@ Add annotation notes with a leader arrow and text balloon.
 - Added drag reordering and removal for timeline lines.
 - Added vertical all-line marker items.
 - Added annotation note items with leader arrows and balloons.
+- Updated event markers with a beveled, glass-like visual treatment.
 
 ## Risks
 

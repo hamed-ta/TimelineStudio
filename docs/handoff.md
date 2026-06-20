@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add annotation notes with a leader arrow and text balloon.
+Improve event marker styling with a richer beveled or glass-like appearance.
 
 ## Last Known State
 
@@ -22,6 +22,8 @@ Timeline items now include a marker type for global reference dates. Markers ren
 
 Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
 
+Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
+
 Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version remains `0.1.0`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
@@ -30,15 +32,13 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`94cc43f feat: add vertical marker items`
+`b3232b9 feat: add annotation note items`
 
 ## Work Completed This Session
 
-- Added product concept and acceptance scenario for annotation note items.
-- Added `note` to the typed timeline item model, default colors, title text, and normalization.
-- Added Note to the toolbar and item type selector.
-- Rendered notes as point annotations with an anchor, straight arrow leader, and rounded text balloon below all timeline lines.
-- Added note export styles so SVG/PNG/PDF output keeps the note leader, anchor, and balloon styling.
+- Added product acceptance scenario for visually distinct event markers.
+- Updated event SVG rendering with a per-event gradient, shadow, beveled edge, and glint.
+- Added event export styles so SVG/PNG/PDF output keeps the richer event marker treatment.
 - Updated `CHANGELOG.md`, plan, and handoff docs.
 
 ## Files Changed
@@ -48,26 +48,24 @@ Firebase should wait until the local Vite app is stable.
 - `docs/plan.md`
 - `docs/product.md`
 - `app.js`
-- `src/App.tsx`
-- `src/timeline/model.ts`
 - `src/timeline/svgExport.ts`
 - `styles.css`
 
 ## Decisions
 
-- Use a distinct `note` type rather than overloading `event` or `text`, so annotations can have their own leader/balloon rendering.
-- Notes are point-based in this slice and do not require a period. Range-attached notes should be a separate future behavior decision.
-- Keep notes lane-bound so they can be reordered with timeline lines like other lane items.
+- Keep the event item model unchanged; this slice is purely visual.
+- Use SVG gradients and simple shape layers rather than adding another dependency.
+- Keep the event title and drag target behavior unchanged.
 
 ## Verification
 
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
-- Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Note in the toolbar.
-- Browser smoke: item type became `note`, lane input stayed enabled at `2`, and the end date field was hidden.
-- Browser smoke: one selected `.item-note` rendered with label `New note`.
-- Browser smoke: note anchor rendered at the date point, the leader line rendered straight down with matching x coordinates, and the balloon rendered below all timeline lines at y=470 after the last lane y=452.
-- Browser smoke: console error log was empty during note checks.
+- `git diff --check`: passed.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: clicked Event in the toolbar.
+- Browser smoke: one selected `.item-event` rendered with gradient-backed marker, shadow, edge, and glint elements.
+- Browser smoke: event marker fill used a generated `event-glass-*` gradient with three stops, marker radius `11`, edge stroke `#b75500`, and visible title `New event`.
+- Browser smoke: console error log was empty during event marker checks.
 
 ## Open Issues
 
@@ -79,8 +77,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: add annotation note items`
+`feat: improve event marker styling`
 
 ## Next Safe Step
 
-Improve event marker styling with a richer beveled or glass-like appearance.
+Review the note and event marker visuals in the browser, then continue UI polish or JSON load/save smoke testing before Firebase work.

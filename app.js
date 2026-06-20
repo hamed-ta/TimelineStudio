@@ -324,7 +324,7 @@ import {
     } else if (item.type === "line") {
       drawLine(group, defs, item, x1, x2, y);
     } else if (item.type === "event") {
-      drawEvent(group, item, x1, y);
+      drawEvent(group, defs, item, x1, y);
     } else if (item.type === "marker") {
       drawMarker(group, item, x1, AXIS_HEIGHT + laneCount * rowHeight);
     } else if (item.type === "note") {
@@ -393,9 +393,29 @@ import {
     group.append(svgEl("text", { class: "note-label", x: x1 + 8, y: y - 11 }, fitText(item.title, Math.max(80, x2 - x1 - 20))));
   }
 
-  function drawEvent(group, item, x, y) {
-    group.append(svgEl("line", { class: "event-stem", x1: x, y1: y - 23, x2: x, y2: y + 23, stroke: item.color }));
-    group.append(svgEl("circle", { class: "event-marker", cx: x, cy: y, r: 9, fill: item.color }));
+  function drawEvent(group, defs, item, x, y) {
+    const gradientId = `event-glass-${safeSvgId(item.id)}`;
+    if (!document.getElementById(gradientId)) {
+      const gradient = svgEl("linearGradient", {
+        id: gradientId,
+        x1: x,
+        y1: y - 12,
+        x2: x,
+        y2: y + 12,
+        gradientUnits: "userSpaceOnUse",
+      });
+      gradient.append(svgEl("stop", { offset: "0", "stop-color": "#ffffff", "stop-opacity": "0.82" }));
+      gradient.append(svgEl("stop", { offset: "0.36", "stop-color": item.color, "stop-opacity": "0.96" }));
+      gradient.append(svgEl("stop", { offset: "1", "stop-color": adjustColor(item.color, -28), "stop-opacity": "1" }));
+      defs.append(gradient);
+    }
+
+    const edgeColor = adjustColor(item.color, -34);
+    group.append(svgEl("line", { class: "event-stem", x1: x, y1: y - 25, x2: x, y2: y + 25, stroke: edgeColor }));
+    group.append(svgEl("circle", { class: "event-marker-shadow", cx: x + 1.5, cy: y + 2, r: 12, fill: edgeColor }));
+    group.append(svgEl("circle", { class: "event-marker", cx: x, cy: y, r: 11, fill: `url(#${gradientId})` }));
+    group.append(svgEl("circle", { class: "event-marker-edge", cx: x, cy: y, r: 11, stroke: edgeColor }));
+    group.append(svgEl("ellipse", { class: "event-marker-glint", cx: x - 3.5, cy: y - 4.2, rx: 3.6, ry: 2.6 }));
     group.append(svgEl("text", { class: "note-label", x: x + 16, y: y + 5 }, item.title));
   }
 
@@ -1223,6 +1243,14 @@ import {
     const blue = parseInt(clean.slice(4, 6), 16);
     const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
     return luminance > 0.56 ? "#1d2732" : "#ffffff";
+  }
+
+  function adjustColor(hex, amount) {
+    const clean = normalizeColor(hex).slice(1);
+    const red = clamp(parseInt(clean.slice(0, 2), 16) + amount, 0, 255);
+    const green = clamp(parseInt(clean.slice(2, 4), 16) + amount, 0, 255);
+    const blue = clamp(parseInt(clean.slice(4, 6), 16) + amount, 0, 255);
+    return `#${[red, green, blue].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
   }
 
   function normalizeColor(value) {

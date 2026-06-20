@@ -18,7 +18,7 @@ Removing a line removes the items assigned to that line and shifts lower lines u
 
 ### Event
 
-A point-in-time item with a title, date, optional description, and assigned line.
+A point-in-time item with a title, date, optional description, and assigned line. Event markers should be visually distinct from flat text and grid lines.
 
 ### Marker
 
@@ -101,6 +101,13 @@ Given an empty timeline
 When the user creates an event on `2001-03-04`
 Then the event appears at the correct date position
 And it is still present after save/load.
+
+### Distinguish Events Visually
+
+Given a timeline has an event
+When the event is rendered on the timeline
+Then the event marker has a beveled or glass-like treatment
+And the marker remains readable against the timeline canvas.
 
 ### Create A Marker
 

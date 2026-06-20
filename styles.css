@@ -892,13 +892,30 @@ button:focus-visible,
 }
 
 .event-stem {
-  stroke-width: 2;
+  stroke-width: 3;
   stroke-linecap: round;
+  opacity: 0.82;
 }
 
 .event-marker {
-  stroke: var(--timeline-bg);
-  stroke-width: 2;
+  stroke: color-mix(in srgb, var(--timeline-bg) 72%, transparent);
+  stroke-width: 1;
+}
+
+.event-marker-shadow {
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.event-marker-edge {
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.event-marker-glint {
+  fill: #ffffff;
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .marker-hit {

@@ -10,8 +10,11 @@ export const TIMELINE_EXPORT_CSS = `
   .title-label{font-size:13px;font-weight:700}
   .note-label{font-size:13px;font-weight:650}
   .period-body{stroke:rgba(0,0,0,.18);stroke-width:1}
-  .event-stem{stroke-width:2;stroke-linecap:round}
-  .event-marker{stroke:#fff;stroke-width:2}
+  .event-stem{stroke-width:3;stroke-linecap:round;opacity:.82}
+  .event-marker{stroke:#fff;stroke-width:1}
+  .event-marker-shadow{opacity:.2}
+  .event-marker-edge{fill:none;stroke-width:1.5}
+  .event-marker-glint{fill:#fff;opacity:.72}
   .marker-hit{stroke-width:16;pointer-events:stroke}
   .marker-line{stroke-width:2;stroke-dasharray:7 7;stroke-linecap:round}
   .marker-pin{stroke:#fff;stroke-width:2}
