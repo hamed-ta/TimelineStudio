@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add GitHub Actions CI, tag-based GitHub Pages deployment, and release creation.
+Add GitHub Actions release infrastructure and open source community documentation.
 
 ## Now
 
@@ -48,6 +48,7 @@ Add GitHub Actions CI, tag-based GitHub Pages deployment, and release creation.
 - Document exact version bump, tag, push, and first-time Pages setup commands.
 - Adjust GitHub Pages documentation for the renamed `TimelineStudio` repository.
 - Add MIT license metadata and refresh README project documentation.
+- Add contributing, security, and code of conduct documents for open source readiness.
 
 ## Next
 
@@ -112,6 +113,7 @@ Add GitHub Actions CI, tag-based GitHub Pages deployment, and release creation.
 - Added GitHub Actions CI and tag-based GitHub Pages release deployment.
 - Accepted GitHub Pages release deployment in ADR 0008.
 - Added MIT license metadata and refreshed README documentation.
+- Added contributing, security, and code of conduct documents.
 
 ## Risks
 

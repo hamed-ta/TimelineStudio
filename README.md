@@ -101,6 +101,9 @@ git push origin v0.2.0
 - [Versioning](docs/versioning.md)
 - [Changelog](CHANGELOG.md)
 - [Architecture decisions](docs/adr/)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Code of conduct](CODE_OF_CONDUCT.md)
 
 ## License
 

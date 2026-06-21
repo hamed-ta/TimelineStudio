@@ -2,7 +2,7 @@
 
 All notable project changes should be recorded here.
 
-This project follows semantic versioning once releases begin. The current package version remains `0.1.0`.
+This project follows semantic versioning. The current package version is `0.2.0`.
 
 ## Unreleased
 
@@ -43,6 +43,7 @@ This project follows semantic versioning once releases begin. The current packag
 ### Documentation
 
 - Documented the release and GitHub Pages deployment flow.
+- Added contributing, security, and code of conduct documents for open source project readiness.
 - Added versioning and changelog guidance.
 - Added dependency policy guidance for justified feature and architecture dependencies.
 - Documented the Ant Design UI system decision in ADR 0007.

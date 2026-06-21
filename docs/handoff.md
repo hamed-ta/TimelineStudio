@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add GitHub Actions CI, tag-based GitHub Pages deployment, and release creation.
+Add GitHub Actions release infrastructure and open source community documentation.
 
 ## Last Known State
 
@@ -19,6 +19,8 @@ The project no longer treats dependency-free status as absolute. ADR 0006 allows
 ADR 0007 accepts Ant Design as the app UI system. The React shell now uses `antd` for app cards, buttons, inputs, and light/dark theme algorithms, plus `@ant-design/icons` for toolbar and menu iconography. Native bridge controls remain where the legacy `app.js` controller still requires exact DOM behavior, such as real `select`, `range`, and hidden compatibility inputs.
 
 ADR 0008 accepts GitHub Pages as the first public deployment path. CI validates branch pushes and pull requests. Version tags such as `v0.2.0` build the Vite app, deploy `dist` to GitHub Pages, and create or update a GitHub Release from the matching `CHANGELOG.md` section.
+
+The repository now has root community documents for contributors, vulnerability reporting, and community conduct.
 
 The React shell now owns UI layout preferences for editor sidebar collapse and timeline toolbar collapse. These preferences are stored in browser local storage and do not affect timeline JSON.
 
@@ -68,7 +70,7 @@ The app now tracks a current JSON file when the browser grants a File System Acc
 
 The main header shows the current file/copy state and an unsaved changes indicator. Timeline data mutations mark the document dirty; saving or loading clears the indicator.
 
-Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version remains `0.1.0`.
+Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version is `0.2.0`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
@@ -76,7 +78,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`c1f998b feat: adopt ant design shell`
+`21585f2 chore: release 0.2.0`
 
 ## Work Completed This Session
 
@@ -139,11 +141,18 @@ Firebase should wait until the local Vite app is stable.
 - Refreshed `README.md` with project features, development, deployment, release, docs, and license sections.
 - Added an MIT `LICENSE` file and package license metadata.
 - Adjusted GitHub Pages documentation and verification notes for the renamed `TimelineStudio` repository.
+- Added `CONTRIBUTING.md` with local setup, validation, project rules, pull request checklist, commit message examples, and release-note guidance.
+- Added `SECURITY.md` with supported-version scope, private vulnerability reporting guidance, in-scope examples, and maintainer response expectations.
+- Added `CODE_OF_CONDUCT.md` with project participation expectations, reporting guidance, and enforcement options.
+- Linked the community documents from `README.md`.
 
 ## Files Changed
 
 - `CHANGELOG.md`
 - `LICENSE`
+- `CONTRIBUTING.md`
+- `SECURITY.md`
+- `CODE_OF_CONDUCT.md`
 - `README.md`
 - `docs/adr/0007-ant-design-ui-system.md`
 - `docs/adr/0008-github-pages-release-deployment.md`
@@ -195,6 +204,7 @@ Firebase should wait until the local Vite app is stable.
 - Use normal branch CI for validation only; deploy and create GitHub Releases only from explicit semver tags.
 - Require release tags to match `package.json` version and a matching `CHANGELOG.md` version section.
 - Keep GitHub Pages as the first hosting target; revisit Firebase Hosting when Firebase Auth and Firestore are added.
+- Keep community governance documents short and project-specific for now; add issue templates and Dependabot config as the next open source readiness slice.
 
 ## Verification
 
@@ -204,6 +214,7 @@ Firebase should wait until the local Vite app is stable.
 - `npm run typecheck`: passed.
 - `npm run build`: passed. Vite still reports the expected Ant Design chunk-size warning.
 - `VITE_BASE_PATH=/TimelineStudio/ npm run build`: passed, verifying the GitHub Pages project base path build for the renamed repository.
+- Documentation-only community file slice: `npm run typecheck`, `npm run build`, and `git diff --check` should be enough verification.
 - RED/documented: product scenario now requires the app shell to use Ant Design components, icons, theme tokens, and light/dark styling while preserving legacy DOM IDs and timeline behavior.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
