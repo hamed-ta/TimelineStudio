@@ -22,6 +22,8 @@ ADR 0008 accepts GitHub Pages as the first public deployment path. CI validates 
 
 The repository now has root community documents for contributors, vulnerability reporting, and community conduct.
 
+`CHANGELOG.md` now includes a concrete `## 0.2.0 - 2026-06-21` section so the release-notes extractor can find notes for the `v0.2.0` tag.
+
 The React shell now owns UI layout preferences for editor sidebar collapse and timeline toolbar collapse. These preferences are stored in browser local storage and do not affect timeline JSON.
 
 Timeline lines can now be reordered from the editor sidebar or from the timeline label area. Items assigned to a line move with that line. Lines can be removed after confirmation; items on the removed line are deleted and lower lines shift upward.
@@ -145,6 +147,7 @@ Firebase should wait until the local Vite app is stable.
 - Added `SECURITY.md` with supported-version scope, private vulnerability reporting guidance, in-scope examples, and maintainer response expectations.
 - Added `CODE_OF_CONDUCT.md` with project participation expectations, reporting guidance, and enforcement options.
 - Linked the community documents from `README.md`.
+- Moved the current changelog entries under `## 0.2.0 - 2026-06-21` to satisfy the release workflow's changelog extraction check.
 
 ## Files Changed
 
@@ -205,6 +208,7 @@ Firebase should wait until the local Vite app is stable.
 - Require release tags to match `package.json` version and a matching `CHANGELOG.md` version section.
 - Keep GitHub Pages as the first hosting target; revisit Firebase Hosting when Firebase Auth and Firestore are added.
 - Keep community governance documents short and project-specific for now; add issue templates and Dependabot config as the next open source readiness slice.
+- A failed `v0.2.0` release job created from the older tag commit will not see changelog fixes committed later on `main`; either move the tag intentionally or cut a new version tag after bumping the package version.
 
 ## Verification
 
@@ -215,6 +219,7 @@ Firebase should wait until the local Vite app is stable.
 - `npm run build`: passed. Vite still reports the expected Ant Design chunk-size warning.
 - `VITE_BASE_PATH=/TimelineStudio/ npm run build`: passed, verifying the GitHub Pages project base path build for the renamed repository.
 - Documentation-only community file slice: `npm run typecheck`, `npm run build`, and `git diff --check` should be enough verification.
+- Release notes fix: `node scripts/extract-release-notes.mjs 0.2.0 /private/tmp/timeline-release-notes.md` passed.
 - RED/documented: product scenario now requires the app shell to use Ant Design components, icons, theme tokens, and light/dark styling while preserving legacy DOM IDs and timeline behavior.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.

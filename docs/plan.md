@@ -49,6 +49,7 @@ Add GitHub Actions release infrastructure and open source community documentatio
 - Adjust GitHub Pages documentation for the renamed `TimelineStudio` repository.
 - Add MIT license metadata and refresh README project documentation.
 - Add contributing, security, and code of conduct documents for open source readiness.
+- Add a concrete `0.2.0` changelog section so the release workflow can extract release notes.
 
 ## Next
 
@@ -114,6 +115,7 @@ Add GitHub Actions release infrastructure and open source community documentatio
 - Accepted GitHub Pages release deployment in ADR 0008.
 - Added MIT license metadata and refreshed README documentation.
 - Added contributing, security, and code of conduct documents.
+- Added the missing `0.2.0` changelog heading required by the release workflow.
 
 ## Risks
 

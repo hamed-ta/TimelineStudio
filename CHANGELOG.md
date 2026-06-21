@@ -6,6 +6,10 @@ This project follows semantic versioning. The current package version is `0.2.0`
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## 0.2.0 - 2026-06-21
+
 ### Changed
 
 - Added GitHub Actions CI for branch validation and tag-based GitHub Pages release deployment.
