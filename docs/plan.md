@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Migrate the app shell to Ant Design components and theme styling while preserving current timeline behavior.
+Add GitHub Actions CI, tag-based GitHub Pages deployment, and release creation.
 
 ## Now
 
@@ -42,6 +42,12 @@ Migrate the app shell to Ant Design components and theme styling while preservin
 - Keep personal timeline JSON files in ignored `user-data/`.
 - Adopt Ant Design as the UI system for shell controls, icons, panels, and light/dark theme styling.
 - Keep exact DOM IDs and compatibility bridge controls where the legacy `app.js` controller still requires native element behavior.
+- Add CI validation for branch pushes and pull requests.
+- Add tag-based GitHub Pages deployment for versioned releases.
+- Create or update a GitHub Release with changelog notes and a zipped static build artifact.
+- Document exact version bump, tag, push, and first-time Pages setup commands.
+- Adjust GitHub Pages documentation for the renamed `TimelineStudio` repository.
+- Add MIT license metadata and refresh README project documentation.
 
 ## Next
 
@@ -103,6 +109,9 @@ Migrate the app shell to Ant Design components and theme styling while preservin
 - Added a curated item color palette and random palette colors for new items.
 - Added a context menu and shortcuts for timeline item commands.
 - Accepted Ant Design as the app UI system in ADR 0007.
+- Added GitHub Actions CI and tag-based GitHub Pages release deployment.
+- Accepted GitHub Pages release deployment in ADR 0008.
+- Added MIT license metadata and refreshed README documentation.
 
 ## Risks
 
@@ -117,6 +126,7 @@ Migrate the app shell to Ant Design components and theme styling while preservin
 - Firebase read/write patterns can create avoidable cost if autosave and realtime listeners are not scoped carefully.
 - Dependencies can increase bundle size, audit noise, and maintenance cost if they are not scoped to real feature value.
 - Ant Design adds a larger dependency footprint; use it as the shared UI system rather than mixing unrelated component libraries.
+- GitHub Pages project deployments need the Vite base path to match the repository path unless a custom domain is configured.
 
 ## Verification Checklist
 

@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Migrate the app shell to Ant Design components and theme styling while preserving current timeline behavior.
+Add GitHub Actions CI, tag-based GitHub Pages deployment, and release creation.
 
 ## Last Known State
 
@@ -17,6 +17,8 @@ Typography now uses a dependency-free modern sans-serif stack that prefers Persi
 The project no longer treats dependency-free status as absolute. ADR 0006 allows reasonable dependencies when they materially improve accessibility, reliability, maintainability, or complex feature behavior, with documentation requirements based on scope.
 
 ADR 0007 accepts Ant Design as the app UI system. The React shell now uses `antd` for app cards, buttons, inputs, and light/dark theme algorithms, plus `@ant-design/icons` for toolbar and menu iconography. Native bridge controls remain where the legacy `app.js` controller still requires exact DOM behavior, such as real `select`, `range`, and hidden compatibility inputs.
+
+ADR 0008 accepts GitHub Pages as the first public deployment path. CI validates branch pushes and pull requests. Version tags such as `v0.2.0` build the Vite app, deploy `dist` to GitHub Pages, and create or update a GitHub Release from the matching `CHANGELOG.md` section.
 
 The React shell now owns UI layout preferences for editor sidebar collapse and timeline toolbar collapse. These preferences are stored in browser local storage and do not affect timeline JSON.
 
@@ -74,7 +76,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`97ef0ef feat: add context menu creation and item locks`
+`c1f998b feat: adopt ant design shell`
 
 ## Work Completed This Session
 
@@ -128,18 +130,35 @@ Firebase should wait until the local Vite app is stable.
 - Updated theme CSS tokens to Ant-aligned blue, neutral, and dark-mode palettes.
 - Kept native bridge controls for legacy-bound selects, range inputs, checkboxes, and hidden fields.
 - Updated product notes, changelog, plan, and handoff docs for the Ant Design migration.
+- Added CI validation workflow for branch pushes, pull requests, and manual runs.
+- Added tag-based release workflow that validates the tag against `package.json`, extracts matching changelog notes, builds the app, deploys to GitHub Pages, and creates or updates a GitHub Release with a zipped `dist` artifact.
+- Added `scripts/extract-release-notes.mjs` for deterministic release notes extraction.
+- Made Vite's `base` configurable through `VITE_BASE_PATH` so GitHub Pages project URLs work while local builds still use `/`.
+- Documented exact version bump, changelog, tag, push, manual workflow, and first-time GitHub Pages setup commands.
+- Added ADR 0008 for GitHub Pages release deployment.
+- Refreshed `README.md` with project features, development, deployment, release, docs, and license sections.
+- Added an MIT `LICENSE` file and package license metadata.
+- Adjusted GitHub Pages documentation and verification notes for the renamed `TimelineStudio` repository.
 
 ## Files Changed
 
 - `CHANGELOG.md`
+- `LICENSE`
+- `README.md`
 - `docs/adr/0007-ant-design-ui-system.md`
+- `docs/adr/0008-github-pages-release-deployment.md`
 - `docs/handoff.md`
 - `docs/plan.md`
 - `docs/product.md`
+- `docs/versioning.md`
+- `.github/workflows/ci.yml`
+- `.github/workflows/release.yml`
 - `package.json`
 - `package-lock.json`
+- `scripts/extract-release-notes.mjs`
 - `src/App.tsx`
 - `src/main.tsx`
+- `vite.config.ts`
 - `styles.css`
 
 ## Decisions
@@ -173,9 +192,18 @@ Firebase should wait until the local Vite app is stable.
 - Keep typography dependency-free for now; prefer locally available Persian-capable fonts and system fallbacks instead of adding a web font package or CDN font.
 - Put `Vazirmatn` and `Noto Sans Arabic` first in the font stack because they support Persian text better than Latin-first UI fonts.
 - Use rem-based UI size tokens for controls, labels, panels, context menus, and info text.
+- Use normal branch CI for validation only; deploy and create GitHub Releases only from explicit semver tags.
+- Require release tags to match `package.json` version and a matching `CHANGELOG.md` version section.
+- Keep GitHub Pages as the first hosting target; revisit Firebase Hosting when Firebase Auth and Firestore are added.
 
 ## Verification
 
+- RED/documented: versioning docs now require tag-based releases, matching changelog headings, GitHub Pages setup, and manual workflow support.
+- `node --check app.js`: passed.
+- `node --check scripts/extract-release-notes.mjs`: passed.
+- `npm run typecheck`: passed.
+- `npm run build`: passed. Vite still reports the expected Ant Design chunk-size warning.
+- `VITE_BASE_PATH=/TimelineStudio/ npm run build`: passed, verifying the GitHub Pages project base path build for the renamed repository.
 - RED/documented: product scenario now requires the app shell to use Ant Design components, icons, theme tokens, and light/dark styling while preserving legacy DOM IDs and timeline behavior.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.

@@ -8,6 +8,8 @@ This project follows semantic versioning once releases begin. The current packag
 
 ### Changed
 
+- Added GitHub Actions CI for branch validation and tag-based GitHub Pages release deployment.
+- Added MIT license metadata and refreshed README project, development, deployment, release, and license documentation.
 - Migrated the app shell to Vite, React, and TypeScript while preserving legacy timeline behavior.
 - Extracted timeline model, date, JSON, export, file, media, PDF, SVG export, and formatting helpers into typed modules.
 - Updated the app theme with system, light, and dark UI theme controls.
@@ -40,6 +42,8 @@ This project follows semantic versioning once releases begin. The current packag
 
 ### Documentation
 
+- Documented the release and GitHub Pages deployment flow.
 - Added versioning and changelog guidance.
 - Added dependency policy guidance for justified feature and architecture dependencies.
 - Documented the Ant Design UI system decision in ADR 0007.
+- Documented the GitHub Pages release deployment decision in ADR 0008.

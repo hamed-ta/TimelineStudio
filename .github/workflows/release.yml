@@ -1,0 +1,130 @@
+name: Release and deploy
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to deploy, for example v0.2.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, deploy, and release
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      VITE_BASE_PATH: /${{ github.event.repository.name }}/
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Validate release metadata
+        id: release_meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="$(node -p "require('./package.json').version")"
+          expected_tag="v${version}"
+
+          if [[ "${RELEASE_TAG}" != "${expected_tag}" ]]; then
+            echo "Release tag ${RELEASE_TAG} must match package.json version ${version} (${expected_tag})." >&2
+            exit 1
+          fi
+
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract changelog release notes
+        run: node scripts/extract-release-notes.mjs "${{ steps.release_meta.outputs.version }}" release-notes.md
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check JavaScript syntax
+        run: node --check app.js
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Package static build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          zip -r "../timeline-studio-${{ steps.release_meta.outputs.version }}.zip" .
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Add deployment URL to release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp release-notes.md release-notes-with-url.md
+          {
+            echo
+            echo "## Deployment"
+            echo
+            echo "- GitHub Pages: ${{ steps.deployment.outputs.page_url }}"
+          } >> release-notes-with-url.md
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${{ steps.release_meta.outputs.tag }}"
+          version="${{ steps.release_meta.outputs.version }}"
+          artifact="timeline-studio-${version}.zip"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" \
+              --title "Timeline Studio ${version}" \
+              --notes-file release-notes-with-url.md
+            gh release upload "$tag" "$artifact" --clobber
+          else
+            gh release create "$tag" "$artifact" \
+              --title "Timeline Studio ${version}" \
+              --notes-file release-notes-with-url.md \
+              --verify-tag
+          fi
