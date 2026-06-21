@@ -44,6 +44,8 @@ git push origin v0.2.0
 
 Pushing the tag runs the release workflow. It builds the app, deploys `dist` to GitHub Pages, creates or updates the GitHub Release, and attaches a zipped static build artifact.
 
+If a release rerun finds that the zipped static build artifact already exists, the workflow leaves that immutable release asset in place instead of trying to replace it.
+
 The release workflow can also be run manually from the GitHub Actions tab with the exact tag name, such as `v0.2.0`.
 
 Before the first deployment, configure the repository at GitHub Settings -> Pages -> Build and deployment -> Source -> GitHub Actions.

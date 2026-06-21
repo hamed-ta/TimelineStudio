@@ -24,6 +24,10 @@ The repository now has root community documents for contributors, vulnerability 
 
 `CHANGELOG.md` now includes a concrete `## 0.2.0 - 2026-06-21` section so the release-notes extractor can find notes for the `v0.2.0` tag.
 
+The GitHub Pages environment allows deployments from `main` and semver tags matching `v*.*.*`.
+
+The release workflow now skips uploading the static zip when the same release asset already exists. This avoids failing reruns on immutable GitHub Release assets.
+
 The React shell now owns UI layout preferences for editor sidebar collapse and timeline toolbar collapse. These preferences are stored in browser local storage and do not affect timeline JSON.
 
 Timeline lines can now be reordered from the editor sidebar or from the timeline label area. Items assigned to a line move with that line. Lines can be removed after confirmation; items on the removed line are deleted and lower lines shift upward.
@@ -80,7 +84,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`21585f2 chore: release 0.2.0`
+`577156f fix: add 0.2.0 changelog notes`
 
 ## Work Completed This Session
 
@@ -148,6 +152,8 @@ Firebase should wait until the local Vite app is stable.
 - Added `CODE_OF_CONDUCT.md` with project participation expectations, reporting guidance, and enforcement options.
 - Linked the community documents from `README.md`.
 - Moved the current changelog entries under `## 0.2.0 - 2026-06-21` to satisfy the release workflow's changelog extraction check.
+- Updated the GitHub Pages environment to allow semver tag deployments.
+- Made the release workflow skip already uploaded immutable release assets on reruns.
 
 ## Files Changed
 
@@ -209,6 +215,7 @@ Firebase should wait until the local Vite app is stable.
 - Keep GitHub Pages as the first hosting target; revisit Firebase Hosting when Firebase Auth and Firestore are added.
 - Keep community governance documents short and project-specific for now; add issue templates and Dependabot config as the next open source readiness slice.
 - A failed `v0.2.0` release job created from the older tag commit will not see changelog fixes committed later on `main`; either move the tag intentionally or cut a new version tag after bumping the package version.
+- GitHub Release assets can be immutable after upload, so rerun-safe release workflows should not use `--clobber` for an asset that already exists.
 
 ## Verification
 
@@ -220,6 +227,7 @@ Firebase should wait until the local Vite app is stable.
 - `VITE_BASE_PATH=/TimelineStudio/ npm run build`: passed, verifying the GitHub Pages project base path build for the renamed repository.
 - Documentation-only community file slice: `npm run typecheck`, `npm run build`, and `git diff --check` should be enough verification.
 - Release notes fix: `node scripts/extract-release-notes.mjs 0.2.0 /private/tmp/timeline-release-notes.md` passed.
+- Release rerun reached Pages deployment, then failed on `gh release upload --clobber` because the release zip already existed as an immutable asset.
 - RED/documented: product scenario now requires the app shell to use Ant Design components, icons, theme tokens, and light/dark styling while preserving legacy DOM IDs and timeline behavior.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.

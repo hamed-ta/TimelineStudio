@@ -50,6 +50,7 @@ Add GitHub Actions release infrastructure and open source community documentatio
 - Add MIT license metadata and refresh README project documentation.
 - Add contributing, security, and code of conduct documents for open source readiness.
 - Add a concrete `0.2.0` changelog section so the release workflow can extract release notes.
+- Make release reruns tolerate already uploaded immutable GitHub Release assets.
 
 ## Next
 
@@ -116,6 +117,7 @@ Add GitHub Actions release infrastructure and open source community documentatio
 - Added MIT license metadata and refreshed README documentation.
 - Added contributing, security, and code of conduct documents.
 - Added the missing `0.2.0` changelog heading required by the release workflow.
+- Allowed GitHub Pages deployment from semver tags and made release asset uploads rerun-safe.
 
 ## Risks
 

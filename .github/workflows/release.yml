@@ -121,7 +121,12 @@ jobs:
             gh release edit "$tag" \
               --title "Timeline Studio ${version}" \
               --notes-file release-notes-with-url.md
-            gh release upload "$tag" "$artifact" --clobber
+
+            if gh release view "$tag" --json assets --jq ".assets[].name" | grep -Fxq "$artifact"; then
+              echo "Release asset ${artifact} already exists; skipping immutable asset upload."
+            else
+              gh release upload "$tag" "$artifact"
+            fi
           else
             gh release create "$tag" "$artifact" \
               --title "Timeline Studio ${version}" \
