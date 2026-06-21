@@ -6,7 +6,7 @@ Timeline Studio uses semantic versioning for releases:
 - `MINOR`: new user-facing features that preserve existing saved JSON compatibility.
 - `PATCH`: bug fixes, internal refactors, documentation fixes, and behavior-preserving improvements.
 
-The current package version is `0.2.0`. Do not bump it during ordinary migration slices unless the user asks for a release or version bump.
+The current package version is `0.2.1`. Do not bump it during ordinary migration slices unless the user asks for a release or version bump.
 
 ## Changelog
 

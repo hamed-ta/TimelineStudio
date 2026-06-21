@@ -18,7 +18,7 @@ The project no longer treats dependency-free status as absolute. ADR 0006 allows
 
 ADR 0007 accepts Ant Design as the app UI system. The React shell now uses `antd` for app cards, buttons, inputs, and light/dark theme algorithms, plus `@ant-design/icons` for toolbar and menu iconography. Native bridge controls remain where the legacy `app.js` controller still requires exact DOM behavior, such as real `select`, `range`, and hidden compatibility inputs.
 
-ADR 0008 accepts GitHub Pages as the first public deployment path. CI validates branch pushes and pull requests. Version tags such as `v0.2.0` build the Vite app, deploy `dist` to GitHub Pages, and create or update a GitHub Release from the matching `CHANGELOG.md` section.
+ADR 0008 accepts GitHub Pages as the first public deployment path. CI validates branch pushes and pull requests. Version tags such as `v0.2.1` build the Vite app, deploy `dist` to GitHub Pages, and create or update a GitHub Release from the matching `CHANGELOG.md` section.
 
 The repository now has root community documents for contributors, vulnerability reporting, and community conduct.
 
@@ -76,7 +76,7 @@ The app now tracks a current JSON file when the browser grants a File System Acc
 
 The main header shows the current file/copy state and an unsaved changes indicator. Timeline data mutations mark the document dirty; saving or loading clears the indicator.
 
-Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version is `0.2.0`.
+Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version is `0.2.1`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
@@ -84,7 +84,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`577156f fix: add 0.2.0 changelog notes`
+`9ca269e ci: make release reruns idempotent`
 
 ## Work Completed This Session
 
@@ -154,6 +154,7 @@ Firebase should wait until the local Vite app is stable.
 - Moved the current changelog entries under `## 0.2.0 - 2026-06-21` to satisfy the release workflow's changelog extraction check.
 - Updated the GitHub Pages environment to allow semver tag deployments.
 - Made the release workflow skip already uploaded immutable release assets on reruns.
+- Bumped the patch release metadata to `0.2.1` because the protected `v0.2.0` tag cannot be moved again.
 
 ## Files Changed
 
@@ -228,6 +229,8 @@ Firebase should wait until the local Vite app is stable.
 - Documentation-only community file slice: `npm run typecheck`, `npm run build`, and `git diff --check` should be enough verification.
 - Release notes fix: `node scripts/extract-release-notes.mjs 0.2.0 /private/tmp/timeline-release-notes.md` passed.
 - Release rerun reached Pages deployment, then failed on `gh release upload --clobber` because the release zip already existed as an immutable asset.
+- Protected tag handling: remote `v0.2.0` is locked at `577156f`; use `v0.2.1` for the workflow fix release.
+- Patch release validation: `node scripts/extract-release-notes.mjs 0.2.1 /private/tmp/timeline-release-notes-0.2.1.md`, `git diff --check`, `npm run typecheck`, and `npm run build` passed.
 - RED/documented: product scenario now requires the app shell to use Ant Design components, icons, theme tokens, and light/dark styling while preserving legacy DOM IDs and timeline behavior.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.

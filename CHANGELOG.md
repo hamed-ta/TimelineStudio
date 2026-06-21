@@ -2,11 +2,17 @@
 
 All notable project changes should be recorded here.
 
-This project follows semantic versioning. The current package version is `0.2.0`.
+This project follows semantic versioning. The current package version is `0.2.1`.
 
 ## Unreleased
 
 No unreleased changes yet.
+
+## 0.2.1 - 2026-06-21
+
+### Fixed
+
+- Made the release workflow skip an already uploaded release zip on reruns so immutable GitHub Release assets do not fail a rerun.
 
 ## 0.2.0 - 2026-06-21
 
@@ -48,7 +54,6 @@ No unreleased changes yet.
 
 - Documented the release and GitHub Pages deployment flow.
 - Added contributing, security, and code of conduct documents for open source project readiness.
-- Made the release workflow skip an already uploaded release zip on reruns so immutable GitHub Release assets do not fail a rerun.
 - Added versioning and changelog guidance.
 - Added dependency policy guidance for justified feature and architecture dependencies.
 - Documented the Ant Design UI system decision in ADR 0007.
