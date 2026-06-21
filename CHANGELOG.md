@@ -36,9 +36,10 @@ This project follows semantic versioning once releases begin. The current packag
 - Normalized app typography with a Persian-capable modern font stack and rem-based type scale.
 - Moved line rename, background color, add, and remove controls into the timeline label area and replaced native color inputs with a shared item/line color picker.
 - Added context-menu item creation and individual item locking alongside toolbar read-only mode.
+- Adopted Ant Design for the React app shell, including Ant cards, buttons, inputs, icons, theme algorithms, and Ant-aligned light/dark color tokens.
 
 ### Documentation
 
 - Added versioning and changelog guidance.
 - Added dependency policy guidance for justified feature and architecture dependencies.
-- Documented the `lucide-react` icon dependency decision for panel controls.
+- Documented the Ant Design UI system decision in ADR 0007.

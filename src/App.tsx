@@ -1,37 +1,44 @@
 import {
-  Baby,
-  Calendar,
-  ChevronRight,
-  Clipboard,
-  CircleDot,
-  Copy,
-  FileCode2,
-  FileText,
-  Flag,
-  FolderOpen,
-  Files,
-  ImageDown,
-  LockKeyhole,
-  LockKeyholeOpen,
-  Maximize2,
-  Minus,
-  Palette,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelTopClose,
-  PanelTopOpen,
-  Plus,
-  Save,
-  StickyNote,
-  Trash2,
-  Type,
-  X,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+  AimOutlined,
+  BgColorsOutlined,
+  BulbOutlined,
+  CalendarOutlined,
+  CloseOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
+  FileAddOutlined,
+  FileImageOutlined,
+  FileOutlined,
+  FilePdfOutlined,
+  FileTextOutlined,
+  FlagOutlined,
+  FolderOpenOutlined,
+  FontSizeOutlined,
+  FormOutlined,
+  FullscreenOutlined,
+  LockOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  MinusOutlined,
+  MoonOutlined,
+  PlusOutlined,
+  RightOutlined,
+  SaveOutlined,
+  SmileOutlined,
+  SunOutlined,
+  UnlockOutlined,
+  VerticalAlignBottomOutlined,
+  VerticalAlignTopOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+} from "@ant-design/icons";
+import { Button, Card, ConfigProvider, Input, Space, Typography, theme as antTheme } from "antd";
+import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ThemeMode = "system" | "light" | "dark";
+type ResolvedThemeMode = "light" | "dark";
 
 const THEME_STORAGE_KEY = "timeline-studio-theme";
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "timeline-studio-sidebar-collapsed";
@@ -43,62 +50,8 @@ const THEME_LABELS: Record<ThemeMode, string> = {
   dark: "Dark",
 };
 
-function ColorPickerField({ label, prefix, paletteLabel }: { label: string; prefix: "item" | "line"; paletteLabel: string }) {
-  const inputId = `${prefix}ColorInput`;
-  const triggerId = `${prefix}ColorTrigger`;
-  const previewId = `${prefix}ColorPreview`;
-  const valueId = `${prefix}ColorValue`;
-  const panelId = `${prefix}ColorPanel`;
-  const planeId = `${prefix}ColorPlane`;
-  const markerId = `${prefix}ColorPlaneMarker`;
-  const hueId = `${prefix}ColorHueInput`;
-  const hexId = `${prefix}ColorHexInput`;
-  const paletteId = `${prefix}ColorPalette`;
-
-  return (
-    <div className="color-picker-field">
-      <span className="field-caption">{label}</span>
-      <div className="color-picker" data-color-picker={prefix}>
-        <input id={inputId} type="hidden" />
-        <button
-          type="button"
-          className="color-picker-trigger"
-          id={triggerId}
-          aria-haspopup="dialog"
-          aria-expanded="false"
-          aria-controls={panelId}
-        >
-          <span className="color-picker-preview" id={previewId} aria-hidden="true"></span>
-          <span className="color-picker-value" id={valueId}>#2563EB</span>
-          <Palette size={15} aria-hidden="true" />
-        </button>
-        <div className="color-picker-panel" id={panelId} role="dialog" aria-label={`${label} picker`} hidden>
-          <div
-            className="color-picker-plane"
-            id={planeId}
-            role="slider"
-            tabIndex={0}
-            aria-label={`${label} saturation and brightness`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={100}
-          >
-            <span className="color-picker-plane-marker" id={markerId}></span>
-          </div>
-          <label className="color-picker-range">
-            Hue
-            <input id={hueId} type="range" min={0} max={360} defaultValue={220} aria-label={`${label} hue`} />
-          </label>
-          <label className="color-picker-hex-row">
-            Hex
-            <input id={hexId} type="text" inputMode="text" maxLength={7} spellCheck={false} aria-label={`${label} hex color`} />
-          </label>
-          <div className="color-swatch-grid" id={paletteId} role="group" aria-label={paletteLabel}></div>
-        </div>
-      </div>
-    </div>
-  );
-}
+const APP_FONT_STACK =
+  '"Vazirmatn", "Noto Sans Arabic", "Noto Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif';
 
 function readStoredTheme(): ThemeMode {
   try {
@@ -117,8 +70,17 @@ function readStoredBoolean(key: string): boolean {
   }
 }
 
-function applyTheme(mode: ThemeMode) {
+function readSystemDark(): boolean {
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  } catch {
+    return false;
+  }
+}
+
+function applyTheme(mode: ThemeMode, resolvedMode: ResolvedThemeMode) {
   document.documentElement.dataset.theme = mode;
+  document.documentElement.dataset.resolvedTheme = resolvedMode;
 }
 
 function storeTheme(mode: ThemeMode) {
@@ -149,16 +111,162 @@ function nextThemeMode(mode: ThemeMode): ThemeMode {
   return THEME_ORDER[(THEME_ORDER.indexOf(mode) + 1) % THEME_ORDER.length];
 }
 
+function themeIcon(mode: ThemeMode) {
+  if (mode === "light") return <SunOutlined />;
+  if (mode === "dark") return <MoonOutlined />;
+  return <DesktopOutlined />;
+}
+
+function ToneIcon({ tone, children }: { tone: string; children: ReactNode }) {
+  return (
+    <span className="toolbar-icon" data-tone={tone} aria-hidden="true">
+      {children}
+    </span>
+  );
+}
+
+function ToolbarButton({
+  tone,
+  addType,
+  id,
+  title,
+  icon,
+  children,
+}: {
+  tone: string;
+  addType?: string;
+  id?: string;
+  title: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <Button
+      id={id}
+      htmlType="button"
+      className="toolbar-button"
+      data-tone={tone}
+      data-add={addType}
+      title={title}
+      icon={<ToneIcon tone={tone}>{icon}</ToneIcon>}
+    >
+      {children}
+    </Button>
+  );
+}
+
+function FieldLabel({ children, id, label }: { children: ReactNode; id?: string; label: string }) {
+  return (
+    <label className="field-label" id={id}>
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function ColorPickerField({ label, prefix, paletteLabel }: { label: string; prefix: "item" | "line"; paletteLabel: string }) {
+  const inputId = `${prefix}ColorInput`;
+  const triggerId = `${prefix}ColorTrigger`;
+  const previewId = `${prefix}ColorPreview`;
+  const valueId = `${prefix}ColorValue`;
+  const panelId = `${prefix}ColorPanel`;
+  const planeId = `${prefix}ColorPlane`;
+  const markerId = `${prefix}ColorPlaneMarker`;
+  const hueId = `${prefix}ColorHueInput`;
+  const hexId = `${prefix}ColorHexInput`;
+  const paletteId = `${prefix}ColorPalette`;
+
+  return (
+    <div className="color-picker-field">
+      <span className="field-caption">{label}</span>
+      <div className="color-picker" data-color-picker={prefix}>
+        <input id={inputId} type="hidden" />
+        <Button
+          htmlType="button"
+          className="color-picker-trigger"
+          id={triggerId}
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls={panelId}
+          icon={<BgColorsOutlined />}
+        >
+          <span className="color-picker-preview" id={previewId} aria-hidden="true"></span>
+          <span className="color-picker-value" id={valueId}>#2563EB</span>
+        </Button>
+        <div className="color-picker-panel" id={panelId} role="dialog" aria-label={`${label} picker`} hidden>
+          <div
+            className="color-picker-plane"
+            id={planeId}
+            role="slider"
+            tabIndex={0}
+            aria-label={`${label} saturation and brightness`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={100}
+          >
+            <span className="color-picker-plane-marker" id={markerId}></span>
+          </div>
+          <label className="color-picker-range">
+            Hue
+            <input id={hueId} type="range" min={0} max={360} defaultValue={220} aria-label={`${label} hue`} />
+          </label>
+          <label className="color-picker-hex-row">
+            Hex
+            <Input id={hexId} type="text" inputMode="text" maxLength={7} spellCheck={false} aria-label={`${label} hex color`} />
+          </label>
+          <div className="color-swatch-grid" id={paletteId} role="group" aria-label={paletteLabel}></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function useSystemTheme() {
+  const [systemDark, setSystemDark] = useState(readSystemDark);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => setSystemDark(media.matches);
+    handleChange();
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
+
+  return systemDark ? "dark" : "light";
+}
+
 export function App() {
   const [themeMode, setThemeMode] = useState<ThemeMode>(readStoredTheme);
+  const systemTheme = useSystemTheme();
+  const resolvedTheme: ResolvedThemeMode = themeMode === "system" ? systemTheme : themeMode;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readStoredBoolean(SIDEBAR_COLLAPSED_STORAGE_KEY));
   const [toolbarCollapsed, setToolbarCollapsed] = useState(() => readStoredBoolean(TOOLBAR_COLLAPSED_STORAGE_KEY));
   const nextMode = nextThemeMode(themeMode);
+  const antConfigTheme = useMemo(
+    () => ({
+      algorithm: resolvedTheme === "dark" ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
+      token: {
+        colorPrimary: "#1677ff",
+        borderRadius: 8,
+        fontFamily: APP_FONT_STACK,
+      },
+      components: {
+        Button: {
+          controlHeight: 34,
+          borderRadius: 8,
+        },
+        Card: {
+          borderRadiusLG: 8,
+        },
+      },
+    }),
+    [resolvedTheme],
+  );
 
   useEffect(() => {
-    applyTheme(themeMode);
+    applyTheme(themeMode, resolvedTheme);
     storeTheme(themeMode);
-  }, [themeMode]);
+  }, [themeMode, resolvedTheme]);
 
   useEffect(() => {
     storeBoolean(SIDEBAR_COLLAPSED_STORAGE_KEY, sidebarCollapsed);
@@ -169,23 +277,27 @@ export function App() {
   }, [toolbarCollapsed]);
 
   return (
-    <>
+    <ConfigProvider theme={antConfigTheme}>
       <div className="app-shell">
         <header className="topbar">
           <div className="brand">
             <span className="brand-mark" aria-hidden="true"></span>
             <div>
-              <h1>Timeline Studio</h1>
-              <p id="statusText" aria-live="polite">
+              <Typography.Title level={1}>Timeline Studio</Typography.Title>
+              <Typography.Text id="statusText" aria-live="polite" type="secondary">
                 Ready
-              </p>
+              </Typography.Text>
             </div>
           </div>
 
           <div className="timeline-context">
             <div>
-              <h2 id="stageTitle">New Timeline</h2>
-              <p id="stageMeta">Create or load a timeline</p>
+              <Typography.Title level={2} id="stageTitle">
+                New Timeline
+              </Typography.Title>
+              <Typography.Text id="stageMeta" type="secondary">
+                Create or load a timeline
+              </Typography.Text>
               <p className="file-state" id="fileState" aria-live="polite">
                 <span id="fileNameLabel">No file selected</span>
                 <span className="dirty-indicator" id="dirtyIndicator" hidden>
@@ -193,34 +305,29 @@ export function App() {
                 </span>
               </p>
             </div>
-            <button type="button" className="secondary-button fit-button" id="fitButton">
-              <Maximize2 size={16} aria-hidden="true" />
-              <span>Fit</span>
-            </button>
+            <Button htmlType="button" className="secondary-button fit-button" id="fitButton" icon={<FullscreenOutlined />}>
+              Fit
+            </Button>
           </div>
 
           <div className="zoom-tools">
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               className="theme-toggle-button"
               data-theme-mode={themeMode}
               aria-label={`Theme: ${THEME_LABELS[themeMode]}. Switch to ${THEME_LABELS[nextMode]}.`}
               title={`Theme: ${THEME_LABELS[themeMode]}. Switch to ${THEME_LABELS[nextMode]}.`}
               onClick={() => setThemeMode(nextMode)}
+              icon={themeIcon(themeMode)}
             >
-              <span className="theme-toggle-icon" aria-hidden="true"></span>
-              <span>{THEME_LABELS[themeMode]}</span>
-            </button>
+              {THEME_LABELS[themeMode]}
+            </Button>
             <span className="separator" aria-hidden="true"></span>
-            <button type="button" className="icon-button zoom-icon-button" id="zoomOutButton" aria-label="Zoom out" title="Zoom out">
-              <ZoomOut size={18} aria-hidden="true" />
-            </button>
+            <Button htmlType="button" className="icon-button zoom-icon-button" id="zoomOutButton" aria-label="Zoom out" title="Zoom out" icon={<ZoomOutOutlined />} />
             <label htmlFor="zoomRange">Zoom</label>
-            <input id="zoomRange" type="range" min="18" max="360" step="0.5" defaultValue="18" />
+            <input id="zoomRange" className="ant-range-bridge" type="range" min="18" max="360" step="0.5" defaultValue="18" />
             <span id="zoomLabel">18 px/month</span>
-            <button type="button" className="icon-button zoom-icon-button" id="zoomInButton" aria-label="Zoom in" title="Zoom in">
-              <ZoomIn size={18} aria-hidden="true" />
-            </button>
+            <Button htmlType="button" className="icon-button zoom-icon-button" id="zoomInButton" aria-label="Zoom in" title="Zoom in" icon={<ZoomInOutlined />} />
           </div>
         </header>
 
@@ -232,8 +339,8 @@ export function App() {
                 <strong>Timeline</strong>
               </div>
               <div className="sidebar-actions">
-                <button
-                  type="button"
+                <Button
+                  htmlType="button"
                   className="icon-button panel-toggle-button"
                   data-collapsed={sidebarCollapsed ? "true" : "false"}
                   aria-expanded={!sidebarCollapsed}
@@ -243,63 +350,60 @@ export function App() {
                   onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
                 >
                   <span className="toggle-icon-stack" aria-hidden="true">
-                    <PanelLeftClose className="toggle-icon-state" data-active={!sidebarCollapsed} size={18} />
-                    <PanelLeftOpen className="toggle-icon-state" data-active={sidebarCollapsed} size={18} />
+                    <MenuFoldIcon active={!sidebarCollapsed} />
+                    <MenuUnfoldIcon active={sidebarCollapsed} />
                   </span>
-                </button>
+                </Button>
               </div>
             </div>
 
             <div id="editorPanels" className="sidebar-panels">
-              <section className="panel">
-                <div className="panel-heading">
-                  <h2>Timeline</h2>
-                </div>
-
-                <label>
-                  Title
-                  <input id="timelineTitleInput" type="text" autoComplete="off" />
-                </label>
+              <Card
+                className="panel"
+                size="small"
+                title={<Typography.Title level={2}>Timeline</Typography.Title>}
+              >
+                <FieldLabel label="Title">
+                  <Input id="timelineTitleInput" type="text" autoComplete="off" />
+                </FieldLabel>
 
                 <div className="field-grid">
-                  <label>
-                    Start date
-                    <input id="startDateInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
-                  </label>
-                  <label>
-                    End date
-                    <input id="endDateInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
-                  </label>
+                  <FieldLabel label="Start date">
+                    <Input id="startDateInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
+                  </FieldLabel>
+                  <FieldLabel label="End date">
+                    <Input id="endDateInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
+                  </FieldLabel>
                 </div>
 
                 <label className="check-row">
-                  <input id="autoEndDateInput" type="checkbox" />
-                  End at today
+                  <input id="autoEndDateInput" className="legacy-checkbox" type="checkbox" />
+                  <span>End at today</span>
                 </label>
 
-                <label>
-                  Drag snap
-                  <select id="snapInput">
+                <FieldLabel label="Drag snap">
+                  <select id="snapInput" className="legacy-select">
                     <option value="year">1 year</option>
                     <option value="month">1 month</option>
                     <option value="week">1 week</option>
                     <option value="day">1 day</option>
                   </select>
-                </label>
-              </section>
+                </FieldLabel>
+              </Card>
 
-              <section className="panel">
-                <div className="panel-heading">
-                  <h2>Item</h2>
-                  <button type="button" className="quiet-button danger" id="deleteItemButton">
+              <Card
+                className="panel"
+                size="small"
+                title={<Typography.Title level={2}>Item</Typography.Title>}
+                extra={
+                  <Button htmlType="button" danger type="text" className="quiet-button danger" id="deleteItemButton">
                     Delete
-                  </button>
-                </div>
-
+                  </Button>
+                }
+              >
                 <form id="itemForm">
-                  <label>
-                    Type
-                    <select id="itemTypeInput">
+                  <FieldLabel label="Type">
+                    <select id="itemTypeInput" className="legacy-select">
                       <option value="birth">Birth</option>
                       <option value="event">Event</option>
                       <option value="marker">Marker</option>
@@ -308,58 +412,53 @@ export function App() {
                       <option value="line">Line</option>
                       <option value="text">Text</option>
                     </select>
-                  </label>
+                  </FieldLabel>
 
-                  <label>
-                    Title
-                    <input id="itemTitleInput" type="text" autoComplete="off" />
-                  </label>
+                  <FieldLabel label="Title">
+                    <Input id="itemTitleInput" type="text" autoComplete="off" />
+                  </FieldLabel>
 
                   <div className="field-grid">
-                    <label>
-                      Lane
-                      <input id="itemLaneInput" type="number" min="0" max="20" step="1" />
-                    </label>
+                    <FieldLabel label="Lane">
+                      <Input id="itemLaneInput" type="number" min="0" max="20" step="1" />
+                    </FieldLabel>
                     <div className="color-field">
                       <ColorPickerField label="Color" prefix="item" paletteLabel="Preset item colors" />
                     </div>
-                    <label>
-                      Start date
-                      <input id="itemStartInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
-                    </label>
-                    <label id="itemEndField">
-                      End date
-                      <input id="itemEndInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
-                    </label>
+                    <FieldLabel label="Start date">
+                      <Input id="itemStartInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
+                    </FieldLabel>
+                    <FieldLabel id="itemEndField" label="End date">
+                      <Input id="itemEndInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
+                    </FieldLabel>
                   </div>
                   <p className="calendar-preview" id="itemCalendarPreview"></p>
 
                   <div className="derived-label-options" id="itemDerivedLabelsField">
                     <label className="check-row">
-                      <input id="itemAgeLabelsInput" type="checkbox" defaultChecked />
-                      Show age at start and end
+                      <input id="itemAgeLabelsInput" className="legacy-checkbox" type="checkbox" defaultChecked />
+                      <span>Show age at start and end</span>
                     </label>
                     <label className="check-row">
-                      <input id="itemDurationLabelInput" type="checkbox" defaultChecked />
-                      Show duration
+                      <input id="itemDurationLabelInput" className="legacy-checkbox" type="checkbox" defaultChecked />
+                      <span>Show duration</span>
                     </label>
                   </div>
 
-                  <label>
-                    Notes
-                    <textarea id="itemNotesInput" rows={4}></textarea>
-                  </label>
+                  <FieldLabel label="Notes">
+                    <Input.TextArea id="itemNotesInput" rows={4} />
+                  </FieldLabel>
 
                   <div className="form-actions">
-                    <button type="submit" className="primary-button">
+                    <Button htmlType="submit" type="primary" className="primary-button">
                       Apply
-                    </button>
-                    <button type="button" className="secondary-button" id="duplicateItemButton">
+                    </Button>
+                    <Button htmlType="button" className="secondary-button" id="duplicateItemButton">
                       Duplicate
-                    </button>
+                    </Button>
                   </div>
                 </form>
-              </section>
+              </Card>
             </div>
           </aside>
 
@@ -367,9 +466,9 @@ export function App() {
             <div className="tool-dock" data-collapsed={toolbarCollapsed ? "true" : "false"}>
               <div className="tool-dock-header">
                 <strong>Actions</strong>
-                <div className="tool-dock-actions">
-                  <button
-                    type="button"
+                <Space size={6} className="tool-dock-actions">
+                  <Button
+                    htmlType="button"
                     className="icon-button lock-toggle-button"
                     id="itemsLockedButton"
                     aria-pressed="false"
@@ -377,12 +476,12 @@ export function App() {
                     title="Read only"
                   >
                     <span className="toggle-icon-stack" aria-hidden="true">
-                      <LockKeyholeOpen className="toggle-icon-state" data-lock-state="unlocked" data-active="true" size={17} />
-                      <LockKeyhole className="toggle-icon-state" data-lock-state="locked" data-active="false" size={17} />
+                      <UnlockOutlined className="toggle-icon-state" data-lock-state="unlocked" data-active="true" />
+                      <LockOutlined className="toggle-icon-state" data-lock-state="locked" data-active="false" />
                     </span>
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    htmlType="button"
                     className="icon-button panel-toggle-button"
                     data-collapsed={toolbarCollapsed ? "true" : "false"}
                     aria-expanded={!toolbarCollapsed}
@@ -392,11 +491,11 @@ export function App() {
                     onClick={() => setToolbarCollapsed((collapsed) => !collapsed)}
                   >
                     <span className="toggle-icon-stack" aria-hidden="true">
-                      <PanelTopClose className="toggle-icon-state" data-active={!toolbarCollapsed} size={18} />
-                      <PanelTopOpen className="toggle-icon-state" data-active={toolbarCollapsed} size={18} />
+                      <VerticalAlignTopOutlined className="toggle-icon-state" data-active={!toolbarCollapsed} />
+                      <VerticalAlignBottomOutlined className="toggle-icon-state is-open" data-active={toolbarCollapsed} />
                     </span>
-                  </button>
-                </div>
+                  </Button>
+                </Space>
               </div>
 
               <div id="timelineActionToolbar" className="toolbar" role="toolbar" aria-label="Timeline actions">
@@ -404,88 +503,28 @@ export function App() {
                 <div className="toolbar-group" aria-label="Create items">
                   <span className="toolbar-group-title">Create</span>
                   <div className="toolbar-group-actions">
-                    <button type="button" className="toolbar-button" data-tone="event" data-add="event" title="Add event">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <CircleDot size={15} />
-                      </span>
-                      <span>Event</span>
-                    </button>
-                    <button type="button" className="toolbar-button" data-tone="period" data-add="period" title="Add period">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <Calendar size={15} />
-                      </span>
-                      <span>Period</span>
-                    </button>
-                    <button type="button" className="toolbar-button" data-tone="note" data-add="note" title="Add note">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <StickyNote size={15} />
-                      </span>
-                      <span>Note</span>
-                    </button>
-                    <button type="button" className="toolbar-button" data-tone="marker" data-add="marker" title="Add marker">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <Flag size={15} />
-                      </span>
-                      <span>Marker</span>
-                    </button>
-                    <button type="button" className="toolbar-button" data-tone="birth" data-add="birth" title="Add birthdate">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <Baby size={15} />
-                      </span>
-                      <span>Birth</span>
-                    </button>
-                    <button type="button" className="toolbar-button" data-tone="line" data-add="line" title="Add line item">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <Minus size={15} />
-                      </span>
-                      <span>Line</span>
-                    </button>
-                    <button type="button" className="toolbar-button" data-tone="text" data-add="text" title="Add text">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <Type size={15} />
-                      </span>
-                      <span>Text</span>
-                    </button>
+                    <ToolbarButton tone="event" addType="event" title="Add event" icon={<AimOutlined />}>Event</ToolbarButton>
+                    <ToolbarButton tone="period" addType="period" title="Add period" icon={<CalendarOutlined />}>Period</ToolbarButton>
+                    <ToolbarButton tone="note" addType="note" title="Add note" icon={<FormOutlined />}>Note</ToolbarButton>
+                    <ToolbarButton tone="marker" addType="marker" title="Add marker" icon={<FlagOutlined />}>Marker</ToolbarButton>
+                    <ToolbarButton tone="birth" addType="birth" title="Add birthdate" icon={<SmileOutlined />}>Birth</ToolbarButton>
+                    <ToolbarButton tone="line" addType="line" title="Add line item" icon={<MinusOutlined />}>Line</ToolbarButton>
+                    <ToolbarButton tone="text" addType="text" title="Add text" icon={<FontSizeOutlined />}>Text</ToolbarButton>
                   </div>
                 </div>
                 <div className="toolbar-group" aria-label="File actions">
                   <span className="toolbar-group-title">File</span>
                   <div className="toolbar-group-actions">
-                    <button type="button" className="toolbar-button" data-tone="save" id="saveJsonButton" title="Save JSON">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <Save size={15} />
-                      </span>
-                      <span>Save</span>
-                    </button>
-                    <button type="button" className="toolbar-button" data-tone="load" id="loadJsonButton" title="Load JSON">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <FolderOpen size={15} />
-                      </span>
-                      <span>Load</span>
-                    </button>
+                    <ToolbarButton tone="save" id="saveJsonButton" title="Save JSON" icon={<SaveOutlined />}>Save</ToolbarButton>
+                    <ToolbarButton tone="load" id="loadJsonButton" title="Load JSON" icon={<FolderOpenOutlined />}>Load</ToolbarButton>
                   </div>
                 </div>
                 <div className="toolbar-group" aria-label="Export actions">
                   <span className="toolbar-group-title">Export</span>
                   <div className="toolbar-group-actions">
-                    <button type="button" className="toolbar-button" data-tone="svg" id="exportSvgButton" title="Export SVG">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <FileCode2 size={15} />
-                      </span>
-                      <span>SVG</span>
-                    </button>
-                    <button type="button" className="toolbar-button" data-tone="png" id="exportPngButton" title="Export PNG">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <ImageDown size={15} />
-                      </span>
-                      <span>PNG</span>
-                    </button>
-                    <button type="button" className="toolbar-button" data-tone="pdf" id="exportPdfButton" title="Export PDF">
-                      <span className="toolbar-icon" aria-hidden="true">
-                        <FileText size={15} />
-                      </span>
-                      <span>PDF</span>
-                    </button>
+                    <ToolbarButton tone="svg" id="exportSvgButton" title="Export SVG" icon={<FileOutlined />}>SVG</ToolbarButton>
+                    <ToolbarButton tone="png" id="exportPngButton" title="Export PNG" icon={<FileImageOutlined />}>PNG</ToolbarButton>
+                    <ToolbarButton tone="pdf" id="exportPdfButton" title="Export PDF" icon={<FilePdfOutlined />}>PDF</ToolbarButton>
                   </div>
                 </div>
               </div>
@@ -507,143 +546,51 @@ export function App() {
               <form id="lineEditorForm">
                 <div className="line-editor-heading">
                   <strong id="lineEditorTitle">Line</strong>
-                  <button type="button" className="icon-button line-editor-close" id="lineEditorCloseButton" aria-label="Close line editor">
-                    <X size={16} aria-hidden="true" />
-                  </button>
+                  <Button htmlType="button" className="icon-button line-editor-close" id="lineEditorCloseButton" aria-label="Close line editor" icon={<CloseOutlined />} />
                 </div>
-                <label>
-                  Name
-                  <input id="lineNameInput" type="text" autoComplete="off" />
-                </label>
+                <FieldLabel label="Name">
+                  <Input id="lineNameInput" type="text" autoComplete="off" />
+                </FieldLabel>
                 <ColorPickerField label="Background" prefix="line" paletteLabel="Preset line background colors" />
                 <div className="line-editor-actions">
-                  <button type="submit" className="primary-button">Apply</button>
-                  <button type="button" className="secondary-button" id="lineColorClearButton">Clear color</button>
-                  <button type="button" className="secondary-button" id="lineAddBelowButton">Add below</button>
-                  <button type="button" className="quiet-button danger" id="lineRemoveButton">Remove</button>
+                  <Button htmlType="submit" type="primary" className="primary-button">Apply</Button>
+                  <Button htmlType="button" className="secondary-button" id="lineColorClearButton">Clear color</Button>
+                  <Button htmlType="button" className="secondary-button" id="lineAddBelowButton">Add below</Button>
+                  <Button htmlType="button" danger type="text" className="quiet-button danger" id="lineRemoveButton">Remove</Button>
                 </div>
               </form>
             </div>
             <div className="context-menu" id="timelineContextMenu" role="menu" aria-label="Timeline item actions" hidden>
               <div className="context-menu-submenu" data-context-submenu="add">
-                <button type="button" role="menuitem" data-context-action="add-menu" aria-haspopup="menu" aria-expanded="false">
+                <Button htmlType="button" role="menuitem" data-context-action="add-menu" aria-haspopup="menu" aria-expanded="false">
                   <span className="context-menu-label">
-                    <Plus size={15} aria-hidden="true" />
+                    <PlusOutlined aria-hidden="true" />
                     <span>Add</span>
                   </span>
-                  <ChevronRight size={14} aria-hidden="true" />
-                </button>
+                  <RightOutlined aria-hidden="true" />
+                </Button>
                 <div className="context-submenu-panel" role="menu" aria-label="Add item type">
-                  <button type="button" role="menuitem" data-context-add="birth">
-                    <span className="context-menu-label">
-                      <Baby size={15} aria-hidden="true" />
-                      <span>Birth</span>
-                    </span>
-                  </button>
-                  <button type="button" role="menuitem" data-context-add="event">
-                    <span className="context-menu-label">
-                      <CircleDot size={15} aria-hidden="true" />
-                      <span>Event</span>
-                    </span>
-                  </button>
-                  <button type="button" role="menuitem" data-context-add="marker">
-                    <span className="context-menu-label">
-                      <Flag size={15} aria-hidden="true" />
-                      <span>Marker</span>
-                    </span>
-                  </button>
-                  <button type="button" role="menuitem" data-context-add="note">
-                    <span className="context-menu-label">
-                      <StickyNote size={15} aria-hidden="true" />
-                      <span>Note</span>
-                    </span>
-                  </button>
-                  <button type="button" role="menuitem" data-context-add="period">
-                    <span className="context-menu-label">
-                      <Calendar size={15} aria-hidden="true" />
-                      <span>Period</span>
-                    </span>
-                  </button>
-                  <button type="button" role="menuitem" data-context-add="line">
-                    <span className="context-menu-label">
-                      <Minus size={15} aria-hidden="true" />
-                      <span>Line</span>
-                    </span>
-                  </button>
-                  <button type="button" role="menuitem" data-context-add="text">
-                    <span className="context-menu-label">
-                      <Type size={15} aria-hidden="true" />
-                      <span>Text</span>
-                    </span>
-                  </button>
+                  <ContextMenuButton action="birth" icon={<SmileOutlined />}>Birth</ContextMenuButton>
+                  <ContextMenuButton action="event" icon={<AimOutlined />}>Event</ContextMenuButton>
+                  <ContextMenuButton action="marker" icon={<FlagOutlined />}>Marker</ContextMenuButton>
+                  <ContextMenuButton action="note" icon={<FormOutlined />}>Note</ContextMenuButton>
+                  <ContextMenuButton action="period" icon={<CalendarOutlined />}>Period</ContextMenuButton>
+                  <ContextMenuButton action="line" icon={<MinusOutlined />}>Line</ContextMenuButton>
+                  <ContextMenuButton action="text" icon={<FontSizeOutlined />}>Text</ContextMenuButton>
                 </div>
               </div>
               <div className="context-menu-separator" role="separator"></div>
-              <button type="button" role="menuitem" data-context-action="copy">
-                <span className="context-menu-label">
-                  <Copy size={15} aria-hidden="true" />
-                  <span>Copy</span>
-                </span>
-                <kbd>Ctrl/Cmd C</kbd>
-              </button>
-              <button type="button" role="menuitem" data-context-action="paste">
-                <span className="context-menu-label">
-                  <Clipboard size={15} aria-hidden="true" />
-                  <span>Paste</span>
-                </span>
-                <kbd>Ctrl/Cmd V</kbd>
-              </button>
-              <button type="button" role="menuitem" data-context-action="duplicate">
-                <span className="context-menu-label">
-                  <Files size={15} aria-hidden="true" />
-                  <span>Duplicate</span>
-                </span>
-                <kbd>Ctrl/Cmd D</kbd>
-              </button>
-              <button type="button" role="menuitem" data-context-action="lock-item">
-                <span className="context-menu-label">
-                  <LockKeyhole size={15} aria-hidden="true" />
-                  <span>Lock item</span>
-                </span>
-                <span aria-hidden="true"></span>
-              </button>
-              <button type="button" role="menuitem" data-context-action="unlock-item">
-                <span className="context-menu-label">
-                  <LockKeyholeOpen size={15} aria-hidden="true" />
-                  <span>Unlock item</span>
-                </span>
-                <span aria-hidden="true"></span>
-              </button>
+              <ContextMenuAction action="copy" icon={<CopyOutlined />} shortcut="Ctrl/Cmd C">Copy</ContextMenuAction>
+              <ContextMenuAction action="paste" icon={<FileAddOutlined />} shortcut="Ctrl/Cmd V">Paste</ContextMenuAction>
+              <ContextMenuAction action="duplicate" icon={<FileTextOutlined />} shortcut="Ctrl/Cmd D">Duplicate</ContextMenuAction>
+              <ContextMenuAction action="lock-item" icon={<LockOutlined />}>Lock item</ContextMenuAction>
+              <ContextMenuAction action="unlock-item" icon={<UnlockOutlined />}>Unlock item</ContextMenuAction>
               <div className="context-menu-separator" role="separator"></div>
-              <button type="button" role="menuitem" data-context-action="zoom-in">
-                <span className="context-menu-label">
-                  <ZoomIn size={15} aria-hidden="true" />
-                  <span>Zoom in</span>
-                </span>
-                <kbd>+</kbd>
-              </button>
-              <button type="button" role="menuitem" data-context-action="zoom-out">
-                <span className="context-menu-label">
-                  <ZoomOut size={15} aria-hidden="true" />
-                  <span>Zoom out</span>
-                </span>
-                <kbd>-</kbd>
-              </button>
-              <button type="button" role="menuitem" data-context-action="fit">
-                <span className="context-menu-label">
-                  <Maximize2 size={15} aria-hidden="true" />
-                  <span>Fit</span>
-                </span>
-                <span aria-hidden="true"></span>
-              </button>
+              <ContextMenuAction action="zoom-in" icon={<ZoomInOutlined />} shortcut="+">Zoom in</ContextMenuAction>
+              <ContextMenuAction action="zoom-out" icon={<ZoomOutOutlined />} shortcut="-">Zoom out</ContextMenuAction>
+              <ContextMenuAction action="fit" icon={<FullscreenOutlined />}>Fit</ContextMenuAction>
               <div className="context-menu-separator" role="separator"></div>
-              <button type="button" role="menuitem" className="danger" data-context-action="delete">
-                <span className="context-menu-label">
-                  <Trash2 size={15} aria-hidden="true" />
-                  <span>Delete</span>
-                </span>
-                <kbd>Del</kbd>
-              </button>
+              <ContextMenuAction action="delete" icon={<DeleteOutlined />} shortcut="Del" danger>Delete</ContextMenuAction>
             </div>
             <div className="timeline-info-panel" id="timelineInfoPanel" aria-live="polite">
               <div className="timeline-info-block">
@@ -666,6 +613,49 @@ export function App() {
       </div>
 
       <input id="fileInput" type="file" accept="application/json,.json" hidden />
-    </>
+    </ConfigProvider>
+  );
+}
+
+function MenuFoldIcon({ active }: { active: boolean }) {
+  return <MenuFoldOutlined className="toggle-icon-state sidebar-fold-icon" data-active={active} />;
+}
+
+function MenuUnfoldIcon({ active }: { active: boolean }) {
+  return <MenuUnfoldOutlined className="toggle-icon-state sidebar-unfold-icon" data-active={active} />;
+}
+
+function ContextMenuButton({ action, icon, children }: { action: string; icon: ReactNode; children: ReactNode }) {
+  return (
+    <Button htmlType="button" role="menuitem" data-context-add={action}>
+      <span className="context-menu-label">
+        {icon}
+        <span>{children}</span>
+      </span>
+    </Button>
+  );
+}
+
+function ContextMenuAction({
+  action,
+  icon,
+  shortcut,
+  danger = false,
+  children,
+}: {
+  action: string;
+  icon: ReactNode;
+  shortcut?: string;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Button htmlType="button" role="menuitem" className={danger ? "danger" : undefined} data-context-action={action}>
+      <span className="context-menu-label">
+        {icon}
+        <span>{children}</span>
+      </span>
+      {shortcut ? <kbd>{shortcut}</kbd> : <span aria-hidden="true"></span>}
+    </Button>
   );
 }

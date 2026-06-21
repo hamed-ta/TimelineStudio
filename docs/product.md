@@ -93,6 +93,7 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 - The app should support both light and dark system color schemes.
 - The user should be able to choose System, Light, or Dark theme from the app UI.
 - The chosen theme preference should be remembered in the browser.
+- The app shell should use Ant Design components, icons, theme tokens, and light/dark styling where compatible with the current timeline controller.
 - The visual theme should use accessible contrast for text, controls, timeline labels, and canvas grid details.
 - The app should use a modern UI font stack that supports Persian text and keeps mixed English/Persian labels visually consistent.
 - UI text sizes should follow a small rem-based type scale instead of scattered one-off values.
@@ -264,6 +265,14 @@ When the user views controls, panels, context menus, and timeline text
 Then the UI uses a Persian-capable modern sans-serif font stack
 And text sizes follow a consistent rem-based scale
 And timeline SVG labels use the same font family as the rest of the app.
+
+### Use Ant Design Shell
+
+Given the app shell renders the header, editor panels, action toolbar, form fields, and file/export controls
+When the user views the app in light or dark theme
+Then those controls use Ant Design components, icons, and theme tokens
+And theme switching applies Ant Design light and dark styling without changing timeline JSON
+And legacy timeline behavior still works through the required DOM IDs and data attributes.
 
 ### Use Timeline Context Menu
 

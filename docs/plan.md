@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add context-menu item creation and split toolbar read-only mode from individual item locking.
+Migrate the app shell to Ant Design components and theme styling while preserving current timeline behavior.
 
 ## Now
 
@@ -40,10 +40,13 @@ Add context-menu item creation and split toolbar read-only mode from individual 
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
+- Adopt Ant Design as the UI system for shell controls, icons, panels, and light/dark theme styling.
+- Keep exact DOM IDs and compatibility bridge controls where the legacy `app.js` controller still requires native element behavior.
 
 ## Next
 
 - Start small UI polish slices in React while preserving the element IDs and behavior expected by `app.js`.
+- Continue migrating remaining custom popovers, menus, picker controls, and timeline controller state into React so more Ant Design components can be used directly.
 - Verify local JSON load, edit, save, pan, zoom, fit, and export before adding Firebase.
 - Add Firebase only after the local app migration is stable.
 
@@ -85,7 +88,7 @@ Add context-menu item creation and split toolbar read-only mode from individual 
 - Added `CHANGELOG.md` and `docs/versioning.md` without bumping the package version.
 - Added system light/dark theme tokens, component styling, and a theme switcher.
 - Added dependency policy guidance in ADR 0006 and agent docs.
-- Added collapsible sidebar and toolbar controls with `lucide-react` icons.
+- Added collapsible sidebar and toolbar controls; iconography is now handled by Ant Design.
 - Moved the timeline title, date range, and Fit action into the main top bar.
 - Added drag reordering and removal for timeline lines.
 - Added vertical all-line marker items.
@@ -99,6 +102,7 @@ Add context-menu item creation and split toolbar read-only mode from individual 
 - Added same-line item edge snapping and readable fit/axis behavior.
 - Added a curated item color palette and random palette colors for new items.
 - Added a context menu and shortcuts for timeline item commands.
+- Accepted Ant Design as the app UI system in ADR 0007.
 
 ## Risks
 
@@ -112,7 +116,7 @@ Add context-menu item creation and split toolbar read-only mode from individual 
 - Version changes should be intentional and documented in `CHANGELOG.md`; do not bump `package.json` during routine migration slices.
 - Firebase read/write patterns can create avoidable cost if autosave and realtime listeners are not scoped carefully.
 - Dependencies can increase bundle size, audit noise, and maintenance cost if they are not scoped to real feature value.
-- `lucide-react` is justified only for focused iconography; avoid expanding it into a full design-system dependency.
+- Ant Design adds a larger dependency footprint; use it as the shared UI system rather than mixing unrelated component libraries.
 
 ## Verification Checklist
 

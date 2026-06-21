@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add context-menu item creation and split toolbar read-only mode from individual item locking.
+Migrate the app shell to Ant Design components and theme styling while preserving current timeline behavior.
 
 ## Last Known State
 
@@ -15,6 +15,8 @@ The stylesheet uses semantic design tokens for light and dark color schemes. The
 Typography now uses a dependency-free modern sans-serif stack that prefers Persian-capable fonts (`Vazirmatn`, `Noto Sans Arabic`) before system UI fallbacks. App UI and SVG timeline labels share the same font family, and UI font sizes use a small rem-based scale.
 
 The project no longer treats dependency-free status as absolute. ADR 0006 allows reasonable dependencies when they materially improve accessibility, reliability, maintainability, or complex feature behavior, with documentation requirements based on scope.
+
+ADR 0007 accepts Ant Design as the app UI system. The React shell now uses `antd` for app cards, buttons, inputs, and light/dark theme algorithms, plus `@ant-design/icons` for toolbar and menu iconography. Native bridge controls remain where the legacy `app.js` controller still requires exact DOM behavior, such as real `select`, `range`, and hidden compatibility inputs.
 
 The React shell now owns UI layout preferences for editor sidebar collapse and timeline toolbar collapse. These preferences are stored in browser local storage and do not affect timeline JSON.
 
@@ -44,11 +46,11 @@ The timeline has a custom context menu for item commands. Right-clicking the tim
 
 Timeline items now have an optional `locked` flag. Old JSON without this field still loads with items unlocked. The top toolbar lock icon is now labeled as read-only mode; turning it on makes item content read-only while preserving selection, copy, pan, zoom, and the ability to turn read-only off. Individual item locking keeps one item selectable and copyable but blocks editing, dragging, resizing, duplicating, and deleting for that item.
 
-The timeline toolbar uses existing `lucide-react` icons with distinct accent colors. Create, file, and export actions are visually grouped with visible group titles and separators, and item locking is a dedicated icon toggle in the toolbar header instead of a checkbox in the action row.
+The timeline toolbar uses Ant Design buttons and icons with distinct accent colors. Create, file, and export actions are visually grouped with visible group titles and separators, and item locking is a dedicated icon toggle in the toolbar header instead of a checkbox in the action row.
 
 The editor sidebar and action toolbar collapse controls use panel-specific open/close icons instead of generic chevrons. The lock toggle and context menu lock actions use keyhole lock icons.
 
-Zoom controls now use Lucide icons. Manual zoom-out, wheel zoom-out, Fit, and context-menu zoom-out all respect the same readable `18 px/month` minimum.
+Zoom controls now use Ant Design icons. Manual zoom-out, wheel zoom-out, Fit, and context-menu zoom-out all respect the same readable `18 px/month` minimum.
 
 Empty timelines show a centered non-interactive empty state overlay, and the timeline SVG/grid expands to at least the visible viewport width so the empty canvas does not look pushed to one side.
 
@@ -72,7 +74,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`cdd78a3 feat: move line editing into timeline`
+`97ef0ef feat: add context menu creation and item locks`
 
 ## Work Completed This Session
 
@@ -91,7 +93,7 @@ Firebase should wait until the local Vite app is stable.
 - Added keyboard shortcuts for copy, paste, duplicate, delete, and lock/unlock.
 - Expanded the preset item color palette from 10 to 18 colors.
 - Reordered and grouped toolbar actions into create, file, and export groups with visible titles and separators.
-- Added colored Lucide icons to toolbar actions.
+- Added colored Ant Design icons to toolbar actions.
 - Replaced the toolbar lock checkbox with a dedicated lock/unlock icon toggle in the toolbar header.
 - Added icons to context menu actions and added context menu Zoom in, Zoom out, and Fit commands.
 - Added plus and minus zoom shortcuts outside editor fields.
@@ -118,16 +120,26 @@ Firebase should wait until the local Vite app is stable.
 - Added an optional `locked` item field with backwards-compatible normalization.
 - Renamed the top toolbar all-items lock control to read-only mode and removed it from the context menu.
 - Updated product notes, changelog, plan, and handoff docs.
+- Added ADR 0007 for the Ant Design UI system decision.
+- Installed `antd` and `@ant-design/icons`, and removed `lucide-react`.
+- Wrapped the React app in Ant Design `ConfigProvider` with light/dark theme algorithms.
+- Imported Ant Design reset CSS before the app stylesheet.
+- Migrated header, timeline context controls, editor panels, toolbar buttons, file/export actions, read-only toggle, line editor actions, context menu actions, and text inputs to Ant Design components where compatible with legacy DOM bindings.
+- Updated theme CSS tokens to Ant-aligned blue, neutral, and dark-mode palettes.
+- Kept native bridge controls for legacy-bound selects, range inputs, checkboxes, and hidden fields.
+- Updated product notes, changelog, plan, and handoff docs for the Ant Design migration.
 
 ## Files Changed
 
 - `CHANGELOG.md`
+- `docs/adr/0007-ant-design-ui-system.md`
 - `docs/handoff.md`
 - `docs/plan.md`
 - `docs/product.md`
-- `app.js`
+- `package.json`
+- `package-lock.json`
 - `src/App.tsx`
-- `src/timeline/model.ts`
+- `src/main.tsx`
 - `styles.css`
 
 ## Decisions
@@ -149,9 +161,10 @@ Firebase should wait until the local Vite app is stable.
 - Keep read-only mode as a top toolbar icon, not a context-menu command.
 - Treat Lock item and Unlock item as per-item protection; locked items remain selectable and copyable.
 - Ignore item command shortcuts while focus is in editor inputs, selects, textareas, or editable content.
-- Reuse `lucide-react` for toolbar iconography instead of adding Font Awesome or another icon dependency.
-- Use colored Lucide icons instead of adding a multicolor icon dependency.
-- Use panel-specific Lucide icons for panel collapse and expand controls so the icon communicates the affected area.
+- Use Ant Design as the shared UI system instead of mixing MUI, Ant, Lucide, and other unrelated UI libraries.
+- Use `@ant-design/icons` for toolbar and context-menu iconography.
+- Keep native bridge controls only where the legacy controller requires native element value, checked, or change-event behavior.
+- Keep the custom SVG timeline, color picker, and context menu controller for now; migrate those to Ant popover/menu controls only after the interaction state is React-owned.
 - Use keyhole lock icons for item lock state so the toolbar and context menu share the same lock metaphor.
 - Keep create-item actions first, followed by file actions, then export actions.
 - Keep the hidden lock checkbox only as a compatibility bridge for existing legacy `app.js` state syncing.
@@ -163,6 +176,17 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
+- RED/documented: product scenario now requires the app shell to use Ant Design components, icons, theme tokens, and light/dark styling while preserving legacy DOM IDs and timeline behavior.
+- `node --check app.js`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed. Vite reported a chunk-size warning after adding Ant Design; this is expected for the first design-system slice and should be reviewed later.
+- Browser smoke through Vite at `http://127.0.0.1:8767/`: initial DOM had 2 Ant cards, 46 Ant buttons, 12 Ant toolbar buttons, 11 Ant inputs, and all required legacy IDs including save/load/export, fit, zoom, read-only, timeline viewport, context menu, and native bridge selects.
+- Browser smoke: theme button switched from System to Light and then to Dark, updating `data-theme` and `data-resolved-theme` without changing timeline data.
+- Browser smoke: Add Event from the Ant toolbar created `New event`, selected it, and kept the selected item editor as an Ant input with the original `itemTitleInput` ID.
+- Browser smoke: the Ant read-only button toggled `aria-pressed`, disabled item editing and duplicate controls, applied the locked viewport class, and toggled back off.
+- Browser smoke: context menu opened with Ant buttons, Add submenu was closed by default, old Lock all / Unlock all actions were absent, opening Add showed Birth/Event/Marker/Note/Period/Line/Text, and choosing Period created `New period`.
+- Browser smoke: no console warnings or errors were reported for the Ant shell checks.
 - RED/documented: product scenarios now require context-menu Add submenu creation, individual item locking, and toolbar-only read-only mode.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
@@ -241,7 +265,7 @@ Firebase should wait until the local Vite app is stable.
 - `npm run build`: passed.
 - Browser smoke through Vite at `http://127.0.0.1:8766/`: toolbar rendered three groups with visible titles `Create`, `File`, and `Export`.
 - Browser smoke: Create and File groups showed `1px` right separators, and the final Export group had no trailing separator.
-- Browser smoke: every visible toolbar action rendered one Lucide SVG icon.
+- Browser smoke: every visible toolbar action rendered one icon.
 - Browser smoke: item lock is now an icon button in the toolbar header; the legacy checkbox is hidden.
 - Browser smoke: clicking the lock icon set `itemsLocked` true, updated `aria-pressed` to `true`, changed the title to `Unlock items`, and applied the locked viewport class.
 - Browser smoke: clicking the lock icon again restored `itemsLocked` false, `aria-pressed` false, title `Lock items`, and removed the locked viewport class.
@@ -256,7 +280,7 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke through Vite at `http://127.0.0.1:8766/`: empty timeline rendered with the empty state visible, no timeline items, SVG width `911`, and viewport width `911`.
 - Browser smoke: the empty-state panel was centered in the viewport (`dx` 0, `dy` 0).
 - Browser smoke: toolbar action buttons rendered 12 colored icons for event, period, note, marker, birth, line, text, save, load, SVG, PNG, and PDF.
-- Browser smoke: Fit, Zoom in, and Zoom out controls each rendered Lucide SVG icons.
+- Browser smoke: Fit, Zoom in, and Zoom out controls each rendered recognizable icons.
 - Browser smoke: repeated header Zoom out stopped at `18 px/month` and showed `Minimum readable zoom reached`.
 - Browser smoke: the context menu exposed Zoom in, Zoom out, and Fit actions, each with one SVG icon.
 - Browser smoke: context-menu Zoom out at the minimum stayed at `18 px/month`, and context-menu Zoom in moved to `38 px/month`.

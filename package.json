@@ -10,7 +10,8 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
-    "lucide-react": "^1.21.0",
+    "@ant-design/icons": "^6.2.5",
+    "antd": "^6.4.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
