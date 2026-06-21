@@ -37,6 +37,9 @@ import { Button, Card, ConfigProvider, Input, Space, Typography, theme as antThe
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
+declare const __APP_NAME__: string;
+declare const __APP_VERSION__: string;
+
 type ThemeMode = "system" | "light" | "dark";
 type ResolvedThemeMode = "light" | "dark";
 
@@ -610,6 +613,12 @@ export function App() {
             </div>
           </section>
         </main>
+
+        <footer className="app-footer" aria-label="Application information">
+          <span className="app-footer-brand">{__APP_NAME__}</span>
+          <span className="app-footer-divider" aria-hidden="true"></span>
+          <span className="app-footer-version">Version {__APP_VERSION__}</span>
+        </footer>
       </div>
 
       <input id="fileInput" type="file" accept="application/json,.json" hidden />

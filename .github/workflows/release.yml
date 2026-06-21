@@ -29,13 +29,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      RELEASE_REF: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.ref_name }}
       VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
     steps:
-      - name: Checkout release tag
+      - name: Checkout release source
         uses: actions/checkout@v6
         with:
-          ref: ${{ env.RELEASE_TAG }}
+          ref: ${{ env.RELEASE_REF }}
 
       - name: Set up Node
         uses: actions/setup-node@v6
@@ -122,7 +123,9 @@ jobs:
               --title "Timeline Studio ${version}" \
               --notes-file release-notes-with-url.md
 
-            if gh release view "$tag" --json assets --jq ".assets[].name" | grep -Fxq "$artifact"; then
+            if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+              gh release upload "$tag" "$artifact" --clobber
+            elif gh release view "$tag" --json assets --jq ".assets[].name" | grep -Fxq "$artifact"; then
               echo "Release asset ${artifact} already exists; skipping immutable asset upload."
             else
               gh release upload "$tag" "$artifact"

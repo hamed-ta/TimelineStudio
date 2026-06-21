@@ -12,7 +12,13 @@ No unreleased changes yet.
 
 ### Fixed
 
+- Removed the tracked macOS `.DS_Store` file from the repository; `.DS_Store` remains ignored.
 - Made the release workflow skip an already uploaded release zip on reruns so immutable GitHub Release assets do not fail a rerun.
+- Updated manual release dispatch so it can rebuild the selected main commit and replace the same-version release asset.
+
+### Changed
+
+- Added a compact footer that shows the app name and package version.
 
 ## 0.2.0 - 2026-06-21
 

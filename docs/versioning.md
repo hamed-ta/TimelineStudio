@@ -47,6 +47,7 @@ Pushing the tag runs the release workflow. It builds the app, deploys `dist` to 
 If a release rerun finds that the zipped static build artifact already exists, the workflow leaves that immutable release asset in place instead of trying to replace it.
 
 The release workflow can also be run manually from the GitHub Actions tab with the exact tag name, such as `v0.2.0`.
+Manual runs build the selected workflow branch or commit and use the input tag as the release target, so they can intentionally refresh an existing same-version release when the package version still matches that tag.
 
 Before the first deployment, configure the repository at GitHub Settings -> Pages -> Build and deployment -> Source -> GitHub Actions.
 

@@ -52,6 +52,9 @@ Add GitHub Actions release infrastructure and open source community documentatio
 - Add a concrete `0.2.0` changelog section so the release workflow can extract release notes.
 - Make release reruns tolerate already uploaded immutable GitHub Release assets.
 - Cut patch release `0.2.1` because protected tag rules prevent moving `v0.2.0`.
+- Remove tracked `.DS_Store` while keeping macOS metadata ignored.
+- Add a compact app footer with the app name and current package version.
+- Let manual release dispatch rebuild the selected main commit into the same-version release target.
 
 ## Next
 
@@ -120,6 +123,9 @@ Add GitHub Actions release infrastructure and open source community documentatio
 - Added the missing `0.2.0` changelog heading required by the release workflow.
 - Allowed GitHub Pages deployment from semver tags and made release asset uploads rerun-safe.
 - Bumped release metadata to `0.2.1` for the corrected release workflow.
+- Removed the tracked `.DS_Store` file from the repository.
+- Added the app name/version footer.
+- Updated manual release dispatch for same-version release refreshes from main.
 
 ## Risks
 

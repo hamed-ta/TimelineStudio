@@ -28,6 +28,12 @@ The GitHub Pages environment allows deployments from `main` and semver tags matc
 
 The release workflow now skips uploading the static zip when the same release asset already exists. This avoids failing reruns on immutable GitHub Release assets.
 
+Manual release workflow dispatch now checks out the selected workflow commit and uses the input tag as the release target. This allows an intentional same-version release refresh from `main` when the package version still matches the release tag.
+
+The app shell now includes a compact footer with the app name and package version from Vite build metadata.
+
+The tracked `.DS_Store` file has been removed; `.gitignore` already ignores future macOS `.DS_Store` files.
+
 The React shell now owns UI layout preferences for editor sidebar collapse and timeline toolbar collapse. These preferences are stored in browser local storage and do not affect timeline JSON.
 
 Timeline lines can now be reordered from the editor sidebar or from the timeline label area. Items assigned to a line move with that line. Lines can be removed after confirmation; items on the removed line are deleted and lower lines shift upward.
@@ -84,7 +90,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`9ca269e ci: make release reruns idempotent`
+`feat: show app version footer` on the current `main` tip
 
 ## Work Completed This Session
 
@@ -155,6 +161,11 @@ Firebase should wait until the local Vite app is stable.
 - Updated the GitHub Pages environment to allow semver tag deployments.
 - Made the release workflow skip already uploaded immutable release assets on reruns.
 - Bumped the patch release metadata to `0.2.1` because the protected `v0.2.0` tag cannot be moved again.
+- Removed the tracked `.DS_Store` file while keeping `.DS_Store` ignored.
+- Added Vite build constants for the app name and package version.
+- Added a compact app footer that shows `Timeline Studio` and the current version.
+- Updated manual release dispatch to build the selected main commit while using the tag input as the release target.
+- Updated product notes, changelog, versioning docs, plan, and handoff.
 
 ## Files Changed
 
@@ -170,6 +181,7 @@ Firebase should wait until the local Vite app is stable.
 - `docs/plan.md`
 - `docs/product.md`
 - `docs/versioning.md`
+- `.DS_Store`
 - `.github/workflows/ci.yml`
 - `.github/workflows/release.yml`
 - `package.json`
@@ -217,6 +229,7 @@ Firebase should wait until the local Vite app is stable.
 - Keep community governance documents short and project-specific for now; add issue templates and Dependabot config as the next open source readiness slice.
 - A failed `v0.2.0` release job created from the older tag commit will not see changelog fixes committed later on `main`; either move the tag intentionally or cut a new version tag after bumping the package version.
 - GitHub Release assets can be immutable after upload, so rerun-safe release workflows should not use `--clobber` for an asset that already exists.
+- Manual same-version release refreshes intentionally rebuild from the selected branch commit rather than the protected tag commit; use this only when updating an existing release without bumping the package version.
 
 ## Verification
 
@@ -231,6 +244,8 @@ Firebase should wait until the local Vite app is stable.
 - Release rerun reached Pages deployment, then failed on `gh release upload --clobber` because the release zip already existed as an immutable asset.
 - Protected tag handling: remote `v0.2.0` is locked at `577156f`; use `v0.2.1` for the workflow fix release.
 - Patch release validation: `node scripts/extract-release-notes.mjs 0.2.1 /private/tmp/timeline-release-notes-0.2.1.md`, `git diff --check`, `npm run typecheck`, and `npm run build` passed.
+- RED/documented: product scenario now requires a compact footer with app name and package version without changing timeline JSON.
+- Current footer and same-version release refresh slice: `node --check app.js`, `node scripts/extract-release-notes.mjs 0.2.1 /private/tmp/timeline-release-notes-0.2.1.md`, `npm run typecheck`, `git diff --check`, `npm run build`, and `VITE_BASE_PATH=/TimelineStudio/ npm run build` passed. Vite still reports the expected Ant Design chunk-size warning.
 - RED/documented: product scenario now requires the app shell to use Ant Design components, icons, theme tokens, and light/dark styling while preserving legacy DOM IDs and timeline behavior.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.

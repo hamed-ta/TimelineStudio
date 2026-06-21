@@ -173,6 +173,33 @@ textarea:disabled {
   flex-direction: column;
 }
 
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 16px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: var(--line-ui);
+}
+
+.app-footer-brand {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.app-footer-divider {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--text-subtle);
+}
+
 .topbar {
   display: grid;
   grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.35fr) minmax(300px, auto);

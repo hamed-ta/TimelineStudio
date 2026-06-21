@@ -119,6 +119,8 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 - Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
 - Layout preferences should be remembered in the browser.
 - Layout changes should not alter saved timeline data.
+- The app should show a compact footer with the app name and current package version.
+- The displayed app version should come from build metadata and should not be saved into timeline JSON.
 
 ## Acceptance Scenarios
 
@@ -257,6 +259,14 @@ Then create-item buttons show icons with short labels
 And toolbar icons use distinct accent colors
 And create, file, and export groups have visible titles and separators
 And item locking is available as a lock/unlock icon toggle outside the create-item button group.
+
+### Show App Version Footer
+
+Given the app has loaded
+When the user looks at the bottom of the shell
+Then a compact footer shows `Timeline Studio`
+And the footer shows the current package version
+And the footer does not change timeline JSON data.
 
 ### Use Normalized Typography
 
