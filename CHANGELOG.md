@@ -19,6 +19,9 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Committed inline note text edits when clicking outside the balloon editor.
 - Removed the browser focus outline from focusable SVG timeline items so right-clicking a note does not draw a large blue box around the note leader and balloon.
 
+## 0.2.2 - 2026-06-27
+- Improved note balloon layout and editing"
+
 ## 0.2.1 - 2026-06-21
 
 ### Fixed
