@@ -167,7 +167,7 @@ function FieldLabel({ children, id, label }: { children: ReactNode; id?: string;
   );
 }
 
-function ColorPickerField({ label, prefix, paletteLabel }: { label: string; prefix: "item" | "line"; paletteLabel: string }) {
+function ColorPickerField({ label, prefix, paletteLabel }: { label: string; prefix: "item" | "itemText" | "line"; paletteLabel: string }) {
   const inputId = `${prefix}ColorInput`;
   const triggerId = `${prefix}ColorTrigger`;
   const previewId = `${prefix}ColorPreview`;
@@ -328,7 +328,7 @@ export function App() {
             <span className="separator" aria-hidden="true"></span>
             <Button htmlType="button" className="icon-button zoom-icon-button" id="zoomOutButton" aria-label="Zoom out" title="Zoom out" icon={<ZoomOutOutlined />} />
             <label htmlFor="zoomRange">Zoom</label>
-            <input id="zoomRange" className="ant-range-bridge" type="range" min="18" max="360" step="0.5" defaultValue="18" />
+            <input id="zoomRange" className="ant-range-bridge" type="range" min="6" max="360" step="0.5" defaultValue="18" />
             <span id="zoomLabel">18 px/month</span>
             <Button htmlType="button" className="icon-button zoom-icon-button" id="zoomInButton" aria-label="Zoom in" title="Zoom in" icon={<ZoomInOutlined />} />
           </div>
@@ -417,7 +417,7 @@ export function App() {
                     </select>
                   </FieldLabel>
 
-                  <FieldLabel label="Title">
+                  <FieldLabel id="itemTitleField" label="Title">
                     <Input id="itemTitleInput" type="text" autoComplete="off" />
                   </FieldLabel>
 
@@ -425,8 +425,11 @@ export function App() {
                     <FieldLabel label="Lane">
                       <Input id="itemLaneInput" type="number" min="0" max="20" step="1" />
                     </FieldLabel>
-                    <div className="color-field">
+                    <div className="color-field" id="itemColorField">
                       <ColorPickerField label="Color" prefix="item" paletteLabel="Preset item colors" />
+                    </div>
+                    <div className="color-field" id="itemTextColorField" hidden>
+                      <ColorPickerField label="Text" prefix="itemText" paletteLabel="Preset note text colors" />
                     </div>
                     <FieldLabel label="Start date">
                       <Input id="itemStartInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
@@ -448,8 +451,14 @@ export function App() {
                     </label>
                   </div>
 
-                  <FieldLabel label="Notes">
-                    <Input.TextArea id="itemNotesInput" rows={4} />
+                  <FieldLabel id="itemNotesField" label="Notes">
+                    <textarea
+                      id="itemNotesInput"
+                      className="ant-input note-textarea"
+                      rows={8}
+                      dir="auto"
+                      placeholder="Write the note text shown in the balloon."
+                    />
                   </FieldLabel>
 
                   <div className="form-actions">
@@ -535,6 +544,7 @@ export function App() {
 
             <div className="timeline-viewport" id="timelineViewport" tabIndex={0}>
               <svg id="timelineSvg" role="img" aria-labelledby="stageTitle stageMeta"></svg>
+              <textarea id="noteInlineEditor" className="note-inline-editor" hidden aria-label="Edit note text"></textarea>
               <div className="timeline-empty-state" id="timelineEmptyState" hidden>
                 <div className="empty-state-mark" aria-hidden="true">
                   <span></span>

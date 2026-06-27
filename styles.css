@@ -1135,6 +1135,12 @@ textarea {
   resize: vertical;
 }
 
+.note-textarea.ant-input {
+  min-height: 138px;
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}
+
 input[readonly] {
   color: var(--text-muted);
   background: var(--surface-muted);
@@ -1147,6 +1153,18 @@ button:focus-visible,
 .timeline-viewport:focus-visible {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--focus);
+  outline: none;
+}
+
+.timeline-viewport:focus {
+  outline: none;
+}
+
+.timeline-viewport.context-menu-open:focus,
+.timeline-viewport.context-menu-open:focus-visible {
+  border-color: transparent;
+  box-shadow: var(--shadow);
+  outline: none;
 }
 
 .field-grid {
@@ -1355,6 +1373,30 @@ button:focus-visible,
   border: 1px solid transparent;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+}
+
+.note-inline-editor {
+  position: absolute;
+  z-index: 4;
+  display: block;
+  min-height: 0;
+  margin: 0;
+  padding: 13px 12px 10px;
+  border: 2px solid var(--selection);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-raised) 98%, transparent);
+  color: var(--text);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--text) 18%, transparent);
+  font: inherit;
+  font-size: var(--timeline-font-sm);
+  font-weight: 700;
+  line-height: 17px;
+  resize: none;
+  touch-action: auto;
+}
+
+.note-inline-editor[hidden] {
+  display: none;
 }
 
 .timeline-empty-state {
@@ -1844,6 +1886,14 @@ button:focus-visible,
 
 .item {
   cursor: grab;
+  outline: none;
+}
+
+.item:focus,
+.item:focus-visible,
+#timelineSvg [tabindex]:focus,
+#timelineSvg [tabindex]:focus-visible {
+  outline: none;
 }
 
 .item.locked {
@@ -1963,7 +2013,19 @@ button:focus-visible,
 .note-leader {
   fill: none;
   stroke-width: 2;
+  stroke-dasharray: 4 7;
   stroke-linecap: round;
+  opacity: 0.78;
+}
+
+.note-leader.selected {
+  stroke-width: 3;
+  opacity: 1;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--selection) 42%, transparent));
+}
+
+.note-leader-layer {
+  pointer-events: none;
 }
 
 .note-anchor {
@@ -1972,16 +2034,22 @@ button:focus-visible,
 }
 
 .note-balloon {
-  fill: color-mix(in srgb, var(--timeline-bg) 88%, var(--surface-raised));
-  stroke-width: 2;
-  filter: drop-shadow(0 8px 12px color-mix(in srgb, var(--text) 12%, transparent));
+  stroke-width: 1.5;
+  filter:
+    drop-shadow(0 10px 16px color-mix(in srgb, var(--text) 16%, transparent))
+    drop-shadow(0 2px 2px color-mix(in srgb, #ffffff 18%, transparent));
+  cursor: move;
 }
 
 .note-balloon-text {
-  fill: var(--timeline-label-strong);
   font-size: var(--timeline-font-sm);
   font-weight: 700;
-  pointer-events: none;
+  cursor: text;
+  pointer-events: auto;
+}
+
+.note-selection-outline {
+  stroke-width: 2.4;
 }
 
 .range-line {
@@ -2003,6 +2071,31 @@ button:focus-visible,
   stroke: var(--selection);
   stroke-width: 2;
   cursor: ew-resize;
+}
+
+.note-resize-handle {
+  cursor: nwse-resize;
+}
+
+.note-resize-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.note-resize-icon {
+  fill: none;
+  stroke: var(--selection);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.timeline-viewport.items-locked .note-balloon,
+.item.locked .note-balloon,
+.timeline-viewport.items-locked .note-resize-handle,
+.item.locked .note-resize-handle {
+  cursor: inherit;
 }
 
 .empty-selection {

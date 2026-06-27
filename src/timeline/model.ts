@@ -73,6 +73,11 @@ export interface TimelineItem {
   locked: boolean;
   showAgeLabels: boolean;
   showDurationLabel: boolean;
+  textColor?: string;
+  noteOffsetX?: number;
+  noteOffsetY?: number;
+  noteWidth?: number;
+  noteHeight?: number;
 }
 
 export interface TimelineDocument {
@@ -106,6 +111,11 @@ interface LegacyItemInput {
   locked?: unknown;
   showAgeLabels?: unknown;
   showDurationLabel?: unknown;
+  textColor?: unknown;
+  noteOffsetX?: unknown;
+  noteOffsetY?: unknown;
+  noteWidth?: unknown;
+  noteHeight?: unknown;
 }
 
 export function createEmptyTimeline(): TimelineDocument {
@@ -217,7 +227,7 @@ export function normalizeItem(item: unknown, defaultStartDate = todayIso()): Tim
     endDate = startDate;
   }
 
-  return {
+  const normalized: TimelineItem = {
     id: String(source.id || createId(type)),
     type,
     lane: isGlobalTimelineItemType(type) ? 0 : clamp(Math.round(toNumber(source.lane, 0)), 0, 20),
@@ -230,6 +240,15 @@ export function normalizeItem(item: unknown, defaultStartDate = todayIso()): Tim
     showAgeLabels: source.showAgeLabels !== false,
     showDurationLabel: source.showDurationLabel !== false,
   };
+  if (type === "note") {
+    const textColor = normalizeOptionalColor(source.textColor);
+    if (textColor) normalized.textColor = textColor;
+    assignOptionalNumber(normalized, "noteOffsetX", source.noteOffsetX, -2000, 2000);
+    assignOptionalNumber(normalized, "noteOffsetY", source.noteOffsetY, 0, 2000);
+    assignOptionalNumber(normalized, "noteWidth", source.noteWidth, 84, 420);
+    assignOptionalNumber(normalized, "noteHeight", source.noteHeight, 44, 280);
+  }
+  return normalized;
 }
 
 export function hasEndYear(type: unknown): boolean {
@@ -268,6 +287,20 @@ function normalizeColor(value: unknown): string {
 function normalizeOptionalColor(value: unknown): string {
   const text = String(value || "").trim();
   return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "";
+}
+
+function assignOptionalNumber<T extends keyof TimelineItem>(
+  item: TimelineItem,
+  key: T,
+  value: unknown,
+  min: number,
+  max: number,
+): void {
+  if (value === undefined || value === null || value === "") return;
+  const number = toNumber(value, Number.NaN);
+  if (Number.isFinite(number)) {
+    item[key] = clamp(number, min, max) as TimelineItem[T];
+  }
 }
 
 function createId(prefix: string): string {

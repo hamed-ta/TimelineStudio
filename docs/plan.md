@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Add GitHub Actions release infrastructure and open source community documentation.
+Improve note balloons with wrapped text, automatic stacking, drag positioning, and resizing.
 
 ## Now
 
@@ -36,6 +36,7 @@ Add GitHub Actions release infrastructure and open source community documentatio
 - Add an Add submenu to the timeline context menu with each timeline item type.
 - Keep read-only mode as a top toolbar icon and remove it from the context menu.
 - Add per-item locking in the context menu.
+- Let note balloons show multi-line text, avoid overlap automatically, use dotted highlighted leader lines behind shaped balloons, auto-align text direction, support separate balloon/text colors, and support lower zoom, manual drag positioning, resizing, and inline text editing.
 - Preserve line reorder, remove, save/load, and item lane assignment behavior.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.

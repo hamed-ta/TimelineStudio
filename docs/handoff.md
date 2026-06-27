@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Add GitHub Actions release infrastructure and open source community documentation.
+Improve note item layout and editing.
 
 ## Last Known State
 
@@ -70,7 +70,7 @@ Zoom controls now use Ant Design icons. Manual zoom-out, wheel zoom-out, Fit, an
 
 Empty timelines show a centered non-interactive empty state overlay, and the timeline SVG/grid expands to at least the visible viewport width so the empty canvas does not look pushed to one side.
 
-Timeline items now include a note type for point annotations. Notes render with an anchor point, straight arrow leader, and rounded text balloon below all timeline lines, use a single date, and stay lane-bound.
+Timeline items now include a note type for point annotations. Notes render with an anchor point, dotted straight arrow leader behind the note balloon layer, and shaped bubble balloon below all timeline lines, use a single date, and stay lane-bound. The bubble has a compact top tip where the dotted leader starts; moving the balloon moves that tip along the bubble top, and the tip leans toward the leader when the balloon is offset from the note date. Note balloons display multi-line note text, automatically choose LTR or RTL alignment from the typed language, automatically stack vertically when close notes would overlap at normal or lower zoom levels, and selected note balloons can be dragged from the balloon body or resized from a small diagonal corner grip. Selection now outlines the exact bubble path and highlights the dotted leader without drawing a large rectangle around the leader and anchor; right-clicking a note keeps that selected note state visible for context menu actions without adding the browser focus box. Double-clicking a note balloon body or text opens an inline timeline textarea for direct editing, while the sidebar hides the generic title field and uses a native multi-line balloon text editor with separate balloon and text color pickers. The app derives the internal note title from the first non-empty balloon text line for labels and confirmations. Manual note layout is saved with optional `noteOffsetX`, `noteOffsetY`, `noteWidth`, `noteHeight`, and `textColor` fields; old note JSON without those fields still loads with automatic layout and readable text color.
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
 
@@ -375,6 +375,18 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke: timeline SVG axis labels rendered with normalized sizes (`13px` year label, `12px` Iranian/lane labels).
 - Browser smoke: a temporary Persian SVG label `تست فارسی` rendered with the same font stack and `13px` timeline label size, then the tab was reset to empty.
 - Browser smoke: no console warnings or errors were reported for typography verification.
+- RED: the previous note balloon rendered one fixed line of title text, every note used the same fixed rectangle below the lines, leader lines were solid and could render above other balloons, selected notes drew one large selection rectangle around the leader and anchor, text direction was not detected from typed language, the sidebar had a small generic notes field and only one color control, zoom-out stopped at 18 px/month, the selection heading included the note lane, and note balloons had no inline editing, drag-position, or resize state.
+- `node --check app.js`: passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed.
+- `npm run build`: passed, with the existing Vite large chunk warning.
+- Local dev server: started at `http://127.0.0.1:8765/`.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: a temporary Persian note kept `بمب باران اصفهان` visible when the sidebar Balloon text field was focused, rendered RTL text at the adjusted vertical baseline, drew a selected outline path that exactly matched the balloon path, and opened the inline editor with the current text after double-clicking the balloon body.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: inline editing committed typed text (`ویرایش مستقیم`) after `Ctrl+Enter`; right-clicking a selected note opened the context menu with the selected note outline visible, the selected leader highlighted, the active viewport outline computed to `none`, and the focusable SVG note item outline style computed to `none`; dragging the note sideways produced a slanted leader and a `-7px` tip lean toward the leader.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: after clearing selection, right-clicking a note selected it for context-menu actions (`.item-note.selected` count `1`), kept `.note-selection-outline` visible, highlighted the selected leader at `3px`, and still kept the SVG item/browser focus outline style at `none`.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: two fast clicks at the center of a note balloon body opened `#noteInlineEditor` with the existing note text selected.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: pressing `Backspace` inside `#noteInlineEditor` edited the note text, kept one note item on the timeline, and did not open the delete-item confirmation.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: clicking outside `#noteInlineEditor` committed `Outside commit`, hid the editor, and kept one note item on the timeline.
 
 ## Open Issues
 
@@ -386,8 +398,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: add context menu creation and item locks`
+`feat: improve note balloon layout editing`
 
 ## Next Safe Step
 
-Review the context-menu Add submenu and item/global lock behavior in the real UI, then commit if acceptable.
+Open the local app, create several nearby notes with English and Persian text, zoom out to confirm vertical stacking, verify dotted leaders stay behind balloons and highlight on selection, check separate balloon/text colors, drag and resize a selected note balloon, then commit if the behavior feels right.

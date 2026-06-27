@@ -6,7 +6,18 @@ This project follows semantic versioning. The current package version is `0.2.1`
 
 ## Unreleased
 
-No unreleased changes yet.
+### Changed
+
+- Improved note balloons with shaped bubble bodies, movable tips, dotted highlighted background leaders, separate balloon and text colors, multi-line text wrapping, automatic direction alignment, automatic vertical stacking at lower zoom levels, manual drag positioning from the balloon body, resizing, inline timeline text editing, a larger sidebar text editor, hidden note title controls, derived internal note titles, and simpler selection headings.
+- Tightened note balloon padding and minimum resize limits, reduced the top tip size, and replaced the selected-note corner square with a smaller diagonal resize grip.
+
+### Fixed
+
+- Aligned the selected note outline to the balloon shape, kept sidebar balloon text visible while editing, and centered note text more evenly within the balloon body.
+- Made note inline editing easier to trigger, kept note selection visible for context menu actions, and angled note balloon tips toward slanted leader lines.
+- Kept `Delete` and `Backspace` available for text editing inside timeline editor fields instead of deleting the selected item.
+- Committed inline note text edits when clicking outside the balloon editor.
+- Removed the browser focus outline from focusable SVG timeline items so right-clicking a note does not draw a large blue box around the note leader and balloon.
 
 ## 0.2.1 - 2026-06-21
 

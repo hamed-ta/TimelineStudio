@@ -65,12 +65,29 @@ import {
   const RIGHT_GUTTER = 110;
   const AXIS_HEIGHT = 112;
   const FOOTER_HEIGHT = 34;
-  const NOTE_AREA_HEIGHT = 76;
   const DEFAULT_ROW_HEIGHT = 68;
   const AXIS_LABEL_CHAR_WIDTH = 7.2;
   const AXIS_MONTH_LABEL_GAP = 14;
   const AXIS_DAY_LABEL_GAP = 8;
-  const MIN_ZOOM = 18;
+  const NOTE_AREA_TOP_GAP = 14;
+  const NOTE_AREA_BOTTOM_GAP = 26;
+  const NOTE_TIP_HEIGHT = 7;
+  const NOTE_TIP_HALF_WIDTH = 9;
+  const NOTE_TIP_MAX_LEAN = 7;
+  const NOTE_DEFAULT_WIDTH = 196;
+  const NOTE_DEFAULT_HEIGHT = 50;
+  const NOTE_MIN_WIDTH = 84;
+  const NOTE_MAX_WIDTH = 420;
+  const NOTE_MIN_HEIGHT = 44;
+  const NOTE_MAX_HEIGHT = 280;
+  const NOTE_PADDING_X = 9;
+  const NOTE_TEXT_VERTICAL_PADDING = 8;
+  const NOTE_TEXT_BASELINE_OFFSET = 13;
+  const NOTE_LINE_HEIGHT = 17;
+  const NOTE_STACK_GAP = 10;
+  const NOTE_DOUBLE_CLICK_MS = 520;
+  const NOTE_DOUBLE_CLICK_DISTANCE = 12;
+  const MIN_ZOOM = 6;
   const MAX_ZOOM = 360;
   const DEFAULT_ZOOM = 18;
   const FIT_MIN_ZOOM = MIN_ZOOM;
@@ -113,8 +130,10 @@ import {
     lineEditorCloseButton: document.getElementById("lineEditorCloseButton"),
     itemForm: document.getElementById("itemForm"),
     itemTypeInput: document.getElementById("itemTypeInput"),
+    itemTitleField: document.getElementById("itemTitleField"),
     itemTitleInput: document.getElementById("itemTitleInput"),
     itemLaneInput: document.getElementById("itemLaneInput"),
+    itemColorField: document.getElementById("itemColorField"),
     itemColorInput: document.getElementById("itemColorInput"),
     itemColorTrigger: document.getElementById("itemColorTrigger"),
     itemColorPreview: document.getElementById("itemColorPreview"),
@@ -125,6 +144,18 @@ import {
     itemColorHueInput: document.getElementById("itemColorHueInput"),
     itemColorHexInput: document.getElementById("itemColorHexInput"),
     itemColorPalette: document.getElementById("itemColorPalette"),
+    itemTextColorField: document.getElementById("itemTextColorField"),
+    itemTextColorInput: document.getElementById("itemTextColorInput"),
+    itemTextColorTrigger: document.getElementById("itemTextColorTrigger"),
+    itemTextColorPreview: document.getElementById("itemTextColorPreview"),
+    itemTextColorValue: document.getElementById("itemTextColorValue"),
+    itemTextColorPanel: document.getElementById("itemTextColorPanel"),
+    itemTextColorPlane: document.getElementById("itemTextColorPlane"),
+    itemTextColorPlaneMarker: document.getElementById("itemTextColorPlaneMarker"),
+    itemTextColorHueInput: document.getElementById("itemTextColorHueInput"),
+    itemTextColorHexInput: document.getElementById("itemTextColorHexInput"),
+    itemTextColorPalette: document.getElementById("itemTextColorPalette"),
+    itemNotesField: document.getElementById("itemNotesField"),
     itemStartInput: document.getElementById("itemStartInput"),
     itemEndInput: document.getElementById("itemEndInput"),
     itemEndField: document.getElementById("itemEndField"),
@@ -148,6 +179,7 @@ import {
     fitButton: document.getElementById("fitButton"),
     timelineViewport: document.getElementById("timelineViewport"),
     timelineSvg: document.getElementById("timelineSvg"),
+    noteInlineEditor: document.getElementById("noteInlineEditor"),
     timelineEmptyState: document.getElementById("timelineEmptyState"),
     timelineContextMenu: document.getElementById("timelineContextMenu"),
     timelineInfoPanel: document.getElementById("timelineInfoPanel"),
@@ -180,7 +212,15 @@ import {
   let contextMenuTarget = null;
   let lineEditorLaneIndex = null;
   let itemColorPicker = null;
+  let itemTextColorPicker = null;
   let lineColorPicker = null;
+  let lastNoteLayouts = new Map();
+  let lastNotePointerDown = null;
+  let noteMeasureContext = null;
+  let noteMeasureFont = "";
+  let editingNoteId = null;
+  let editingNoteOriginalNotes = "";
+  let editingNoteOriginalDisplayText = "";
 
   init();
 
@@ -217,6 +257,10 @@ import {
 
     dom.itemTypeInput.addEventListener("change", () => {
       const type = dom.itemTypeInput.value;
+      updateItemFieldVisibilityForType(type);
+      updateItemNotesLabel({ type });
+      const item = getItem(selectedId);
+      setColorPickerDisabled(itemTextColorPicker, !item || isItemReadOnly(item) || type !== "note");
       dom.itemEndField.hidden = !hasEndYear(type);
       dom.itemDerivedLabelsField.hidden = type !== "period";
       dom.itemLaneInput.disabled = isGlobalTimelineItemType(type);
@@ -225,6 +269,9 @@ import {
     });
     dom.itemColorInput.addEventListener("input", handleItemColorInput);
     dom.itemColorInput.addEventListener("change", handleItemColorInput);
+    if (dom.itemTextColorInput) dom.itemTextColorInput.addEventListener("input", handleItemTextColorInput);
+    if (dom.itemTextColorInput) dom.itemTextColorInput.addEventListener("change", handleItemTextColorInput);
+    dom.itemNotesInput.addEventListener("input", updateNotesInputDirection);
 
     dom.itemForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -263,6 +310,8 @@ import {
 
     dom.timelineViewport.addEventListener("wheel", handleViewportWheel, { passive: false });
     dom.timelineViewport.addEventListener("contextmenu", openTimelineContextMenu);
+    dom.timelineViewport.addEventListener("click", openNoteEditorFromClickCount);
+    dom.timelineViewport.addEventListener("dblclick", openNoteEditorFromDoubleClick);
     dom.timelineViewport.addEventListener("keydown", (event) => {
       const addNode = event.target.closest?.("[data-timeline-lane-add]");
       if (addNode && (event.key === "Enter" || event.key === " ")) {
@@ -277,6 +326,7 @@ import {
         openLineEditor(Number(laneNode.dataset.timelineLaneIndex), rect.left + 48, rect.top + 96);
         return;
       }
+      if (isEditableShortcutTarget(event.target)) return;
       if ((event.key === "Delete" || event.key === "Backspace") && selectedId) {
         event.preventDefault();
         deleteSelectedItem();
@@ -289,6 +339,16 @@ import {
     dom.timelineViewport.addEventListener("pointerleave", hideHoverReadout);
     dom.timelineViewport.addEventListener("pointerup", endPointerDrag);
     dom.timelineViewport.addEventListener("pointercancel", endPointerDrag);
+    if (dom.noteInlineEditor) {
+      dom.noteInlineEditor.addEventListener("blur", commitNoteInlineEditor);
+      dom.noteInlineEditor.addEventListener("input", updateNoteInlineEditorDirection);
+      dom.noteInlineEditor.addEventListener("keydown", handleNoteInlineEditorKeydown);
+      dom.noteInlineEditor.addEventListener("pointerdown", (event) => event.stopPropagation());
+      dom.noteInlineEditor.addEventListener("click", (event) => event.stopPropagation());
+      dom.noteInlineEditor.addEventListener("contextmenu", (event) => event.stopPropagation());
+      dom.noteInlineEditor.addEventListener("dblclick", (event) => event.stopPropagation());
+    }
+    document.addEventListener("pointerdown", commitNoteInlineEditorFromPointer, true);
     document.addEventListener("pointerdown", closeContextMenuFromPointer, true);
     document.addEventListener("pointerdown", closeLineEditorFromPointer, true);
     document.addEventListener("pointerdown", closeColorPickersFromPointer, true);
@@ -309,6 +369,7 @@ import {
     renderTimeline();
     updateMeta();
     updateTimelineInfoPanel();
+    positionNoteInlineEditor();
     if (options.save !== false) {
       markDirty();
     } else {
@@ -332,8 +393,10 @@ import {
     const viewportWidth = Math.ceil(dom.timelineViewport.clientWidth || 0);
     const contentWidth = Math.max(timelineWidth, viewportWidth);
     const laneAreaBottom = AXIS_HEIGHT + laneCount * rowHeight;
-    const noteAreaHeight = timeline.items.some((item) => item.type === "note") ? NOTE_AREA_HEIGHT : 0;
-    const contentHeight = laneAreaBottom + noteAreaHeight + FOOTER_HEIGHT;
+    const noteLayouts = computeNoteLayouts(laneCount, rowHeight, contentWidth);
+    lastNoteLayouts = noteLayouts;
+    const noteAreaHeight = getNoteAreaHeight(noteLayouts, laneAreaBottom);
+    const contentHeight = laneAreaBottom + FOOTER_HEIGHT + noteAreaHeight;
 
     svg.setAttribute("width", String(Math.ceil(contentWidth)));
     svg.setAttribute("height", String(Math.ceil(contentHeight)));
@@ -356,12 +419,13 @@ import {
     const sortedItems = timeline.items
       .slice()
       .sort((a, b) => a.lane - b.lane || compareIso(a.startDate, b.startDate));
+    drawNoteLeaderLayer(svg, defs, sortedItems, laneCount, rowHeight, noteLayouts);
     sortedItems
       .filter((item) => isGlobalTimelineItemType(item.type))
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight));
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts));
     sortedItems
       .filter((item) => !isGlobalTimelineItemType(item.type))
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight));
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts));
   }
 
   function drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth) {
@@ -520,7 +584,7 @@ import {
     svg.append(addGroup);
   }
 
-  function drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight) {
+  function drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts) {
     const group = svgEl("g", {
       class: `item item-${item.type}${item.locked ? " locked" : ""}${item.id === selectedId ? " selected" : ""}`,
       "data-item-id": item.id,
@@ -542,12 +606,12 @@ import {
     } else if (item.type === "marker") {
       drawMarker(group, item, x1, AXIS_HEIGHT + laneCount * rowHeight);
     } else if (item.type === "note") {
-      drawNote(group, defs, item, x1, y, laneCount, rowHeight, contentWidth);
+      drawNote(group, defs, item, x1, y, noteLayouts);
     } else {
       drawTextItem(group, item, x1, y);
     }
 
-    if (item.id === selectedId) drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight);
+    if (item.id === selectedId) drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight, noteLayouts);
     svg.append(group);
   }
 
@@ -813,8 +877,30 @@ import {
     }, label));
   }
 
-  function drawNote(group, defs, item, x, y, laneCount, rowHeight, contentWidth) {
-    const layout = getNoteLayout(item, x, laneCount, rowHeight, contentWidth);
+  function drawNoteLeaderLayer(svg, defs, items, laneCount, rowHeight, noteLayouts) {
+    const layer = svgEl("g", { class: "note-leader-layer", "aria-hidden": "true" });
+    items
+      .filter((item) => item.type === "note")
+      .forEach((item) => {
+        const layout = noteLayouts.get(item.id);
+        if (!layout) return;
+        const x = dateToX(item.startDate);
+        const y = AXIS_HEIGHT + item.lane * rowHeight + rowHeight / 2;
+        const markerId = ensureNoteArrowMarker(defs, item);
+        layer.append(svgEl("line", {
+          class: `note-leader${item.id === selectedId ? " selected" : ""}`,
+          x1: layout.tipX,
+          y1: layout.tipY,
+          x2: x,
+          y2: y,
+          stroke: item.color,
+          "marker-end": `url(#${markerId})`,
+        }));
+      });
+    if (layer.childNodes.length) svg.append(layer);
+  }
+
+  function ensureNoteArrowMarker(defs, item) {
     const markerId = `note-arrow-${safeSvgId(item.id)}`;
     if (!document.getElementById(markerId)) {
       const marker = svgEl("marker", {
@@ -829,27 +915,42 @@ import {
       marker.append(svgEl("path", { d: "M 0 0 L 8 4 L 0 8 z", fill: item.color }));
       defs.append(marker);
     }
+    return markerId;
+  }
 
-    group.append(svgEl("line", {
-      class: "note-leader",
-      x1: layout.leaderX,
-      y1: layout.leaderY,
-      x2: x,
-      y2: y,
-      stroke: item.color,
-      "marker-end": `url(#${markerId})`,
-    }));
+  function drawNote(group, defs, item, x, y, noteLayouts) {
+    const layout = noteLayouts.get(item.id);
+    if (!layout) return;
+    const gradientId = ensureNoteBalloonGradient(defs, item, layout);
     group.append(svgEl("circle", { class: "note-anchor", cx: x, cy: y, r: 6, fill: item.color }));
-    group.append(svgEl("rect", {
+    group.append(svgEl("path", {
       class: "note-balloon",
-      x: layout.x,
-      y: layout.y,
-      width: layout.width,
-      height: layout.height,
-      rx: 10,
-      stroke: item.color,
+      "data-note-drag": "true",
+      "data-note-edit": "true",
+      d: noteBubblePath(layout),
+      fill: `url(#${gradientId})`,
+      stroke: noteBorderColor(item.color),
     }));
-    group.append(svgEl("text", { class: "note-balloon-text", x: layout.x + 12, y: layout.y + 23 }, layout.label));
+    drawNoteText(group, layout);
+  }
+
+  function ensureNoteBalloonGradient(defs, item, layout) {
+    const gradientId = `note-balloon-fill-${safeSvgId(item.id)}`;
+    if (!document.getElementById(gradientId)) {
+      const gradient = svgEl("linearGradient", {
+        id: gradientId,
+        x1: layout.x,
+        y1: layout.y,
+        x2: layout.x,
+        y2: layout.y + layout.height,
+        gradientUnits: "userSpaceOnUse",
+      });
+      gradient.append(svgEl("stop", { offset: "0", "stop-color": adjustColor(item.color, 26), "stop-opacity": "1" }));
+      gradient.append(svgEl("stop", { offset: "0.58", "stop-color": item.color, "stop-opacity": "1" }));
+      gradient.append(svgEl("stop", { offset: "1", "stop-color": adjustColor(item.color, -10), "stop-opacity": "1" }));
+      defs.append(gradient);
+    }
+    return gradientId;
   }
 
   function drawTextItem(group, item, x, y) {
@@ -857,7 +958,7 @@ import {
     group.append(svgEl("text", { class: "note-label", x: x + 10, y: y + 5, fill: item.color }, item.title));
   }
 
-  function drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight) {
+  function drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight, noteLayouts) {
     if (item.type === "period") {
       const width = Math.max(12, x2 - x1);
       group.append(svgEl("rect", { class: "selection-outline", x: x1 - 4, y: y - 21, width: width + 8, height: 42, rx: 8 }));
@@ -877,34 +978,314 @@ import {
         rx: 7,
       }));
     } else if (item.type === "note") {
-      const layout = getNoteLayout(item, x1, laneCount, rowHeight, contentWidth);
+      const layout = noteLayouts.get(item.id);
+      if (!layout) return;
+      const handleSize = 12;
+      const handleX = layout.x + layout.width - handleSize - 1;
+      const handleY = layout.y + layout.height - handleSize - 1;
+      group.append(svgEl("path", {
+        class: "selection-outline note-selection-outline",
+        d: noteBubblePath(layout),
+      }));
       group.append(svgEl("rect", {
-        class: "selection-outline",
-        x: Math.min(x1 - 10, layout.x - 4),
-        y: Math.min(y - 10, layout.y - 4),
-        width: Math.max(x1 + 10, layout.x + layout.width + 4) - Math.min(x1 - 10, layout.x - 4),
-        height: Math.max(y + 10, layout.y + layout.height + 4) - Math.min(y - 10, layout.y - 4),
-        rx: 12,
+        class: "resize-handle note-resize-handle note-resize-hit",
+        "data-item-id": item.id,
+        "data-handle": "note-resize",
+        x: handleX - 2,
+        y: handleY - 2,
+        width: handleSize + 4,
+        height: handleSize + 4,
+        rx: 2,
+      }));
+      group.append(svgEl("path", {
+        class: "resize-handle note-resize-handle note-resize-icon",
+        d: [
+          `M ${handleX + 7} ${handleY + 12} L ${handleX + 12} ${handleY + 7}`,
+          `M ${handleX + 3} ${handleY + 12} L ${handleX + 12} ${handleY + 3}`,
+        ].join(" "),
       }));
     } else {
       group.append(svgEl("rect", { class: "selection-outline", x: x1 - 12, y: y - 22, width: 210, height: 44, rx: 8 }));
     }
   }
 
-  function getNoteLayout(item, x, laneCount, rowHeight, contentWidth) {
-    const width = clamp(String(item.title || "").length * 7.2 + 28, 96, 220);
-    const height = 38;
-    const balloonX = clamp(x - width / 2, 12, Math.max(12, contentWidth - width - 12));
-    const balloonY = AXIS_HEIGHT + laneCount * rowHeight + 18;
-    return {
-      x: balloonX,
-      y: balloonY,
-      width,
-      height,
-      label: fitText(item.title, width - 24),
-      leaderX: x,
-      leaderY: balloonY,
-    };
+  function computeNoteLayouts(laneCount, rowHeight, contentWidth) {
+    const layouts = new Map();
+    const placedLayouts = [];
+    const baseY = noteBaseY(laneCount, rowHeight);
+    timeline.items
+      .filter((item) => item.type === "note")
+      .slice()
+      .sort((a, b) => compareIso(a.startDate, b.startDate) || a.lane - b.lane || String(a.id).localeCompare(String(b.id)))
+      .forEach((item) => {
+        const anchorX = dateToX(item.startDate);
+        const size = noteSize(item);
+        const rawX = finiteNumber(item.noteOffsetX)
+          ? anchorX + Number(item.noteOffsetX)
+          : anchorX - size.width / 2;
+        const x = clamp(rawX, 12, Math.max(12, contentWidth - size.width - 12));
+        const y = finiteNumber(item.noteOffsetY)
+          ? baseY + Number(item.noteOffsetY)
+          : findAvailableNoteY({ x, y: baseY, width: size.width, height: size.height }, placedLayouts, baseY);
+        const layout = {
+          itemId: item.id,
+          anchorX,
+          x,
+          y,
+          width: size.width,
+          height: size.height,
+          text: noteText(item),
+          textColor: noteTextColor(item),
+          direction: textDirectionFor(noteText(item)),
+          lines: wrapNoteText(noteText(item), size.width - NOTE_PADDING_X * 2, size.height),
+          tipX: clamp(anchorX, x + NOTE_TIP_HALF_WIDTH + 10, x + size.width - NOTE_TIP_HALF_WIDTH - 10),
+          tipY: y,
+        };
+        layouts.set(item.id, layout);
+        placedLayouts.push(layout);
+      });
+    return layouts;
+  }
+
+  function getNoteAreaHeight(noteLayouts, laneAreaBottom) {
+    if (!noteLayouts.size) return 0;
+    let bottom = laneAreaBottom + FOOTER_HEIGHT;
+    noteLayouts.forEach((layout) => {
+      bottom = Math.max(bottom, layout.y + layout.height);
+    });
+    return Math.max(0, bottom - (laneAreaBottom + FOOTER_HEIGHT) + NOTE_AREA_BOTTOM_GAP);
+  }
+
+  function noteBaseY(laneCount, rowHeight) {
+    return AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT + NOTE_AREA_TOP_GAP;
+  }
+
+  function noteSize(item) {
+    const text = noteText(item);
+    const naturalWidth = Math.min(
+      NOTE_MAX_WIDTH,
+      Math.max(NOTE_DEFAULT_WIDTH, longestNoteLineWidth(text) + NOTE_PADDING_X * 2),
+    );
+    const width = clamp(
+      finiteNumber(item.noteWidth) ? Number(item.noteWidth) : naturalWidth,
+      NOTE_MIN_WIDTH,
+      NOTE_MAX_WIDTH,
+    );
+    const naturalLineCount = wrapNoteTextLines(text, width - NOTE_PADDING_X * 2).length;
+    const naturalHeight = NOTE_TIP_HEIGHT + NOTE_TEXT_VERTICAL_PADDING * 2 + naturalLineCount * NOTE_LINE_HEIGHT;
+    const height = clamp(
+      finiteNumber(item.noteHeight) ? Number(item.noteHeight) : Math.max(NOTE_DEFAULT_HEIGHT, naturalHeight),
+      NOTE_MIN_HEIGHT,
+      NOTE_MAX_HEIGHT,
+    );
+    return { width, height };
+  }
+
+  function noteText(item) {
+    return String(item.notes || item.title || titleForType("note")).trim() || titleForType("note");
+  }
+
+  function noteTitleFromText(text) {
+    const firstLine = String(text || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find(Boolean);
+    if (!firstLine) return titleForType("note");
+    return firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
+  }
+
+  function noteTextColor(item) {
+    return normalizeOptionalColor(item.textColor) || readableTextColor(item.color);
+  }
+
+  function noteBorderColor(color) {
+    return adjustColor(color, 34);
+  }
+
+  function noteBubblePath(layout, pad = 0) {
+    const x = layout.x - pad;
+    const y = layout.y - pad;
+    const width = layout.width + pad * 2;
+    const height = layout.height + pad * 2;
+    const right = x + width;
+    const bottom = y + height;
+    const tipHeight = NOTE_TIP_HEIGHT + pad;
+    const tipHalf = NOTE_TIP_HALF_WIDTH + pad / 2;
+    const bodyY = y + tipHeight;
+    const radius = Math.min(14 + pad / 2, width / 4, Math.max(4, (height - tipHeight) / 3));
+    const tipApexX = clamp(layout.tipX, x + radius + tipHalf, right - radius - tipHalf);
+    const tipLean = clamp((layout.anchorX - tipApexX) * 0.18, -NOTE_TIP_MAX_LEAN, NOTE_TIP_MAX_LEAN);
+    const tipBaseX = clamp(tipApexX - tipLean, x + radius + tipHalf, right - radius - tipHalf);
+    const tipLeft = tipBaseX - tipHalf;
+    const tipRight = tipBaseX + tipHalf;
+
+    return [
+      `M ${x + radius} ${bodyY}`,
+      `H ${tipLeft}`,
+      `L ${tipApexX} ${y}`,
+      `L ${tipRight} ${bodyY}`,
+      `H ${right - radius}`,
+      `Q ${right} ${bodyY} ${right} ${bodyY + radius}`,
+      `V ${bottom - radius}`,
+      `Q ${right} ${bottom} ${right - radius} ${bottom}`,
+      `H ${x + radius}`,
+      `Q ${x} ${bottom} ${x} ${bottom - radius}`,
+      `V ${bodyY + radius}`,
+      `Q ${x} ${bodyY} ${x + radius} ${bodyY}`,
+      "Z",
+    ].join(" ");
+  }
+
+  function longestNoteLineWidth(text) {
+    return String(text || "")
+      .split(/\r?\n/)
+      .reduce((max, line) => Math.max(max, measureNoteTextWidth(line)), 0);
+  }
+
+  function findAvailableNoteY(rect, placedLayouts, baseY) {
+    const candidate = { ...rect, y: baseY };
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      const blocker = placedLayouts.find((layout) => noteRectsOverlap(candidate, layout));
+      if (!blocker) return candidate.y;
+      candidate.y = blocker.y + blocker.height + NOTE_STACK_GAP;
+    }
+    return candidate.y;
+  }
+
+  function noteRectsOverlap(a, b) {
+    return a.x < b.x + b.width + NOTE_STACK_GAP
+      && a.x + a.width + NOTE_STACK_GAP > b.x
+      && a.y < b.y + b.height + NOTE_STACK_GAP
+      && a.y + a.height + NOTE_STACK_GAP > b.y;
+  }
+
+  function drawNoteText(group, layout) {
+    const isRtl = layout.direction === "rtl";
+    const textX = isRtl ? layout.x + layout.width - NOTE_PADDING_X : layout.x + NOTE_PADDING_X;
+    const textY = noteTextFirstBaseline(layout);
+    const text = svgEl("text", {
+      class: "note-balloon-text",
+      "data-note-drag": "true",
+      "data-note-edit": "true",
+      x: textX,
+      y: textY,
+      fill: layout.textColor,
+      direction: layout.direction,
+      "text-anchor": "start",
+      "unicode-bidi": "plaintext",
+    });
+    layout.lines.forEach((line, index) => {
+      text.append(svgEl("tspan", {
+        x: textX,
+        dy: index === 0 ? 0 : NOTE_LINE_HEIGHT,
+      }, line));
+    });
+    group.append(text);
+  }
+
+  function noteTextFirstBaseline(layout) {
+    const bodyY = layout.y + NOTE_TIP_HEIGHT;
+    const bodyHeight = Math.max(0, layout.height - NOTE_TIP_HEIGHT);
+    const blockHeight = Math.max(NOTE_LINE_HEIGHT, layout.lines.length * NOTE_LINE_HEIGHT);
+    const blockTop = bodyY + Math.max(NOTE_TEXT_VERTICAL_PADDING, (bodyHeight - blockHeight) / 2);
+    return blockTop + NOTE_TEXT_BASELINE_OFFSET;
+  }
+
+  function wrapNoteText(text, maxWidth, height) {
+    const lines = wrapNoteTextLines(text, maxWidth);
+    const bodyHeight = Math.max(0, height - NOTE_TIP_HEIGHT);
+    const usableHeight = Math.max(NOTE_LINE_HEIGHT, bodyHeight - NOTE_TEXT_VERTICAL_PADDING * 2);
+    const maxLines = Math.max(1, Math.floor(usableHeight / NOTE_LINE_HEIGHT));
+    if (lines.length <= maxLines) return lines;
+    const visible = lines.slice(0, maxLines);
+    visible[visible.length - 1] = fitNoteText(`${visible[visible.length - 1]}...`, maxWidth);
+    return visible;
+  }
+
+  function wrapNoteTextLines(text, maxWidth) {
+    return String(text || "")
+      .split(/\r?\n/)
+      .flatMap((line) => wrapNoteLine(line, maxWidth));
+  }
+
+  function wrapNoteLine(line, maxWidth) {
+    const value = String(line || "");
+    if (!value.trim()) return [" "];
+    const words = value.split(/\s+/);
+    const lines = [];
+    let current = "";
+    words.forEach((word) => {
+      if (!current) {
+        current = word;
+        return;
+      }
+      const next = `${current} ${word}`;
+      if (measureNoteTextWidth(next) <= maxWidth) {
+        current = next;
+      } else {
+        lines.push(...splitLongNoteWord(current, maxWidth));
+        current = word;
+      }
+    });
+    if (current) lines.push(...splitLongNoteWord(current, maxWidth));
+    return lines.length ? lines : [" "];
+  }
+
+  function splitLongNoteWord(word, maxWidth) {
+    const value = String(word || "");
+    if (measureNoteTextWidth(value) <= maxWidth) return [value];
+    const chunks = [];
+    let current = "";
+    Array.from(value).forEach((char) => {
+      const next = `${current}${char}`;
+      if (current && measureNoteTextWidth(next) > maxWidth) {
+        chunks.push(current);
+        current = char;
+      } else {
+        current = next;
+      }
+    });
+    if (current) chunks.push(current);
+    return chunks;
+  }
+
+  function fitNoteText(text, maxWidth) {
+    const value = String(text || "");
+    if (maxWidth <= 0) return "";
+    if (measureNoteTextWidth(value) <= maxWidth) return value;
+    const suffix = "...";
+    let output = value;
+    while (output.length > 1 && measureNoteTextWidth(`${output}${suffix}`) > maxWidth) {
+      output = output.slice(0, -1);
+    }
+    return `${output}${suffix}`;
+  }
+
+  function measureNoteTextWidth(text) {
+    const value = String(text || "");
+    if (!noteMeasureContext) {
+      noteMeasureContext = document.createElement("canvas").getContext("2d");
+    }
+    if (!noteMeasureContext) return estimateSvgTextWidth(value);
+    if (!noteMeasureFont) {
+      const rootStyle = getComputedStyle(document.documentElement);
+      noteMeasureFont = `700 13px ${rootStyle.fontFamily || "sans-serif"}`;
+    }
+    noteMeasureContext.font = noteMeasureFont;
+    return noteMeasureContext.measureText(value).width;
+  }
+
+  function finiteNumber(value) {
+    return Number.isFinite(Number(value));
+  }
+
+  function textDirectionFor(text) {
+    const value = String(text || "");
+    for (const char of value) {
+      if (/[\u0590-\u08FF\uFB1D-\uFEFC]/u.test(char)) return "rtl";
+      if (/[A-Za-z\u00C0-\u024F]/u.test(char)) return "ltr";
+    }
+    return "ltr";
   }
 
   function updateMeta() {
@@ -969,9 +1350,10 @@ import {
   }
 
   function formatSelectedItemTitle(item) {
-    const lineText = isGlobalTimelineItemType(item.type) ? "" : ` - Line ${item.lane + 1}`;
+    const lineText = isGlobalTimelineItemType(item.type) || item.type === "note" ? "" : ` - Line ${item.lane + 1}`;
     const lockedText = item.locked ? "Locked - " : "";
-    return `${lockedText}${itemTypeLabel(item.type)}: ${item.title}${lineText}`;
+    const title = item.type === "note" ? noteTitleFromText(noteText(item)) : item.title;
+    return `${lockedText}${itemTypeLabel(item.type)}: ${title}${lineText}`;
   }
 
   function formatSelectedItemStartLine(item) {
@@ -1083,6 +1465,7 @@ import {
       dom.itemTitleInput,
       dom.itemLaneInput,
       dom.itemColorInput,
+      dom.itemTextColorInput,
       dom.itemStartInput,
       dom.itemEndInput,
       dom.itemAgeLabelsInput,
@@ -1102,16 +1485,22 @@ import {
       dom.itemTitleInput.value = "";
       dom.itemLaneInput.value = "";
       dom.itemColorInput.value = TYPE_COLORS.event;
+      if (dom.itemTextColorInput) dom.itemTextColorInput.value = "";
       dom.itemStartInput.value = "";
       dom.itemEndInput.value = "";
       dom.itemAgeLabelsInput.checked = true;
       dom.itemDurationLabelInput.checked = true;
       dom.itemNotesInput.value = "";
+      updateItemFieldVisibilityForType("event");
+      updateItemNotesLabel(null);
+      updateNotesInputDirection();
       dom.itemCalendarPreview.textContent = "Select an item to see Gregorian and Iranian dates.";
       dom.itemEndField.hidden = true;
       dom.itemDerivedLabelsField.hidden = true;
       setColorPickerValue(itemColorPicker, TYPE_COLORS.event, { emit: false });
       setColorPickerDisabled(itemColorPicker, true);
+      setColorPickerValue(itemTextColorPicker, "#111827", { emit: false });
+      setColorPickerDisabled(itemTextColorPicker, true);
       dom.itemForm.classList.add("empty-selection");
       suppressControlEvents = false;
       return;
@@ -1123,16 +1512,42 @@ import {
     dom.itemLaneInput.value = item.lane;
     setColorPickerValue(itemColorPicker, item.color, { emit: false });
     setColorPickerDisabled(itemColorPicker, itemReadOnly);
+    setColorPickerValue(itemTextColorPicker, item.type === "note" ? noteTextColor(item) : "#111827", { emit: false });
+    setColorPickerDisabled(itemTextColorPicker, itemReadOnly || item.type !== "note");
     dom.itemStartInput.value = item.startDate;
     dom.itemEndInput.value = item.endDate;
     dom.itemAgeLabelsInput.checked = item.showAgeLabels !== false;
     dom.itemDurationLabelInput.checked = item.showDurationLabel !== false;
-    dom.itemNotesInput.value = item.notes;
+    dom.itemNotesInput.value = item.type === "note" ? noteText(item) : item.notes;
+    updateItemFieldVisibilityForType(item.type);
+    updateItemNotesLabel(item);
+    updateNotesInputDirection();
     dom.itemEndField.hidden = !hasEndYear(item.type);
     dom.itemDerivedLabelsField.hidden = item.type !== "period";
     dom.itemLaneInput.disabled = itemReadOnly || isGlobalTimelineItemType(item.type);
     updateItemCalendarPreview(item);
     suppressControlEvents = false;
+  }
+
+  function updateItemNotesLabel(item) {
+    const label = dom.itemNotesField?.querySelector("span");
+    if (!label) return;
+    label.textContent = item?.type === "note" ? "Balloon text" : "Notes";
+    dom.itemNotesInput.placeholder = item?.type === "note"
+      ? "Write the text shown inside the note balloon."
+      : "Write private notes for this item.";
+  }
+
+  function updateItemFieldVisibilityForType(type) {
+    if (dom.itemTitleField) dom.itemTitleField.hidden = type === "note";
+    if (dom.itemTextColorField) dom.itemTextColorField.hidden = type !== "note";
+    const colorLabel = dom.itemColorField?.querySelector(".field-caption");
+    if (colorLabel) colorLabel.textContent = type === "note" ? "Balloon" : "Color";
+  }
+
+  function updateNotesInputDirection() {
+    if (!dom.itemNotesInput) return;
+    dom.itemNotesInput.dir = textDirectionFor(dom.itemNotesInput.value);
   }
 
   function setupColorPickers() {
@@ -1151,6 +1566,22 @@ import {
       defaultColor: TYPE_COLORS.event,
       emptyLabel: "",
       onChange: handleItemColorInput,
+    });
+    itemTextColorPicker = createColorPicker({
+      name: "itemText",
+      input: dom.itemTextColorInput,
+      trigger: dom.itemTextColorTrigger,
+      preview: dom.itemTextColorPreview,
+      valueLabel: dom.itemTextColorValue,
+      panel: dom.itemTextColorPanel,
+      plane: dom.itemTextColorPlane,
+      planeMarker: dom.itemTextColorPlaneMarker,
+      hueInput: dom.itemTextColorHueInput,
+      hexInput: dom.itemTextColorHexInput,
+      palette: dom.itemTextColorPalette,
+      defaultColor: "#111827",
+      emptyLabel: "",
+      onChange: handleItemTextColorInput,
     });
     lineColorPicker = createColorPicker({
       name: "line",
@@ -1257,14 +1688,14 @@ import {
   }
 
   function closeColorPickers(exceptPicker = null) {
-    [itemColorPicker, lineColorPicker].forEach((picker) => {
+    [itemColorPicker, itemTextColorPicker, lineColorPicker].forEach((picker) => {
       if (!picker || picker === exceptPicker) return;
       setColorPickerOpen(picker, false);
     });
   }
 
   function closeColorPickersFromPointer(event) {
-    [itemColorPicker, lineColorPicker].forEach((picker) => {
+    [itemColorPicker, itemTextColorPicker, lineColorPicker].forEach((picker) => {
       if (!picker || picker.panel.hidden || !picker.root) return;
       if (picker.root.contains(event.target)) return;
       if (picker.panel.contains(event.target)) return;
@@ -1387,6 +1818,11 @@ import {
     applyItemColorFromControl();
   }
 
+  function handleItemTextColorInput() {
+    if (suppressControlEvents) return;
+    applyItemTextColorFromControl();
+  }
+
   function applyItemColorFromControl() {
     const item = getItem(selectedId);
     if (!item) return;
@@ -1399,6 +1835,20 @@ import {
     item.color = color;
     const changed = renderAllAfterMaybeChange(previousSnapshot);
     if (changed) setStatus("Item color updated");
+  }
+
+  function applyItemTextColorFromControl() {
+    const item = getItem(selectedId);
+    if (!item || item.type !== "note") return;
+    const color = normalizeColor(dom.itemTextColorInput.value || noteTextColor(item));
+    setColorPickerValue(itemTextColorPicker, color, { emit: false });
+    setColorPickerDisabled(itemTextColorPicker, false);
+    if (item.textColor === color) return;
+
+    const previousSnapshot = timelineDataSnapshot();
+    item.textColor = color;
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Note text color updated");
   }
 
   function renderLaneControls() {
@@ -1803,7 +2253,10 @@ import {
     const previousSnapshot = timelineDataSnapshot();
     const type = dom.itemTypeInput.value;
     item.type = type;
-    item.title = dom.itemTitleInput.value.trim() || titleForType(type);
+    const notes = dom.itemNotesInput.value;
+    item.title = type === "note"
+      ? noteTitleFromText(notes)
+      : dom.itemTitleInput.value.trim() || titleForType(type);
     item.lane = isGlobalTimelineItemType(type) ? 0 : clamp(Math.round(toNumber(dom.itemLaneInput.value, item.lane)), 0, 20);
     item.color = normalizeColor(dom.itemColorInput.value || TYPE_COLORS[type]);
     item.startDate = normalizeDateInput(dom.itemStartInput.value, item.startDate);
@@ -1811,7 +2264,12 @@ import {
     if (hasEndYear(type) && compareIso(item.endDate, item.startDate) <= 0) item.endDate = addDaysIso(item.startDate, 1);
     item.showAgeLabels = dom.itemAgeLabelsInput.checked;
     item.showDurationLabel = dom.itemDurationLabelInput.checked;
-    item.notes = dom.itemNotesInput.value;
+    item.notes = notes;
+    if (type === "note") {
+      item.textColor = normalizeColor(dom.itemTextColorInput.value || noteTextColor(item));
+    } else {
+      delete item.textColor;
+    }
 
     const changed = renderAllAfterMaybeChange(previousSnapshot);
     if (changed) setStatus("Item updated");
@@ -1849,21 +2307,21 @@ import {
     });
   }
 
-  function deleteSelectedItem() {
-    if (!selectedId) return;
-    const item = getItem(selectedId);
+  function deleteSelectedItem(itemId = selectedId) {
+    if (!itemId) return;
+    const item = getItem(itemId);
     if (!item) return;
     if (!canModifyItem(item, "delete it")) return;
     const ok = window.confirm(`Delete "${item.title}"?`);
     if (!ok) return;
-    timeline.items = timeline.items.filter((candidate) => candidate.id !== selectedId);
-    selectedId = null;
+    timeline.items = timeline.items.filter((candidate) => candidate.id !== item.id);
+    if (selectedId === item.id) selectedId = null;
     renderAll();
     setStatus("Item deleted");
   }
 
-  function copySelectedItem() {
-    const item = getItem(selectedId);
+  function copySelectedItem(itemId = selectedId) {
+    const item = getItem(itemId);
     if (!item) {
       setStatus("Select an item to copy");
       return false;
@@ -1915,8 +2373,8 @@ import {
     });
   }
 
-  function duplicateSelectedItem() {
-    const item = getItem(selectedId);
+  function duplicateSelectedItem(itemId = selectedId) {
+    const item = getItem(itemId);
     if (!item) return;
     if (!canModifyItem(item, "duplicate it")) return;
     const copy = {
@@ -2122,16 +2580,18 @@ import {
     }
     closeContextMenu();
 
+    const actionItemId = target.itemId || selectedId;
+
     if (action === "copy") {
-      copySelectedItem();
+      copySelectedItem(actionItemId);
     } else if (action === "paste") {
       pasteCopiedItem(target);
     } else if (action === "duplicate") {
-      duplicateSelectedItem();
+      duplicateSelectedItem(actionItemId);
     } else if (action === "lock-item") {
-      setSelectedItemLocked(true);
+      setSelectedItemLocked(true, actionItemId);
     } else if (action === "unlock-item") {
-      setSelectedItemLocked(false);
+      setSelectedItemLocked(false, actionItemId);
     } else if (action === "zoom-in") {
       zoomBy(20);
     } else if (action === "zoom-out") {
@@ -2139,7 +2599,7 @@ import {
     } else if (action === "fit") {
       fitTimelineToViewport();
     } else if (action === "delete") {
-      deleteSelectedItem();
+      deleteSelectedItem(actionItemId);
     }
   }
 
@@ -2153,8 +2613,8 @@ import {
     setStatus(`${titleForType(type)} added`);
   }
 
-  function setSelectedItemLocked(locked) {
-    const item = getItem(selectedId);
+  function setSelectedItemLocked(locked, itemId = selectedId) {
+    const item = getItem(itemId);
     if (!item) {
       setStatus("Select an item first");
       return;
@@ -2174,7 +2634,7 @@ import {
 
   function updateContextMenuItems() {
     if (!dom.timelineContextMenu) return;
-    const item = getItem(selectedId);
+    const item = getItem(contextMenuTarget?.itemId || selectedId);
     const hasSelection = Boolean(item);
     const allLocked = timeline.settings.itemsLocked;
     const itemLocked = Boolean(item?.locked);
@@ -2228,6 +2688,7 @@ import {
   function showContextMenuAt(clientX, clientY) {
     const menu = dom.timelineContextMenu;
     menu.hidden = false;
+    dom.timelineViewport.classList.add("context-menu-open");
     menu.style.visibility = "hidden";
     menu.style.left = "0px";
     menu.style.top = "0px";
@@ -2259,6 +2720,7 @@ import {
   function closeContextMenu() {
     if (!dom.timelineContextMenu) return;
     dom.timelineContextMenu.hidden = true;
+    dom.timelineViewport.classList.remove("context-menu-open");
     dom.timelineContextMenu.querySelectorAll(".context-menu-submenu.is-open").forEach((node) => {
       node.classList.remove("is-open");
       node.querySelector("[aria-expanded]")?.setAttribute("aria-expanded", "false");
@@ -2266,9 +2728,140 @@ import {
     contextMenuTarget = null;
   }
 
+  function openNoteEditorFromClickCount(event) {
+    if (event.detail < 2) return;
+    openNoteEditorFromDoubleClick(event);
+  }
+
+  function openNoteEditorFromDoubleClick(event) {
+    const editNode = event.target.closest?.("[data-note-edit], .item-note[data-item-id]");
+    const itemNode = editNode?.closest("[data-item-id]");
+    if (!itemNode) return;
+    const item = getItem(itemNode.dataset.itemId);
+    if (!item || item.type !== "note") return;
+    if (!canModifyItem(item, "edit it")) return;
+    event.preventDefault();
+    selectedId = item.id;
+    renderAll({ save: false });
+    openNoteInlineEditor(item.id);
+  }
+
+  function shouldOpenNoteEditorFromPointer(event, itemId) {
+    const now = Date.now();
+    const previous = lastNotePointerDown;
+    lastNotePointerDown = {
+      itemId,
+      time: now,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    };
+    if (!previous || previous.itemId !== itemId) return false;
+    const elapsed = now - previous.time;
+    const distance = Math.hypot(event.clientX - previous.clientX, event.clientY - previous.clientY);
+    if (elapsed > NOTE_DOUBLE_CLICK_MS || distance > NOTE_DOUBLE_CLICK_DISTANCE) return false;
+    lastNotePointerDown = null;
+    return true;
+  }
+
+  function openNoteInlineEditor(noteId) {
+    const item = getItem(noteId);
+    const layout = item ? lastNoteLayouts.get(noteId) : null;
+    if (!item || item.type !== "note" || !layout || !dom.noteInlineEditor) return;
+    editingNoteId = item.id;
+    editingNoteOriginalNotes = item.notes;
+    editingNoteOriginalDisplayText = noteText(item);
+    dom.noteInlineEditor.value = editingNoteOriginalDisplayText;
+    dom.noteInlineEditor.hidden = false;
+    updateNoteInlineEditorDirection();
+    positionNoteInlineEditor();
+    dom.noteInlineEditor.focus();
+    dom.noteInlineEditor.select();
+  }
+
+  function positionNoteInlineEditor() {
+    if (!editingNoteId || !dom.noteInlineEditor || dom.noteInlineEditor.hidden) return;
+    const item = getItem(editingNoteId);
+    const layout = item ? lastNoteLayouts.get(editingNoteId) : null;
+    if (!item || item.type !== "note" || !layout) {
+      closeNoteInlineEditor();
+      return;
+    }
+    dom.noteInlineEditor.style.left = `${layout.x}px`;
+    dom.noteInlineEditor.style.top = `${layout.y + NOTE_TIP_HEIGHT}px`;
+    dom.noteInlineEditor.style.width = `${layout.width}px`;
+    dom.noteInlineEditor.style.height = `${Math.max(NOTE_MIN_HEIGHT - NOTE_TIP_HEIGHT, layout.height - NOTE_TIP_HEIGHT)}px`;
+    dom.noteInlineEditor.style.color = noteTextColor(item);
+    dom.noteInlineEditor.style.background = item.color;
+  }
+
+  function updateNoteInlineEditorDirection() {
+    if (!dom.noteInlineEditor) return;
+    dom.noteInlineEditor.dir = textDirectionFor(dom.noteInlineEditor.value);
+  }
+
+  function handleNoteInlineEditorKeydown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelNoteInlineEditor();
+    } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      dom.noteInlineEditor.blur();
+    }
+  }
+
+  function commitNoteInlineEditor() {
+    if (!editingNoteId || !dom.noteInlineEditor) return;
+    const item = getItem(editingNoteId);
+    const value = dom.noteInlineEditor.value;
+    const shouldWrite = item && (
+      value !== editingNoteOriginalDisplayText ||
+      editingNoteOriginalNotes !== item.notes
+    );
+    closeNoteInlineEditor();
+    if (!item || item.type !== "note" || !shouldWrite) {
+      renderAll({ save: false });
+      return;
+    }
+    const previousSnapshot = timelineDataSnapshot();
+    item.notes = value;
+    item.title = noteTitleFromText(value);
+    selectedId = item.id;
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Note text updated");
+  }
+
+  function cancelNoteInlineEditor() {
+    closeNoteInlineEditor();
+    renderAll({ save: false });
+    setStatus("Note edit canceled");
+  }
+
+  function commitNoteInlineEditorFromPointer(event) {
+    if (!editingNoteId || !dom.noteInlineEditor || dom.noteInlineEditor.hidden) return;
+    if (event.target instanceof Element && event.target.closest("#noteInlineEditor")) return;
+    commitNoteInlineEditor();
+  }
+
+  function closeNoteInlineEditor() {
+    if (dom.noteInlineEditor) {
+      dom.noteInlineEditor.hidden = true;
+      dom.noteInlineEditor.value = "";
+      dom.noteInlineEditor.style.left = "";
+      dom.noteInlineEditor.style.top = "";
+      dom.noteInlineEditor.style.width = "";
+      dom.noteInlineEditor.style.height = "";
+      dom.noteInlineEditor.style.color = "";
+      dom.noteInlineEditor.style.background = "";
+    }
+    editingNoteId = null;
+    editingNoteOriginalNotes = "";
+    editingNoteOriginalDisplayText = "";
+  }
+
   function beginPointerDrag(event) {
     closeContextMenu();
     if (event.button !== 0) return;
+    if (event.target.closest?.("#noteInlineEditor")) return;
     const laneAddNode = event.target.closest("[data-timeline-lane-add]");
     if (laneAddNode) {
       event.preventDefault();
@@ -2293,6 +2886,7 @@ import {
     }
 
     const handle = event.target.closest(".resize-handle");
+    const noteDragNode = event.target.closest("[data-note-drag]");
     const itemNode = event.target.closest("[data-item-id]");
     if (!itemNode) {
       if (selectedId) {
@@ -2317,18 +2911,36 @@ import {
     const item = getItem(itemNode.dataset.itemId);
     if (!item) return;
     selectedId = item.id;
+    const noteDoubleClick = item.type === "note"
+      && noteDragNode
+      && !handle
+      && (event.detail >= 2 || shouldOpenNoteEditorFromPointer(event, item.id));
+    if (noteDoubleClick) {
+      event.preventDefault();
+      lastNotePointerDown = null;
+      if (!canModifyItem(item, "edit it")) {
+        renderAll({ save: false });
+        return;
+      }
+      renderAll({ save: false });
+      openNoteInlineEditor(item.id);
+      return;
+    }
     if (isItemReadOnly(item)) {
       renderAll({ save: false });
       event.preventDefault();
       return;
     }
     const point = svgPoint(event);
+    const mode = handle ? handle.dataset.handle : (noteDragNode ? "note-position" : "move");
+    const noteLayout = item.type === "note" ? lastNoteLayouts.get(item.id) : null;
     dragState = {
       pointerId: event.pointerId,
-      mode: handle ? handle.dataset.handle : "move",
+      mode,
       itemId: item.id,
       startPoint: point,
       original: { ...item },
+      startLayout: noteLayout ? { ...noteLayout, lines: noteLayout.lines.slice() } : null,
     };
     dom.timelineViewport.setPointerCapture(event.pointerId);
     renderAll({ save: false });
@@ -2369,7 +2981,11 @@ import {
     const minDate = timeline.settings.startDate;
     const maxDate = addDaysIso(timeline.settings.endDate, 1);
 
-    if (dragState.mode === "start") {
+    if (item.type === "note" && dragState.mode === "note-position") {
+      moveNoteBalloon(item, point, original, dragState.startLayout);
+    } else if (item.type === "note" && dragState.mode === "note-resize") {
+      resizeNoteBalloon(item, point, original, dragState.startLayout);
+    } else if (dragState.mode === "start") {
       const maxStart = addDaysIso(item.endDate, -minDurationDays());
       item.startDate = clampIso(snapDate(clampIso(addDaysIso(original.startDate, dxDays), minDate, maxStart)), minDate, maxStart);
     } else if (dragState.mode === "end") {
@@ -2396,9 +3012,51 @@ import {
     if (hasEndYear(item.type) && compareIso(item.endDate, item.startDate) <= 0) {
       item.endDate = addDaysIso(item.startDate, minDurationDays());
     }
-    applyLaneEdgeSnap(item, dragState.mode, original);
+    if (dragState.mode !== "note-position" && dragState.mode !== "note-resize") {
+      applyLaneEdgeSnap(item, dragState.mode, original);
+    }
     renderAll({ save: false });
     event.preventDefault();
+  }
+
+  function moveNoteBalloon(item, point, original, startLayout) {
+    const layout = startLayout || lastNoteLayouts.get(item.id);
+    if (!layout) return;
+    const dx = point.x - dragState.startPoint.x;
+    const dy = point.y - dragState.startPoint.y;
+    const contentWidth = currentContentWidth();
+    const rowHeight = timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT;
+    const baseY = noteBaseY(currentLaneCount(), rowHeight);
+    const nextX = clamp(layout.x + dx, 12, Math.max(12, contentWidth - layout.width - 12));
+    const nextY = Math.max(baseY, layout.y + dy);
+    const anchorX = dateToX(original.startDate);
+
+    item.startDate = original.startDate;
+    item.endDate = original.endDate;
+    item.lane = original.lane;
+    item.noteOffsetX = Math.round(nextX - anchorX);
+    item.noteOffsetY = Math.round(nextY - baseY);
+  }
+
+  function resizeNoteBalloon(item, point, original, startLayout) {
+    const layout = startLayout || lastNoteLayouts.get(item.id);
+    if (!layout) return;
+    const dx = point.x - dragState.startPoint.x;
+    const dy = point.y - dragState.startPoint.y;
+    const contentWidth = currentContentWidth();
+    const rowHeight = timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT;
+    const baseY = noteBaseY(currentLaneCount(), rowHeight);
+    const nextWidth = clamp(layout.width + dx, NOTE_MIN_WIDTH, Math.min(NOTE_MAX_WIDTH, Math.max(NOTE_MIN_WIDTH, contentWidth - layout.x - 12)));
+    const nextHeight = clamp(layout.height + dy, NOTE_MIN_HEIGHT, NOTE_MAX_HEIGHT);
+    const anchorX = dateToX(original.startDate);
+
+    item.startDate = original.startDate;
+    item.endDate = original.endDate;
+    item.lane = original.lane;
+    item.noteOffsetX = Math.round(layout.x - anchorX);
+    item.noteOffsetY = Math.round(layout.y - baseY);
+    item.noteWidth = Math.round(nextWidth);
+    item.noteHeight = Math.round(nextHeight);
   }
 
   function applyLaneEdgeSnap(item, mode, original) {
@@ -2595,7 +3253,13 @@ import {
       return;
     }
     renderAll({ save: dataMoved });
-    setStatus(dataMoved ? "Item moved" : "Item selected");
+    if (dataMoved && endedDrag.mode === "note-resize") {
+      setStatus("Note resized");
+    } else if (dataMoved && endedDrag.mode === "note-position") {
+      setStatus("Note moved");
+    } else {
+      setStatus(dataMoved ? "Item moved" : "Item selected");
+    }
   }
 
   function hasDraggedItemChanged(endedDrag) {
@@ -2604,7 +3268,11 @@ import {
     if (!item) return false;
     return item.startDate !== endedDrag.original.startDate
       || item.endDate !== endedDrag.original.endDate
-      || item.lane !== endedDrag.original.lane;
+      || item.lane !== endedDrag.original.lane
+      || item.noteOffsetX !== endedDrag.original.noteOffsetX
+      || item.noteOffsetY !== endedDrag.original.noteOffsetY
+      || item.noteWidth !== endedDrag.original.noteWidth
+      || item.noteHeight !== endedDrag.original.noteHeight;
   }
 
   function handleViewportWheel(event) {
@@ -2674,6 +3342,23 @@ import {
     const labels = ensureLaneLabels();
     const rowHeight = timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT;
     return clamp(Math.floor((point.y - AXIS_HEIGHT) / rowHeight), 0, labels.length - 1);
+  }
+
+  function currentLaneCount() {
+    return Math.max(
+      1,
+      timeline.settings.laneLabels.length,
+      ...timeline.items.map((item) => Math.max(0, Number(item.lane) + 1)),
+    );
+  }
+
+  function currentContentWidth() {
+    const renderedWidth = Number(dom.timelineSvg.getAttribute("width"));
+    if (Number.isFinite(renderedWidth) && renderedWidth > 0) return renderedWidth;
+    const contentEndDate = addDaysIso(timeline.settings.endDate, 1);
+    const timelineWidth = LEFT_GUTTER + daysBetween(timeline.settings.startDate, contentEndDate) * pixelsPerDay() + RIGHT_GUTTER;
+    const viewportWidth = Math.ceil(dom.timelineViewport.clientWidth || 0);
+    return Math.max(timelineWidth, viewportWidth);
   }
 
   function getItem(id) {

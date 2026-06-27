@@ -199,7 +199,25 @@ And visible axis labels do not overlap.
 Given a timeline has a line with events
 When the user creates a note on `2001-03-04`
 Then a leader arrow points to the correct date position
-And a balloon below all timeline lines displays the note title
+And the leader line is dotted and renders behind note balloons
+And the leader line is highlighted when the note is selected
+And a shaped balloon with a movable tip below all timeline lines displays the note text
+And the balloon tip leans toward the leader line when the balloon is offset from the note date
+And selected notes show selection around the balloon only, not around the leader line or anchor
+And multi-line note text wraps inside the balloon
+And the balloon text direction and alignment follow the typed language
+And notes created near each other automatically stack vertically to avoid overlapping
+And notes continue stacking vertically when the user zooms farther out
+And the user can drag the balloon to reposition it outside the timeline lines
+And the user can resize the selected note balloon with a compact corner grip
+And the user can double-click the balloon text or body to edit balloon text directly on the timeline
+And clicking outside the inline balloon text editor commits the edit
+And the sidebar provides a larger multi-line editor for the balloon text
+And the sidebar provides separate color controls for the note balloon and note text
+And note items do not expose a separate title field when editing
+And the app derives any internal note title from the first non-empty balloon text line
+And selecting the note does not append the line number to the selection heading
+And right-clicking a note keeps the selected note outline visible for context menu actions without adding a browser focus box
 And the note is still present after save/load.
 
 ### Create A Period
@@ -336,6 +354,8 @@ When the user presses `Ctrl+D` or `Command+D`
 Then the selected item is duplicated
 When the user presses `Delete` or `Backspace`
 Then the app asks before deleting the selected item
+But when the user is editing text in an editor field
+Then `Delete` and `Backspace` edit that text and do not delete the selected item
 When the user presses `Ctrl+Shift+L` or `Command+Shift+L`
 Then item locking toggles
 And command shortcuts do not run while the user is typing in an editor field.
