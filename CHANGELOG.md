@@ -31,6 +31,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Moved persistent boolean UI preference state into a shared React hook.
 - Extracted note item text, title, color, and sizing rules into `features/timeline-editor/items` with focused tests.
 - Extracted timeline context-menu action state rules into `features/timeline-editor/interactions` with focused tests.
+- Extracted period item derived age and duration metadata into `features/timeline-editor/items` with focused tests.
 
 ### Fixed
 

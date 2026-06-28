@@ -46,8 +46,6 @@ import {
   monthName,
 } from "../../timeline/formatters";
 import {
-  formatAgeAtDate,
-  formatCompactDateSpan,
   formatDetailedAgeAtDate,
   formatDetailedAgeValueAtDate,
   formatDetailedDateSpan,
@@ -107,6 +105,9 @@ import {
   noteTextColorForItem,
   noteTitleFromText,
 } from "./items/noteItem";
+import {
+  periodDerivedMeta,
+} from "./items/periodItem";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -760,17 +761,8 @@ import {
   }
 
   function getPeriodDerivedMeta(item, width) {
-    if (item.type !== "period") return null;
-    const showAges = item.showAgeLabels !== false && width >= 230;
-    const showDuration = item.showDurationLabel !== false && width >= 150;
-    if (!showAges && !showDuration) return null;
     const birthItem = getPrimaryBirthItem();
-    const meta = {
-      startAge: showAges && birthItem ? formatAgeAtDate(birthItem.startDate, item.startDate) : "",
-      endAge: showAges && birthItem ? formatAgeAtDate(birthItem.startDate, item.endDate) : "",
-      duration: showDuration ? formatCompactDateSpan(item.startDate, item.endDate) : "",
-    };
-    return meta.startAge || meta.endAge || meta.duration ? meta : null;
+    return periodDerivedMeta(item, width, birthItem?.startDate);
   }
 
   function getPrimaryBirthItem() {
