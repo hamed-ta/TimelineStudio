@@ -26,6 +26,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Split `TimelineEditor` into named feature components for the header, sidebar, toolbar, canvas shell, line editor popover, and info panel.
 - Moved PDF and SVG export helpers under `timeline/export` to match the feature-first source layout.
 - Added timeline editor action creators, selectors, and a reducer-backed hook factory with focused selector tests.
+- Extracted timeline coordinate, fit-zoom, snapping, and default-duration math into `features/timeline-editor/layout`.
 
 ### Fixed
 
@@ -36,7 +37,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Removed the browser focus outline from focusable SVG timeline items so right-clicking a note does not draw a large blue box around the note leader and balloon.
 
 ## 0.2.2 - 2026-06-27
-- Improved note balloon layout and editing"
+- Improved note balloon layout and editing.
 
 ## 0.2.1 - 2026-06-21
 

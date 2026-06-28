@@ -108,6 +108,8 @@ The fourteenth ADR 0009 implementation slice moved PDF and SVG export helpers in
 
 The fifteenth ADR 0009 implementation slice added `src/features/timeline-editor/timelineActions.ts`, `timelineSelectors.ts`, and `useTimelineEditor.ts`. The live runtime is still legacy-owned, but the reducer boundary now has action creators, selectors, and a hook factory ready for a later React state wiring slice. `timelineSelectors.test.js` covers selected-item lookup, earliest birth selection, lane count derivation, create/paste permission, and read-only state.
 
+The sixteenth ADR 0009 implementation slice extracted timeline coordinate conversion, fit-zoom calculation, snap rounding, minimum durations, and default end-date math into `src/features/timeline-editor/layout/timelineLayout.ts`. The legacy runtime still calls thin wrappers for DOM-specific state, but the reusable layout math now has focused tests in `timelineLayout.test.js`.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -445,6 +447,8 @@ Firebase should wait until the local Vite app is stable.
 - Thirteenth ADR 0009 component slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after splitting the header, sidebar, toolbar, canvas shell, line editor popover, and info panel into named feature components. Vite still reports the expected Ant Design chunk-size warning.
 - Fourteenth ADR 0009 structure slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving export helpers into `src/timeline/export`. Vite still reports the expected Ant Design chunk-size warning.
 - Fifteenth ADR 0009 reducer-support slice: `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after adding action creators, selectors, and `useTimelineEditor`. The test suite now has 47 passing tests. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/layout/timelineLayout.ts` did not exist yet.
+- Sixteenth ADR 0009 layout slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after extracting timeline coordinate, fit, snap, and duration helpers into `features/timeline-editor/layout`. The test suite now has 52 passing tests.
 
 ## Open Issues
 
@@ -456,8 +460,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: add timeline editor actions and selectors`
+`refactor: extract timeline layout math`
 
 ## Next Safe Step
 
-Continue ADR 0009 with another small pure extraction from `app.js`, or introduce the first reducer test for timeline mutations before moving state ownership into React.
+Continue ADR 0009 by moving canvas-facing shell files into the target `canvas/` folder or extracting another focused pure helper from the legacy runtime before moving state ownership into React.

@@ -61,7 +61,7 @@ Document and start the modular React timeline editor architecture migration.
 
 ## Next
 
-- Extract pure note layout, axis layout, edge snapping, and keyboard shortcut helpers from the legacy timeline editor controller.
+- Continue extracting pure timeline layout, rendering, and interaction helpers from the legacy timeline editor controller.
 - Add a `features/timeline-editor/` folder with reducer, action, selector, interaction, layout, component, canvas, and item boundaries.
 - Introduce timeline reducer tests or focused pure helper tests before moving more interactive behavior.
 - Start small UI polish slices in React while preserving the element IDs and behavior expected by the legacy timeline editor controller.
@@ -133,6 +133,7 @@ Document and start the modular React timeline editor architecture migration.
 - Added the app name/version footer.
 - Updated manual release dispatch for same-version release refreshes from main.
 - Accepted the modular React timeline editor architecture in ADR 0009.
+- Extracted timeline editor keyboard, edge-snap, axis, note-layout, date-span, color, reducer, selector, export, and timeline-layout boundaries as ADR 0009 migration slices.
 
 ## Risks
 

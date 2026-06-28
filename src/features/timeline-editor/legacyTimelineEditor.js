@@ -1,21 +1,16 @@
 import {
   addDaysIso,
   addMonthsIso,
-  addYearsIso,
   clamp,
   clampIso,
-  compareIso,
   daysBetween,
   isoDay,
   isoFromParts,
-  isoMonth,
   isoYear,
-  monthsBetween,
   normalizeDateInput,
   normalizeSnap,
   todayIso,
   toNumber,
-  yearStartIso,
 } from "../../timeline/dates";
 import {
   ITEM_COLOR_PALETTE,
@@ -85,6 +80,15 @@ import {
 import {
   canPlaceAxisLabel,
 } from "./layout/axisLayout";
+import {
+  defaultEndDateForSnap,
+  fitZoomForTimeline,
+  minDurationDaysForSnap,
+  snapTimelineDate,
+  timelineDateToX,
+  timelinePixelsPerDay,
+  timelineXToDate,
+} from "./layout/timelineLayout";
 import {
   findAvailableNoteY,
   noteBubblePath,
@@ -3137,9 +3141,15 @@ import {
   }
 
   function fitTimelineToViewport() {
-    const months = Math.max(1, monthsBetween(timeline.settings.startDate, addDaysIso(timeline.settings.endDate, 1)));
-    const available = Math.max(200, dom.timelineViewport.clientWidth - LEFT_GUTTER - RIGHT_GUTTER - 24);
-    const fittedZoom = clamp(available / months, MIN_ZOOM, MAX_ZOOM);
+    const fittedZoom = fitZoomForTimeline({
+      startDate: timeline.settings.startDate,
+      endDate: timeline.settings.endDate,
+      viewportWidth: dom.timelineViewport.clientWidth,
+      leftGutter: LEFT_GUTTER,
+      rightGutter: RIGHT_GUTTER,
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
+    });
     const readableZoom = Math.max(fittedZoom, FIT_MIN_ZOOM);
     setZoom(readableZoom);
     dom.timelineViewport.scrollLeft = 0;
@@ -3152,11 +3162,11 @@ import {
   }
 
   function dateToX(isoDate) {
-    return LEFT_GUTTER + daysBetween(timeline.settings.startDate, isoDate) * pixelsPerDay();
+    return timelineDateToX(isoDate, timeline.settings.startDate, LEFT_GUTTER, pixelsPerDay());
   }
 
   function xToDate(x) {
-    return addDaysIso(timeline.settings.startDate, Math.round((Number(x) - LEFT_GUTTER) / pixelsPerDay()));
+    return timelineXToDate(x, timeline.settings.startDate, LEFT_GUTTER, pixelsPerDay());
   }
 
   function svgPoint(event) {
@@ -3385,42 +3395,19 @@ import {
   }
 
   function pixelsPerDay() {
-    return zoom / AVG_DAYS_PER_MONTH;
+    return timelinePixelsPerDay(zoom, AVG_DAYS_PER_MONTH);
   }
 
   function snapDate(isoDate) {
-    const date = normalizeDateInput(isoDate, timeline.settings.startDate);
-    const snap = normalizeSnap(timeline.settings.snap);
-    if (snap === "year") {
-      const currentYear = isoYear(date);
-      const midYear = `${currentYear}-07-02`;
-      return yearStartIso(compareIso(date, midYear) < 0 ? currentYear : currentYear + 1);
-    }
-    if (snap === "month") {
-      const year = isoYear(date);
-      const month = isoMonth(date);
-      const day = isoDay(date);
-      return isoFromParts(month === 11 && day >= 16 ? year + 1 : year, day >= 16 ? (month + 1) % 12 : month, 1);
-    }
-    if (snap === "week") {
-      const days = daysBetween(timeline.settings.startDate, date);
-      return addDaysIso(timeline.settings.startDate, Math.round(days / 7) * 7);
-    }
-    return addDaysIso(timeline.settings.startDate, daysBetween(timeline.settings.startDate, date));
+    return snapTimelineDate(isoDate, timeline.settings.startDate, timeline.settings.snap);
   }
 
   function minDurationDays() {
-    if (timeline.settings.snap === "year") return 365;
-    if (timeline.settings.snap === "month") return 28;
-    if (timeline.settings.snap === "week") return 7;
-    return 1;
+    return minDurationDaysForSnap(timeline.settings.snap);
   }
 
   function defaultEndDate(startDate) {
-    if (timeline.settings.snap === "year") return addYearsIso(startDate, 1);
-    if (timeline.settings.snap === "week") return addDaysIso(startDate, 7);
-    if (timeline.settings.snap === "day") return addDaysIso(startDate, 1);
-    return addMonthsIso(startDate, 1);
+    return defaultEndDateForSnap(startDate, timeline.settings.snap);
   }
 
   function createId(prefix) {
