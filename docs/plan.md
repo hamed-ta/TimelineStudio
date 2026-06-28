@@ -139,6 +139,7 @@ Document and start the modular React timeline editor architecture migration.
 - Extracted note item display, color, finite-number, and sizing rules into `features/timeline-editor/items`.
 - Extracted context-menu action state rules into `features/timeline-editor/interactions`.
 - Extracted period item derived age and duration metadata into `features/timeline-editor/items`.
+- Extracted SVG text fitting, width estimation, and ID sanitizing helpers into `features/timeline-editor/canvas`.
 
 ## Risks
 

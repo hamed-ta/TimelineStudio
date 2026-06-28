@@ -32,6 +32,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Extracted note item text, title, color, and sizing rules into `features/timeline-editor/items` with focused tests.
 - Extracted timeline context-menu action state rules into `features/timeline-editor/interactions` with focused tests.
 - Extracted period item derived age and duration metadata into `features/timeline-editor/items` with focused tests.
+- Extracted SVG text fitting, width estimation, and safe ID helpers into `features/timeline-editor/canvas` with focused tests.
 
 ### Fixed
 

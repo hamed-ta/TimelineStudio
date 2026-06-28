@@ -120,6 +120,8 @@ The twentieth ADR 0009 implementation slice extracted context-menu action enable
 
 The twenty-first ADR 0009 implementation slice introduced `src/features/timeline-editor/items/periodItem.ts` for period derived age and duration metadata. The legacy SVG renderer still draws labels, but the label visibility and value calculation are now pure and tested in `periodItem.test.js`.
 
+The twenty-second ADR 0009 implementation slice extracted SVG text fitting, text-width estimation, and generated-ID sanitizing into `src/features/timeline-editor/canvas/svgText.ts`. The legacy renderer still creates SVG DOM nodes, but shared canvas text/id helpers are now pure and tested in `svgText.test.js`.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -465,6 +467,7 @@ Firebase should wait until the local Vite app is stable.
 - Nineteenth ADR 0009 item slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving note item text, title, color, finite-number, and sizing rules into `features/timeline-editor/items`. The test suite now has 57 passing tests.
 - Twentieth ADR 0009 interaction slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving context-menu action state derivation into `features/timeline-editor/interactions`. The test suite now has 61 passing tests.
 - Twenty-first ADR 0009 item slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving period derived label metadata into `features/timeline-editor/items`. The test suite now has 65 passing tests.
+- Twenty-second ADR 0009 canvas slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving SVG text/id helpers into `features/timeline-editor/canvas`. The test suite now has 68 passing tests.
 
 ## Open Issues
 
@@ -476,7 +479,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract period item helpers`
+`refactor: extract svg text helpers`
 
 ## Next Safe Step
 

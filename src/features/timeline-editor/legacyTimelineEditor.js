@@ -71,6 +71,11 @@ import {
   deriveTimelineContextMenuState,
 } from "./interactions/contextMenu";
 import {
+  estimateSvgTextWidth,
+  fitSvgText,
+  safeSvgId,
+} from "./canvas/svgText";
+import {
   isEditableShortcutTarget,
 } from "./interactions/keyboardShortcuts";
 import {
@@ -548,7 +553,7 @@ import {
     const cellWidth = Math.max(0, dateToX(cellEndDate) - x);
     const centerX = x + cellWidth / 2;
     const label = String(isoDay(date));
-    const width = estimateSvgTextWidth(label);
+    const width = estimateSvgTextWidth(label, AXIS_LABEL_CHAR_WIDTH);
     if (cellWidth >= 4 && canPlaceAxisLabel({ centerX, width, lastLabelEnd, gap: AXIS_DAY_LABEL_GAP })) {
       svg.append(svgEl("text", { class: "axis-day", x: centerX, y: 105, "text-anchor": "middle" }, label));
       return centerX + width / 2;
@@ -563,7 +568,10 @@ import {
     const centerX = x + cellWidth / 2;
     const gregorian = monthName(date);
     const iranian = iranianMonthName(date);
-    const stackedWidth = Math.max(estimateSvgTextWidth(gregorian), estimateSvgTextWidth(iranian));
+    const stackedWidth = Math.max(
+      estimateSvgTextWidth(gregorian, AXIS_LABEL_CHAR_WIDTH),
+      estimateSvgTextWidth(iranian, AXIS_LABEL_CHAR_WIDTH),
+    );
     const gregorianY = hasDayLabels ? 58 : 78;
     const iranianY = hasDayLabels ? 74 : 96;
     const compactY = hasDayLabels ? 72 : 88;
@@ -579,7 +587,7 @@ import {
       return centerX + stackedWidth / 2;
     }
 
-    const compactWidth = estimateSvgTextWidth(gregorian);
+    const compactWidth = estimateSvgTextWidth(gregorian, AXIS_LABEL_CHAR_WIDTH);
     if (cellWidth >= compactWidth + 12 && canPlaceAxisLabel({
       centerX,
       width: compactWidth,
@@ -617,7 +625,7 @@ import {
       [-7, 0, 7].forEach((offset) => {
         group.append(svgEl("circle", { class: "lane-label-grip", cx: 18, cy: centerY + offset, r: 1.7 }));
       });
-      group.append(svgEl("text", { class: "lane-label", x: 28, y: centerY + 4 }, fitText(label, LEFT_GUTTER - 66)));
+      group.append(svgEl("text", { class: "lane-label", x: 28, y: centerY + 4 }, fitSvgText(label, LEFT_GUTTER - 66, AXIS_LABEL_CHAR_WIDTH)));
       svg.append(group);
     }
     const addY = AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT / 2;
@@ -716,7 +724,7 @@ import {
 
     const periodMeta = getPeriodDerivedMeta(item, width);
     const titleY = periodMeta ? y - 2 : y + 5;
-    const label = fitText(item.title, width - 16);
+    const label = fitSvgText(item.title, width - 16, AXIS_LABEL_CHAR_WIDTH);
     group.append(
       svgEl("text", {
         class: "title-label",
@@ -813,7 +821,7 @@ import {
         "marker-end": `url(#${markerId})`,
       }),
     );
-    group.append(svgEl("text", { class: "note-label", x: x1 + 8, y: y - 11 }, fitText(item.title, Math.max(80, x2 - x1 - 20))));
+    group.append(svgEl("text", { class: "note-label", x: x1 + 8, y: y - 11 }, fitSvgText(item.title, Math.max(80, x2 - x1 - 20), AXIS_LABEL_CHAR_WIDTH)));
   }
 
   function drawEvent(group, defs, item, x, y) {
@@ -854,7 +862,7 @@ import {
   function drawBirth(group, item, x, laneAreaBottom) {
     const y1 = AXIS_HEIGHT - 8;
     const y2 = laneAreaBottom;
-    const label = fitText(item.title || titleForType("birth"), 116);
+    const label = fitSvgText(item.title || titleForType("birth"), 116, AXIS_LABEL_CHAR_WIDTH);
     const labelWidth = Math.max(70, label.length * 7.2 + 22);
     const labelX = Math.max(8, x - labelWidth - 10);
     const labelY = AXIS_HEIGHT + 10;
@@ -1120,7 +1128,7 @@ import {
     if (!noteMeasureContext) {
       noteMeasureContext = document.createElement("canvas").getContext("2d");
     }
-    if (!noteMeasureContext) return estimateSvgTextWidth(value);
+    if (!noteMeasureContext) return estimateSvgTextWidth(value, AXIS_LABEL_CHAR_WIDTH);
     if (!noteMeasureFont) {
       const rootStyle = getComputedStyle(document.documentElement);
       noteMeasureFont = `700 13px ${rootStyle.fontFamily || "sans-serif"}`;
@@ -3320,19 +3328,6 @@ import {
     return node;
   }
 
-  function fitText(text, maxWidth) {
-    const value = String(text || "");
-    if (maxWidth <= 0) return "";
-    const estimatedWidth = estimateSvgTextWidth(value);
-    if (estimatedWidth <= maxWidth) return value;
-    const maxChars = Math.max(3, Math.floor(maxWidth / AXIS_LABEL_CHAR_WIDTH) - 3);
-    return `${value.slice(0, maxChars)}...`;
-  }
-
-  function estimateSvgTextWidth(text) {
-    return String(text || "").length * AXIS_LABEL_CHAR_WIDTH;
-  }
-
   function randomPaletteColor() {
     if (!ITEM_COLOR_PALETTE.length) return TYPE_COLORS.event;
     let index = randomIndex(ITEM_COLOR_PALETTE.length);
@@ -3371,10 +3366,6 @@ import {
   function createId(prefix) {
     if (window.crypto && crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
     return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  function safeSvgId(value) {
-    return String(value).replace(/[^a-zA-Z0-9_-]/g, "-");
   }
 
   function filenameBase() {
