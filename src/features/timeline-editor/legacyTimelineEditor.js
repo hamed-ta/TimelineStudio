@@ -70,6 +70,9 @@ import {
   loadImage,
 } from "../../platform/media";
 import {
+  deriveTimelineContextMenuState,
+} from "./interactions/contextMenu";
+import {
   isEditableShortcutTarget,
 } from "./interactions/keyboardShortcuts";
 import {
@@ -2476,24 +2479,15 @@ import {
   function updateContextMenuItems() {
     if (!dom.timelineContextMenu) return;
     const item = getItem(contextMenuTarget?.itemId || selectedId);
-    const hasSelection = Boolean(item);
-    const allLocked = timeline.settings.itemsLocked;
-    const itemLocked = Boolean(item?.locked);
-    const canModifySelection = hasSelection && !allLocked && !itemLocked;
-    const canAdd = !allLocked;
-    setContextMenuActionState("add-menu", { disabled: !canAdd });
-    setContextMenuAddState({ disabled: !canAdd });
-    setContextMenuActionState("copy", { disabled: !hasSelection });
-    setContextMenuActionState("paste", { disabled: !copiedItem || allLocked });
-    setContextMenuActionState("duplicate", { disabled: !canModifySelection });
-    setContextMenuActionState("delete", { disabled: !canModifySelection });
-    setContextMenuActionState("lock-item", {
-      disabled: !hasSelection,
-      hidden: itemLocked,
+    const menuState = deriveTimelineContextMenuState({
+      hasSelection: Boolean(item),
+      allItemsLocked: timeline.settings.itemsLocked,
+      selectedItemLocked: Boolean(item?.locked),
+      hasCopiedItem: Boolean(copiedItem),
     });
-    setContextMenuActionState("unlock-item", {
-      disabled: !hasSelection,
-      hidden: !itemLocked,
+    setContextMenuAddState({ disabled: menuState.addItemsDisabled });
+    Object.entries(menuState.actions).forEach(([action, state]) => {
+      setContextMenuActionState(action, state);
     });
   }
 

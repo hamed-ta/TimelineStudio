@@ -116,6 +116,8 @@ The eighteenth ADR 0009 implementation slice extracted reusable browser-storage-
 
 The nineteenth ADR 0009 implementation slice introduced `src/features/timeline-editor/items/noteItem.ts` for note display text, derived titles, text color, border color, finite-number checks, and size calculation. The legacy SVG renderer still draws notes, but note-specific pure behavior now lives in the feature `items` boundary with tests in `noteItem.test.js`.
 
+The twentieth ADR 0009 implementation slice extracted context-menu action enablement, hidden-state, and add-item disabled rules into `src/features/timeline-editor/interactions/contextMenu.ts`. The legacy runtime still owns DOM placement and event dispatch, but menu capability calculation is now pure and tested in `contextMenu.test.js`.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -459,6 +461,7 @@ Firebase should wait until the local Vite app is stable.
 - Eighteenth ADR 0009 shared-hook slice: extracted persistent boolean UI preference state into `src/shared/hooks/usePersistentBoolean.ts`.
 - RED: `npm test` first failed because the note item helper pulled in a runtime `model.ts` import whose internal extensionless imports are not resolvable by the Node strip-types runner.
 - Nineteenth ADR 0009 item slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving note item text, title, color, finite-number, and sizing rules into `features/timeline-editor/items`. The test suite now has 57 passing tests.
+- Twentieth ADR 0009 interaction slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving context-menu action state derivation into `features/timeline-editor/interactions`. The test suite now has 61 passing tests.
 
 ## Open Issues
 
@@ -470,7 +473,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract note item helpers`
+`refactor: extract context menu state`
 
 ## Next Safe Step
 

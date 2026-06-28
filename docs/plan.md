@@ -137,6 +137,7 @@ Document and start the modular React timeline editor architecture migration.
 - Moved the timeline SVG shell into the ADR 0009 `features/timeline-editor/canvas` boundary.
 - Extracted persistent boolean UI preference state into `src/shared/hooks`.
 - Extracted note item display, color, finite-number, and sizing rules into `features/timeline-editor/items`.
+- Extracted context-menu action state rules into `features/timeline-editor/interactions`.
 
 ## Risks
 
