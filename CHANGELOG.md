@@ -27,6 +27,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Moved PDF and SVG export helpers under `timeline/export` to match the feature-first source layout.
 - Added timeline editor action creators, selectors, and a reducer-backed hook factory with focused selector tests.
 - Extracted timeline coordinate, fit-zoom, snapping, and default-duration math into `features/timeline-editor/layout`.
+- Moved the timeline SVG shell into `features/timeline-editor/canvas` to match the feature-first source layout.
 
 ### Fixed
 

@@ -110,6 +110,8 @@ The fifteenth ADR 0009 implementation slice added `src/features/timeline-editor/
 
 The sixteenth ADR 0009 implementation slice extracted timeline coordinate conversion, fit-zoom calculation, snap rounding, minimum durations, and default end-date math into `src/features/timeline-editor/layout/timelineLayout.ts`. The legacy runtime still calls thin wrappers for DOM-specific state, but the reusable layout math now has focused tests in `timelineLayout.test.js`.
 
+The seventeenth ADR 0009 implementation slice moved the React timeline SVG shell from `components/TimelineCanvas.tsx` into `src/features/timeline-editor/canvas/TimelineCanvas.tsx`. The markup, DOM IDs, and legacy runtime bindings are unchanged.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -449,6 +451,7 @@ Firebase should wait until the local Vite app is stable.
 - Fifteenth ADR 0009 reducer-support slice: `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after adding action creators, selectors, and `useTimelineEditor`. The test suite now has 47 passing tests. Vite still reports the expected Ant Design chunk-size warning.
 - RED: `npm test` failed because `src/features/timeline-editor/layout/timelineLayout.ts` did not exist yet.
 - Sixteenth ADR 0009 layout slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after extracting timeline coordinate, fit, snap, and duration helpers into `features/timeline-editor/layout`. The test suite now has 52 passing tests.
+- Seventeenth ADR 0009 canvas structure slice: moved `TimelineCanvas` into `features/timeline-editor/canvas` without changing legacy DOM bridge IDs.
 
 ## Open Issues
 
@@ -460,7 +463,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract timeline layout math`
+`refactor: move timeline canvas shell`
 
 ## Next Safe Step
 

@@ -134,6 +134,7 @@ Document and start the modular React timeline editor architecture migration.
 - Updated manual release dispatch for same-version release refreshes from main.
 - Accepted the modular React timeline editor architecture in ADR 0009.
 - Extracted timeline editor keyboard, edge-snap, axis, note-layout, date-span, color, reducer, selector, export, and timeline-layout boundaries as ADR 0009 migration slices.
+- Moved the timeline SVG shell into the ADR 0009 `features/timeline-editor/canvas` boundary.
 
 ## Risks
 

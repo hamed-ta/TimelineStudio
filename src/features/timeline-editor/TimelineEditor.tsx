@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { TimelineCanvas } from "./canvas/TimelineCanvas";
 import { EditorSidebar } from "./components/EditorSidebar";
 import { LineEditorPopover } from "./components/LineEditorPopover";
-import { TimelineCanvas } from "./components/TimelineCanvas";
 import { TimelineContextMenu } from "./components/TimelineContextMenu";
 import { TimelineHeader } from "./components/TimelineHeader";
 import { TimelineInfoPanel } from "./components/TimelineInfoPanel";
