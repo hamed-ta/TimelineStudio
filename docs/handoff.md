@@ -84,6 +84,8 @@ The second ADR 0009 implementation slice extracted same-line edge-snap primitive
 
 The third ADR 0009 implementation slice extracted the axis label collision helper into `src/features/timeline-editor/layout/axisLayout.ts`. `app.js` still owns SVG label drawing for now, but month and day label placement now delegates the pure collision check to the feature layout module. `src/features/timeline-editor/layout/axisLayout.test.js` covers allowed, blocked, and exactly-at-gap placement.
 
+The fourth ADR 0009 implementation slice extracted note stacking collision helpers into `src/features/timeline-editor/layout/noteLayout.ts`. `app.js` still owns note sizing, text wrapping, and SVG drawing, but automatic vertical stacking now delegates `findAvailableNoteY` to the feature layout module. `src/features/timeline-editor/layout/noteLayout.test.js` covers gap-based rectangle overlap, non-overlap at touching edges, and stacking through one or more blockers.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -403,6 +405,8 @@ Firebase should wait until the local Vite app is stable.
 - Second ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving edge-snap primitives into `features/timeline-editor/interactions`. Vite still reports the expected Ant Design chunk-size warning.
 - RED: `npm test` failed because `src/features/timeline-editor/layout/axisLayout.ts` did not exist yet.
 - Third ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving axis label collision checking into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/layout/noteLayout.ts` did not exist yet.
+- Fourth ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving note stacking collision helpers into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
 
 ## Open Issues
 

@@ -68,6 +68,9 @@ import {
 import {
   canPlaceAxisLabel,
 } from "./src/features/timeline-editor/layout/axisLayout";
+import {
+  findAvailableNoteY,
+} from "./src/features/timeline-editor/layout/noteLayout";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -1043,7 +1046,7 @@ import {
         const x = clamp(rawX, 12, Math.max(12, contentWidth - size.width - 12));
         const y = finiteNumber(item.noteOffsetY)
           ? baseY + Number(item.noteOffsetY)
-          : findAvailableNoteY({ x, y: baseY, width: size.width, height: size.height }, placedLayouts, baseY);
+          : findAvailableNoteY({ x, y: baseY, width: size.width, height: size.height }, placedLayouts, baseY, NOTE_STACK_GAP);
         const layout = {
           itemId: item.id,
           anchorX,
@@ -1157,23 +1160,6 @@ import {
     return String(text || "")
       .split(/\r?\n/)
       .reduce((max, line) => Math.max(max, measureNoteTextWidth(line)), 0);
-  }
-
-  function findAvailableNoteY(rect, placedLayouts, baseY) {
-    const candidate = { ...rect, y: baseY };
-    for (let attempt = 0; attempt < 200; attempt += 1) {
-      const blocker = placedLayouts.find((layout) => noteRectsOverlap(candidate, layout));
-      if (!blocker) return candidate.y;
-      candidate.y = blocker.y + blocker.height + NOTE_STACK_GAP;
-    }
-    return candidate.y;
-  }
-
-  function noteRectsOverlap(a, b) {
-    return a.x < b.x + b.width + NOTE_STACK_GAP
-      && a.x + a.width + NOTE_STACK_GAP > b.x
-      && a.y < b.y + b.height + NOTE_STACK_GAP
-      && a.y + a.height + NOTE_STACK_GAP > b.y;
   }
 
   function drawNoteText(group, layout) {

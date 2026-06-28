@@ -14,6 +14,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Started the modular architecture migration by extracting the editable-shortcut guard into `features/timeline-editor/interactions` and adding a focused `npm test` command.
 - Extracted same-line edge-snap primitives into `features/timeline-editor/interactions` with focused unit tests.
 - Extracted the axis label collision helper into `features/timeline-editor/layout` with focused unit tests.
+- Extracted note stacking collision helpers into `features/timeline-editor/layout` with focused unit tests.
 
 ### Fixed
 
