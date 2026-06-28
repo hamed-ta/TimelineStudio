@@ -41,6 +41,13 @@ import {
   monthName,
 } from "./src/timeline/formatters";
 import {
+  formatAgeAtDate,
+  formatCompactDateSpan,
+  formatDetailedAgeAtDate,
+  formatDetailedAgeValueAtDate,
+  formatDetailedDateSpan,
+} from "./src/timeline/dateSpans";
+import {
   buildPdfFromJpeg,
 } from "./src/timeline/pdf";
 import {
@@ -746,60 +753,6 @@ import {
     return timeline.items
       .filter((item) => item.type === "birth")
       .sort((a, b) => compareIso(a.startDate, b.startDate))[0] || null;
-  }
-
-  function formatAgeAtDate(birthDate, targetDate) {
-    if (compareIso(targetDate, birthDate) < 0) return "Before birth";
-    return `Age ${formatCompactDateSpan(birthDate, targetDate)}`;
-  }
-
-  function formatDetailedAgeAtDate(birthDate, targetDate) {
-    if (compareIso(targetDate, birthDate) < 0) return "Before birth";
-    return `Age ${formatDetailedDateSpan(birthDate, targetDate)}`;
-  }
-
-  function formatDetailedAgeValueAtDate(birthDate, targetDate) {
-    if (compareIso(targetDate, birthDate) < 0) return "before birth";
-    return formatDetailedDateSpan(birthDate, targetDate);
-  }
-
-  function formatCompactDateSpan(startDate, endDate) {
-    if (compareIso(endDate, startDate) < 0) return "before";
-    const span = getDateSpanParts(startDate, endDate);
-    const parts = [];
-    if (span.years) parts.push(`${span.years}y`);
-    if (span.months) parts.push(`${span.months}m`);
-    if (span.days || parts.length === 0) parts.push(`${span.days}d`);
-    return parts.join(" ");
-  }
-
-  function formatDetailedDateSpan(startDate, endDate) {
-    if (compareIso(endDate, startDate) < 0) return "before";
-    const span = getDateSpanParts(startDate, endDate);
-    const parts = [];
-    if (span.years) parts.push(`${span.years} ${span.years === 1 ? "year" : "years"}`);
-    if (span.months) parts.push(`${span.months} ${span.months === 1 ? "month" : "months"}`);
-    if (span.days || parts.length === 0) parts.push(`${span.days} ${span.days === 1 ? "day" : "days"}`);
-    return parts.join(", ");
-  }
-
-  function getDateSpanParts(startDate, endDate) {
-    let years = isoYear(endDate) - isoYear(startDate);
-    let months = isoMonth(endDate) - isoMonth(startDate);
-    let days = isoDay(endDate) - isoDay(startDate);
-    if (days < 0) {
-      months -= 1;
-      days += daysInIsoMonth(isoYear(endDate), isoMonth(endDate) - 1);
-    }
-    if (months < 0) {
-      years -= 1;
-      months += 12;
-    }
-    return { years: Math.max(0, years), months: Math.max(0, months), days: Math.max(0, days) };
-  }
-
-  function daysInIsoMonth(year, monthIndex) {
-    return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
   }
 
   function updateHoverReadout(event) {

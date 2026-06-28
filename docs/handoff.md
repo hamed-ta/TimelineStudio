@@ -90,6 +90,8 @@ The fifth ADR 0009 implementation slice extracted note bubble SVG path geometry 
 
 The sixth ADR 0009 implementation slice extracted note text wrapping, truncation, text direction, and first-baseline calculations into `src/features/timeline-editor/layout/noteLayout.ts`. `app.js` still owns browser text measurement and note drawing, but injects the measurement callback into the pure helper functions. `noteLayout.test.js` covers measured wrapping, long-word splitting, visible-line truncation, fitted ellipsis text, RTL/LTR detection, and baseline centering.
 
+The seventh ADR 0009 implementation slice extracted age and date-span formatting into `src/timeline/dateSpans.ts`. `app.js` still decides which selected or hovered item needs age context, but now imports the pure span formatters used by period labels and the timeline info panel. `dateSpans.test.js` covers borrowed month/day spans, compact and detailed labels, reversed ranges, age labels, and before-birth output.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -415,6 +417,8 @@ Firebase should wait until the local Vite app is stable.
 - Fifth ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving note bubble SVG path geometry into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
 - RED: `npm test` failed because `src/features/timeline-editor/layout/noteLayout.ts` did not export `fitNoteText`.
 - Sixth ADR 0009 extraction slice: `npm test` passed after moving note text wrapping, truncation, text direction, and first-baseline helpers into `features/timeline-editor/layout`.
+- RED: `npm test` failed because `src/timeline/dateSpans.ts` did not exist yet.
+- Seventh ADR 0009 extraction slice: `npm test` passed after moving age and date-span formatting into `src/timeline/dateSpans.ts`.
 
 ## Open Issues
 
@@ -426,7 +430,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract note text layout helpers`
+`refactor: extract date span formatters`
 
 ## Next Safe Step
 
