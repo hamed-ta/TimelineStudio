@@ -114,6 +114,8 @@ The seventeenth ADR 0009 implementation slice moved the React timeline SVG shell
 
 The eighteenth ADR 0009 implementation slice extracted reusable browser-storage-backed boolean state into `src/shared/hooks/usePersistentBoolean.ts`. `TimelineEditor.tsx` now uses the shared hook for sidebar and toolbar collapse preferences instead of owning local storage helpers directly.
 
+The nineteenth ADR 0009 implementation slice introduced `src/features/timeline-editor/items/noteItem.ts` for note display text, derived titles, text color, border color, finite-number checks, and size calculation. The legacy SVG renderer still draws notes, but note-specific pure behavior now lives in the feature `items` boundary with tests in `noteItem.test.js`.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -455,6 +457,8 @@ Firebase should wait until the local Vite app is stable.
 - Sixteenth ADR 0009 layout slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after extracting timeline coordinate, fit, snap, and duration helpers into `features/timeline-editor/layout`. The test suite now has 52 passing tests.
 - Seventeenth ADR 0009 canvas structure slice: moved `TimelineCanvas` into `features/timeline-editor/canvas` without changing legacy DOM bridge IDs.
 - Eighteenth ADR 0009 shared-hook slice: extracted persistent boolean UI preference state into `src/shared/hooks/usePersistentBoolean.ts`.
+- RED: `npm test` first failed because the note item helper pulled in a runtime `model.ts` import whose internal extensionless imports are not resolvable by the Node strip-types runner.
+- Nineteenth ADR 0009 item slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving note item text, title, color, finite-number, and sizing rules into `features/timeline-editor/items`. The test suite now has 57 passing tests.
 
 ## Open Issues
 
@@ -466,7 +470,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract persistent boolean hook`
+`refactor: extract note item helpers`
 
 ## Next Safe Step
 

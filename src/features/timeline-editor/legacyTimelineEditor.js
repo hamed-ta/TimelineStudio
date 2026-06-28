@@ -95,8 +95,15 @@ import {
   noteTextFirstBaseline,
   textDirectionFor,
   wrapNoteText,
-  wrapNoteTextLines,
 } from "./layout/noteLayout";
+import {
+  hasFiniteNumber,
+  noteBorderColor,
+  noteDisplayText,
+  noteSizeForItem,
+  noteTextColorForItem,
+  noteTitleFromText,
+} from "./items/noteItem";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -1012,14 +1019,15 @@ import {
       .sort((a, b) => compareIso(a.startDate, b.startDate) || a.lane - b.lane || String(a.id).localeCompare(String(b.id)))
       .forEach((item) => {
         const anchorX = dateToX(item.startDate);
-        const size = noteSize(item);
-        const rawX = finiteNumber(item.noteOffsetX)
+        const size = noteSizeForItem(item, noteSizeOptions());
+        const rawX = hasFiniteNumber(item.noteOffsetX)
           ? anchorX + Number(item.noteOffsetX)
           : anchorX - size.width / 2;
         const x = clamp(rawX, 12, Math.max(12, contentWidth - size.width - 12));
-        const y = finiteNumber(item.noteOffsetY)
+        const y = hasFiniteNumber(item.noteOffsetY)
           ? baseY + Number(item.noteOffsetY)
           : findAvailableNoteY({ x, y: baseY, width: size.width, height: size.height }, placedLayouts, baseY, NOTE_STACK_GAP);
+        const text = noteDisplayText(item);
         const layout = {
           itemId: item.id,
           anchorX,
@@ -1027,10 +1035,10 @@ import {
           y,
           width: size.width,
           height: size.height,
-          text: noteText(item),
-          textColor: noteTextColor(item),
-          direction: textDirectionFor(noteText(item)),
-          lines: wrapNoteText(noteText(item), size.width - NOTE_PADDING_X * 2, size.height, textLayoutOptions),
+          text,
+          textColor: noteTextColorForItem(item),
+          direction: textDirectionFor(text),
+          lines: wrapNoteText(text, size.width - NOTE_PADDING_X * 2, size.height, textLayoutOptions),
           tipX: clamp(anchorX, x + NOTE_TIP_HALF_WIDTH + 10, x + size.width - NOTE_TIP_HALF_WIDTH - 10),
           tipY: y,
         };
@@ -1053,54 +1061,28 @@ import {
     return AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT + NOTE_AREA_TOP_GAP;
   }
 
-  function noteSize(item) {
-    const text = noteText(item);
-    const naturalWidth = Math.min(
-      NOTE_MAX_WIDTH,
-      Math.max(NOTE_DEFAULT_WIDTH, longestNoteLineWidth(text) + NOTE_PADDING_X * 2),
-    );
-    const width = clamp(
-      finiteNumber(item.noteWidth) ? Number(item.noteWidth) : naturalWidth,
-      NOTE_MIN_WIDTH,
-      NOTE_MAX_WIDTH,
-    );
-    const naturalLineCount = wrapNoteTextLines(text, width - NOTE_PADDING_X * 2, measureNoteTextWidth).length;
-    const naturalHeight = NOTE_TIP_HEIGHT + NOTE_TEXT_VERTICAL_PADDING * 2 + naturalLineCount * NOTE_LINE_HEIGHT;
-    const height = clamp(
-      finiteNumber(item.noteHeight) ? Number(item.noteHeight) : Math.max(NOTE_DEFAULT_HEIGHT, naturalHeight),
-      NOTE_MIN_HEIGHT,
-      NOTE_MAX_HEIGHT,
-    );
-    return { width, height };
-  }
-
-  function noteText(item) {
-    return String(item.notes || item.title || titleForType("note")).trim() || titleForType("note");
-  }
-
-  function noteTitleFromText(text) {
-    const firstLine = String(text || "")
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .find(Boolean);
-    if (!firstLine) return titleForType("note");
-    return firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
-  }
-
-  function noteTextColor(item) {
-    return normalizeOptionalColor(item.textColor) || readableTextColor(item.color);
-  }
-
-  function noteBorderColor(color) {
-    return adjustColor(color, 34);
-  }
-
   function noteBubblePathOptions(pad = 0) {
     return {
       tipHeight: NOTE_TIP_HEIGHT,
       tipHalfWidth: NOTE_TIP_HALF_WIDTH,
       tipMaxLean: NOTE_TIP_MAX_LEAN,
       pad,
+    };
+  }
+
+  function noteSizeOptions() {
+    return {
+      defaultWidth: NOTE_DEFAULT_WIDTH,
+      defaultHeight: NOTE_DEFAULT_HEIGHT,
+      minWidth: NOTE_MIN_WIDTH,
+      maxWidth: NOTE_MAX_WIDTH,
+      minHeight: NOTE_MIN_HEIGHT,
+      maxHeight: NOTE_MAX_HEIGHT,
+      paddingX: NOTE_PADDING_X,
+      tipHeight: NOTE_TIP_HEIGHT,
+      textVerticalPadding: NOTE_TEXT_VERTICAL_PADDING,
+      lineHeight: NOTE_LINE_HEIGHT,
+      measureText: measureNoteTextWidth,
     };
   }
 
@@ -1112,12 +1094,6 @@ import {
       lineHeight: NOTE_LINE_HEIGHT,
       measureText: measureNoteTextWidth,
     };
-  }
-
-  function longestNoteLineWidth(text) {
-    return String(text || "")
-      .split(/\r?\n/)
-      .reduce((max, line) => Math.max(max, measureNoteTextWidth(line)), 0);
   }
 
   function drawNoteText(group, layout) {
@@ -1156,10 +1132,6 @@ import {
     }
     noteMeasureContext.font = noteMeasureFont;
     return noteMeasureContext.measureText(value).width;
-  }
-
-  function finiteNumber(value) {
-    return Number.isFinite(Number(value));
   }
 
   function updateMeta() {
@@ -1226,7 +1198,7 @@ import {
   function formatSelectedItemTitle(item) {
     const lineText = isGlobalTimelineItemType(item.type) || item.type === "note" ? "" : ` - Line ${item.lane + 1}`;
     const lockedText = item.locked ? "Locked - " : "";
-    const title = item.type === "note" ? noteTitleFromText(noteText(item)) : item.title;
+    const title = item.type === "note" ? noteTitleFromText(noteDisplayText(item)) : item.title;
     return `${lockedText}${itemTypeLabel(item.type)}: ${title}${lineText}`;
   }
 
@@ -1386,13 +1358,13 @@ import {
     dom.itemLaneInput.value = item.lane;
     setColorPickerValue(itemColorPicker, item.color, { emit: false });
     setColorPickerDisabled(itemColorPicker, itemReadOnly);
-    setColorPickerValue(itemTextColorPicker, item.type === "note" ? noteTextColor(item) : "#111827", { emit: false });
+    setColorPickerValue(itemTextColorPicker, item.type === "note" ? noteTextColorForItem(item) : "#111827", { emit: false });
     setColorPickerDisabled(itemTextColorPicker, itemReadOnly || item.type !== "note");
     dom.itemStartInput.value = item.startDate;
     dom.itemEndInput.value = item.endDate;
     dom.itemAgeLabelsInput.checked = item.showAgeLabels !== false;
     dom.itemDurationLabelInput.checked = item.showDurationLabel !== false;
-    dom.itemNotesInput.value = item.type === "note" ? noteText(item) : item.notes;
+    dom.itemNotesInput.value = item.type === "note" ? noteDisplayText(item) : item.notes;
     updateItemFieldVisibilityForType(item.type);
     updateItemNotesLabel(item);
     updateNotesInputDirection();
@@ -1714,7 +1686,7 @@ import {
   function applyItemTextColorFromControl() {
     const item = getItem(selectedId);
     if (!item || item.type !== "note") return;
-    const color = normalizeColor(dom.itemTextColorInput.value || noteTextColor(item));
+    const color = normalizeColor(dom.itemTextColorInput.value || noteTextColorForItem(item));
     setColorPickerValue(itemTextColorPicker, color, { emit: false });
     setColorPickerDisabled(itemTextColorPicker, false);
     if (item.textColor === color) return;
@@ -2135,7 +2107,7 @@ import {
     item.showDurationLabel = dom.itemDurationLabelInput.checked;
     item.notes = notes;
     if (type === "note") {
-      item.textColor = normalizeColor(dom.itemTextColorInput.value || noteTextColor(item));
+      item.textColor = normalizeColor(dom.itemTextColorInput.value || noteTextColorForItem(item));
     } else {
       delete item.textColor;
     }
@@ -2638,7 +2610,7 @@ import {
     if (!item || item.type !== "note" || !layout || !dom.noteInlineEditor) return;
     editingNoteId = item.id;
     editingNoteOriginalNotes = item.notes;
-    editingNoteOriginalDisplayText = noteText(item);
+    editingNoteOriginalDisplayText = noteDisplayText(item);
     dom.noteInlineEditor.value = editingNoteOriginalDisplayText;
     dom.noteInlineEditor.hidden = false;
     updateNoteInlineEditorDirection();
@@ -2659,7 +2631,7 @@ import {
     dom.noteInlineEditor.style.top = `${layout.y + NOTE_TIP_HEIGHT}px`;
     dom.noteInlineEditor.style.width = `${layout.width}px`;
     dom.noteInlineEditor.style.height = `${Math.max(NOTE_MIN_HEIGHT - NOTE_TIP_HEIGHT, layout.height - NOTE_TIP_HEIGHT)}px`;
-    dom.noteInlineEditor.style.color = noteTextColor(item);
+    dom.noteInlineEditor.style.color = noteTextColorForItem(item);
     dom.noteInlineEditor.style.background = item.color;
   }
 

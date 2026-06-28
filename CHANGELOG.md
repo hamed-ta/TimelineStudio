@@ -29,6 +29,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Extracted timeline coordinate, fit-zoom, snapping, and default-duration math into `features/timeline-editor/layout`.
 - Moved the timeline SVG shell into `features/timeline-editor/canvas` to match the feature-first source layout.
 - Moved persistent boolean UI preference state into a shared React hook.
+- Extracted note item text, title, color, and sizing rules into `features/timeline-editor/items` with focused tests.
 
 ### Fixed
 
