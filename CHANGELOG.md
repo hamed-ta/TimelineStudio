@@ -23,6 +23,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Moved the React app shell under `src/app` and the legacy editor runtime under `features/timeline-editor` so the entrypoint follows the feature-first source layout.
 - Split the React app wrapper, app theme provider, and timeline editor shell into `src/app/providers` and `features/timeline-editor/TimelineEditor`.
 - Extracted timeline editor bridge controls, panel toggle icons, toolbar buttons, and the timeline context menu into feature component files.
+- Split `TimelineEditor` into named feature components for the header, sidebar, toolbar, canvas shell, line editor popover, and info panel.
 
 ### Fixed
 
