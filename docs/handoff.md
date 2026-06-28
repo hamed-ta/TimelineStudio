@@ -112,6 +112,8 @@ The sixteenth ADR 0009 implementation slice extracted timeline coordinate conver
 
 The seventeenth ADR 0009 implementation slice moved the React timeline SVG shell from `components/TimelineCanvas.tsx` into `src/features/timeline-editor/canvas/TimelineCanvas.tsx`. The markup, DOM IDs, and legacy runtime bindings are unchanged.
 
+The eighteenth ADR 0009 implementation slice extracted reusable browser-storage-backed boolean state into `src/shared/hooks/usePersistentBoolean.ts`. `TimelineEditor.tsx` now uses the shared hook for sidebar and toolbar collapse preferences instead of owning local storage helpers directly.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -452,6 +454,7 @@ Firebase should wait until the local Vite app is stable.
 - RED: `npm test` failed because `src/features/timeline-editor/layout/timelineLayout.ts` did not exist yet.
 - Sixteenth ADR 0009 layout slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after extracting timeline coordinate, fit, snap, and duration helpers into `features/timeline-editor/layout`. The test suite now has 52 passing tests.
 - Seventeenth ADR 0009 canvas structure slice: moved `TimelineCanvas` into `features/timeline-editor/canvas` without changing legacy DOM bridge IDs.
+- Eighteenth ADR 0009 shared-hook slice: extracted persistent boolean UI preference state into `src/shared/hooks/usePersistentBoolean.ts`.
 
 ## Open Issues
 
@@ -463,7 +466,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: move timeline canvas shell`
+`refactor: extract persistent boolean hook`
 
 ## Next Safe Step
 

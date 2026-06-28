@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { usePersistentBoolean } from "../../shared/hooks/usePersistentBoolean";
 import { TimelineCanvas } from "./canvas/TimelineCanvas";
 import { EditorSidebar } from "./components/EditorSidebar";
 import { LineEditorPopover } from "./components/LineEditorPopover";
@@ -14,16 +14,8 @@ const SIDEBAR_COLLAPSED_STORAGE_KEY = "timeline-studio-sidebar-collapsed";
 const TOOLBAR_COLLAPSED_STORAGE_KEY = "timeline-studio-toolbar-collapsed";
 
 export function TimelineEditor() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readStoredBoolean(SIDEBAR_COLLAPSED_STORAGE_KEY));
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(() => readStoredBoolean(TOOLBAR_COLLAPSED_STORAGE_KEY));
-
-  useEffect(() => {
-    storeBoolean(SIDEBAR_COLLAPSED_STORAGE_KEY, sidebarCollapsed);
-  }, [sidebarCollapsed]);
-
-  useEffect(() => {
-    storeBoolean(TOOLBAR_COLLAPSED_STORAGE_KEY, toolbarCollapsed);
-  }, [toolbarCollapsed]);
+  const [sidebarCollapsed, setSidebarCollapsed] = usePersistentBoolean(SIDEBAR_COLLAPSED_STORAGE_KEY);
+  const [toolbarCollapsed, setToolbarCollapsed] = usePersistentBoolean(TOOLBAR_COLLAPSED_STORAGE_KEY);
 
   return (
     <>
@@ -58,20 +50,4 @@ export function TimelineEditor() {
       <input id="fileInput" type="file" accept="application/json,.json" hidden />
     </>
   );
-}
-
-function readStoredBoolean(key: string): boolean {
-  try {
-    return window.localStorage.getItem(key) === "true";
-  } catch {
-    return false;
-  }
-}
-
-function storeBoolean(key: string, value: boolean) {
-  try {
-    window.localStorage.setItem(key, String(value));
-  } catch {
-    // Layout preference is cosmetic; ignore unavailable browser storage.
-  }
 }
