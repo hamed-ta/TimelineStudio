@@ -25,6 +25,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Extracted timeline editor bridge controls, panel toggle icons, toolbar buttons, and the timeline context menu into feature component files.
 - Split `TimelineEditor` into named feature components for the header, sidebar, toolbar, canvas shell, line editor popover, and info panel.
 - Moved PDF and SVG export helpers under `timeline/export` to match the feature-first source layout.
+- Added timeline editor action creators, selectors, and a reducer-backed hook factory with focused selector tests.
 
 ### Fixed
 
