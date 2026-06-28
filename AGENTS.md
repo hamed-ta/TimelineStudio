@@ -38,6 +38,7 @@ Check JavaScript syntax and TypeScript:
 
 ```sh
 node --check app.js
+npm test
 npm run typecheck
 ```
 

@@ -37,6 +37,9 @@ jobs:
       - name: Check JavaScript syntax
         run: node --check app.js
 
+      - name: Test
+        run: npm test
+
       - name: Typecheck
         run: npm run typecheck
 

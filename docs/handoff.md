@@ -78,6 +78,8 @@ Timeline items now include a note type for point annotations. Notes render with 
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
 
+The first ADR 0009 implementation slice is in place. `app.js` imports the editable shortcut target guard from `src/features/timeline-editor/interactions/keyboardShortcuts.ts`, and `src/features/timeline-editor/interactions/keyboardShortcuts.test.js` covers editable, non-editable, and non-element event targets. The built-in Node test runner is exposed as `npm test`, and CI/release workflows now run it before typecheck and build.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -391,6 +393,8 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: two fast clicks at the center of a note balloon body opened `#noteInlineEditor` with the existing note text selected.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: pressing `Backspace` inside `#noteInlineEditor` edited the note text, kept one note item on the timeline, and did not open the delete-item confirmation.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: clicking outside `#noteInlineEditor` committed `Outside commit`, hid the editor, and kept one note item on the timeline.
+- RED: `npm test` failed because `src/features/timeline-editor/interactions/keyboardShortcuts.ts` did not exist yet.
+- First ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving `isEditableShortcutTarget` into `features/timeline-editor/interactions`. Vite still reports the expected Ant Design chunk-size warning.
 
 ## Open Issues
 

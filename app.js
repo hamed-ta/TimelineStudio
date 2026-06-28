@@ -57,6 +57,9 @@ import {
   canvasToBlob,
   loadImage,
 } from "./src/platform/media";
+import {
+  isEditableShortcutTarget,
+} from "./src/features/timeline-editor/interactions/keyboardShortcuts";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -2212,11 +2215,6 @@ import {
   function handleGlobalPaste(event) {
     if (event.defaultPrevented || isEditableShortcutTarget(event.target)) return;
     if (pasteCopiedItem()) event.preventDefault();
-  }
-
-  function isEditableShortcutTarget(target) {
-    return target instanceof Element
-      && Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
   }
 
   function canCreateOrPasteItems() {

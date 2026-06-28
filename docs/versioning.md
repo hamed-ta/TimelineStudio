@@ -24,6 +24,7 @@ GitHub Actions validates normal branch pushes and pull requests with:
 
 ```sh
 node --check app.js
+npm test
 npm run typecheck
 npm run build
 ```

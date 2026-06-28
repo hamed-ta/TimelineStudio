@@ -156,6 +156,7 @@ Document and start the modular React timeline editor architecture migration.
 During the current legacy-app phase:
 
 - `node --check app.js`
+- `npm test`
 - `npm run typecheck`
 - `npm run build`
 - App loads at `http://127.0.0.1:8765/`
