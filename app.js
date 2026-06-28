@@ -70,6 +70,7 @@ import {
 } from "./src/features/timeline-editor/layout/axisLayout";
 import {
   findAvailableNoteY,
+  noteBubblePath,
 } from "./src/features/timeline-editor/layout/noteLayout";
 
 (() => {
@@ -947,7 +948,7 @@ import {
       class: "note-balloon",
       "data-note-drag": "true",
       "data-note-edit": "true",
-      d: noteBubblePath(layout),
+      d: noteBubblePath(layout, noteBubblePathOptions()),
       fill: `url(#${gradientId})`,
       stroke: noteBorderColor(item.color),
     }));
@@ -1005,7 +1006,7 @@ import {
       const handleY = layout.y + layout.height - handleSize - 1;
       group.append(svgEl("path", {
         class: "selection-outline note-selection-outline",
-        d: noteBubblePath(layout),
+        d: noteBubblePath(layout, noteBubblePathOptions()),
       }));
       group.append(svgEl("rect", {
         class: "resize-handle note-resize-handle note-resize-hit",
@@ -1122,38 +1123,13 @@ import {
     return adjustColor(color, 34);
   }
 
-  function noteBubblePath(layout, pad = 0) {
-    const x = layout.x - pad;
-    const y = layout.y - pad;
-    const width = layout.width + pad * 2;
-    const height = layout.height + pad * 2;
-    const right = x + width;
-    const bottom = y + height;
-    const tipHeight = NOTE_TIP_HEIGHT + pad;
-    const tipHalf = NOTE_TIP_HALF_WIDTH + pad / 2;
-    const bodyY = y + tipHeight;
-    const radius = Math.min(14 + pad / 2, width / 4, Math.max(4, (height - tipHeight) / 3));
-    const tipApexX = clamp(layout.tipX, x + radius + tipHalf, right - radius - tipHalf);
-    const tipLean = clamp((layout.anchorX - tipApexX) * 0.18, -NOTE_TIP_MAX_LEAN, NOTE_TIP_MAX_LEAN);
-    const tipBaseX = clamp(tipApexX - tipLean, x + radius + tipHalf, right - radius - tipHalf);
-    const tipLeft = tipBaseX - tipHalf;
-    const tipRight = tipBaseX + tipHalf;
-
-    return [
-      `M ${x + radius} ${bodyY}`,
-      `H ${tipLeft}`,
-      `L ${tipApexX} ${y}`,
-      `L ${tipRight} ${bodyY}`,
-      `H ${right - radius}`,
-      `Q ${right} ${bodyY} ${right} ${bodyY + radius}`,
-      `V ${bottom - radius}`,
-      `Q ${right} ${bottom} ${right - radius} ${bottom}`,
-      `H ${x + radius}`,
-      `Q ${x} ${bottom} ${x} ${bottom - radius}`,
-      `V ${bodyY + radius}`,
-      `Q ${x} ${bodyY} ${x + radius} ${bodyY}`,
-      "Z",
-    ].join(" ");
+  function noteBubblePathOptions(pad = 0) {
+    return {
+      tipHeight: NOTE_TIP_HEIGHT,
+      tipHalfWidth: NOTE_TIP_HALF_WIDTH,
+      tipMaxLean: NOTE_TIP_MAX_LEAN,
+      pad,
+    };
   }
 
   function longestNoteLineWidth(text) {

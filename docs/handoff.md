@@ -86,6 +86,8 @@ The third ADR 0009 implementation slice extracted the axis label collision helpe
 
 The fourth ADR 0009 implementation slice extracted note stacking collision helpers into `src/features/timeline-editor/layout/noteLayout.ts`. `app.js` still owns note sizing, text wrapping, and SVG drawing, but automatic vertical stacking now delegates `findAvailableNoteY` to the feature layout module. `src/features/timeline-editor/layout/noteLayout.test.js` covers gap-based rectangle overlap, non-overlap at touching edges, and stacking through one or more blockers.
 
+The fifth ADR 0009 implementation slice extracted note bubble SVG path geometry into `src/features/timeline-editor/layout/noteLayout.ts`. `app.js` still owns note constants and drawing, but now passes the note tip geometry options into the pure layout helper. `noteLayout.test.js` covers centered tip paths, tip lean toward the anchor, and clamping the tip into the rounded body.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -407,6 +409,8 @@ Firebase should wait until the local Vite app is stable.
 - Third ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving axis label collision checking into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
 - RED: `npm test` failed because `src/features/timeline-editor/layout/noteLayout.ts` did not exist yet.
 - Fourth ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving note stacking collision helpers into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/layout/noteLayout.ts` did not export `noteBubblePath`.
+- Fifth ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving note bubble SVG path geometry into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
 
 ## Open Issues
 
