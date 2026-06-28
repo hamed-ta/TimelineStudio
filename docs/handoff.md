@@ -88,6 +88,8 @@ The fourth ADR 0009 implementation slice extracted note stacking collision helpe
 
 The fifth ADR 0009 implementation slice extracted note bubble SVG path geometry into `src/features/timeline-editor/layout/noteLayout.ts`. `app.js` still owns note constants and drawing, but now passes the note tip geometry options into the pure layout helper. `noteLayout.test.js` covers centered tip paths, tip lean toward the anchor, and clamping the tip into the rounded body.
 
+The sixth ADR 0009 implementation slice extracted note text wrapping, truncation, text direction, and first-baseline calculations into `src/features/timeline-editor/layout/noteLayout.ts`. `app.js` still owns browser text measurement and note drawing, but injects the measurement callback into the pure helper functions. `noteLayout.test.js` covers measured wrapping, long-word splitting, visible-line truncation, fitted ellipsis text, RTL/LTR detection, and baseline centering.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -411,6 +413,8 @@ Firebase should wait until the local Vite app is stable.
 - Fourth ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving note stacking collision helpers into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
 - RED: `npm test` failed because `src/features/timeline-editor/layout/noteLayout.ts` did not export `noteBubblePath`.
 - Fifth ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving note bubble SVG path geometry into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/layout/noteLayout.ts` did not export `fitNoteText`.
+- Sixth ADR 0009 extraction slice: `npm test` passed after moving note text wrapping, truncation, text direction, and first-baseline helpers into `features/timeline-editor/layout`.
 
 ## Open Issues
 
@@ -422,8 +426,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`feat: improve note balloon layout editing`
+`refactor: extract note text layout helpers`
 
 ## Next Safe Step
 
-Open the local app, create several nearby notes with English and Persian text, zoom out to confirm vertical stacking, verify dotted leaders stay behind balloons and highlight on selection, check separate balloon/text colors, drag and resize a selected note balloon, then commit if the behavior feels right.
+Continue ADR 0009 with another small pure extraction from `app.js`, or introduce the first reducer test for timeline mutations before moving state ownership into React.

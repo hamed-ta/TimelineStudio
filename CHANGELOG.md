@@ -16,6 +16,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Extracted the axis label collision helper into `features/timeline-editor/layout` with focused unit tests.
 - Extracted note stacking collision helpers into `features/timeline-editor/layout` with focused unit tests.
 - Extracted note bubble SVG path geometry into `features/timeline-editor/layout` with focused unit tests.
+- Extracted note text wrapping, truncation, direction, and baseline helpers into `features/timeline-editor/layout` with focused unit tests.
 
 ### Fixed
 

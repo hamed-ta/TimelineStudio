@@ -2,9 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  fitNoteText,
   findAvailableNoteY,
   noteBubblePath,
+  noteTextFirstBaseline,
   noteRectsOverlap,
+  textDirectionFor,
+  wrapNoteText,
+  wrapNoteTextLines,
 } from "./noteLayout.ts";
 
 test("note rect overlap uses a gap around both rectangles", () => {
@@ -99,4 +104,51 @@ test("note bubble path clamps the tip into the rounded body", () => {
   }, bubbleOptions);
 
   assert.match(path, /L 33 20/);
+});
+
+const measureText = (text) => String(text || "").length * 10;
+const textOptions = {
+  tipHeight: 7,
+  verticalPadding: 8,
+  baselineOffset: 13,
+  lineHeight: 17,
+  measureText,
+};
+
+test("wrap note text lines by measured width", () => {
+  assert.deepEqual(wrapNoteTextLines("alpha beta gamma", 100, measureText), [
+    "alpha beta",
+    "gamma",
+  ]);
+});
+
+test("wrap note text lines splits words that are wider than the available width", () => {
+  assert.deepEqual(wrapNoteTextLines("abcdef", 20, measureText), ["ab", "cd", "ef"]);
+});
+
+test("wrap note text truncates to the visible line count", () => {
+  const lines = wrapNoteText("one two three four", 70, 40, textOptions);
+
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /\.\.\.$/);
+});
+
+test("fit note text keeps text within the measured width", () => {
+  assert.equal(fitNoteText("abcdef", 50, measureText), "ab...");
+});
+
+test("note text direction follows the first strong text character", () => {
+  assert.equal(textDirectionFor("بیماران اصفهان"), "rtl");
+  assert.equal(textDirectionFor("Timeline note"), "ltr");
+  assert.equal(textDirectionFor("123"), "ltr");
+});
+
+test("note text first baseline centers the visible text block in the balloon body", () => {
+  const baseline = noteTextFirstBaseline({
+    y: 20,
+    height: 50,
+    lines: ["hello"],
+  }, textOptions);
+
+  assert.equal(baseline, 53);
 });

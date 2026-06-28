@@ -71,6 +71,10 @@ import {
 import {
   findAvailableNoteY,
   noteBubblePath,
+  noteTextFirstBaseline,
+  textDirectionFor,
+  wrapNoteText,
+  wrapNoteTextLines,
 } from "./src/features/timeline-editor/layout/noteLayout";
 
 (() => {
@@ -1034,6 +1038,7 @@ import {
     const layouts = new Map();
     const placedLayouts = [];
     const baseY = noteBaseY(laneCount, rowHeight);
+    const textLayoutOptions = noteTextLayoutOptions();
     timeline.items
       .filter((item) => item.type === "note")
       .slice()
@@ -1058,7 +1063,7 @@ import {
           text: noteText(item),
           textColor: noteTextColor(item),
           direction: textDirectionFor(noteText(item)),
-          lines: wrapNoteText(noteText(item), size.width - NOTE_PADDING_X * 2, size.height),
+          lines: wrapNoteText(noteText(item), size.width - NOTE_PADDING_X * 2, size.height, textLayoutOptions),
           tipX: clamp(anchorX, x + NOTE_TIP_HALF_WIDTH + 10, x + size.width - NOTE_TIP_HALF_WIDTH - 10),
           tipY: y,
         };
@@ -1092,7 +1097,7 @@ import {
       NOTE_MIN_WIDTH,
       NOTE_MAX_WIDTH,
     );
-    const naturalLineCount = wrapNoteTextLines(text, width - NOTE_PADDING_X * 2).length;
+    const naturalLineCount = wrapNoteTextLines(text, width - NOTE_PADDING_X * 2, measureNoteTextWidth).length;
     const naturalHeight = NOTE_TIP_HEIGHT + NOTE_TEXT_VERTICAL_PADDING * 2 + naturalLineCount * NOTE_LINE_HEIGHT;
     const height = clamp(
       finiteNumber(item.noteHeight) ? Number(item.noteHeight) : Math.max(NOTE_DEFAULT_HEIGHT, naturalHeight),
@@ -1132,6 +1137,16 @@ import {
     };
   }
 
+  function noteTextLayoutOptions() {
+    return {
+      tipHeight: NOTE_TIP_HEIGHT,
+      verticalPadding: NOTE_TEXT_VERTICAL_PADDING,
+      baselineOffset: NOTE_TEXT_BASELINE_OFFSET,
+      lineHeight: NOTE_LINE_HEIGHT,
+      measureText: measureNoteTextWidth,
+    };
+  }
+
   function longestNoteLineWidth(text) {
     return String(text || "")
       .split(/\r?\n/)
@@ -1141,7 +1156,7 @@ import {
   function drawNoteText(group, layout) {
     const isRtl = layout.direction === "rtl";
     const textX = isRtl ? layout.x + layout.width - NOTE_PADDING_X : layout.x + NOTE_PADDING_X;
-    const textY = noteTextFirstBaseline(layout);
+    const textY = noteTextFirstBaseline(layout, noteTextLayoutOptions());
     const text = svgEl("text", {
       class: "note-balloon-text",
       "data-note-drag": "true",
@@ -1162,84 +1177,6 @@ import {
     group.append(text);
   }
 
-  function noteTextFirstBaseline(layout) {
-    const bodyY = layout.y + NOTE_TIP_HEIGHT;
-    const bodyHeight = Math.max(0, layout.height - NOTE_TIP_HEIGHT);
-    const blockHeight = Math.max(NOTE_LINE_HEIGHT, layout.lines.length * NOTE_LINE_HEIGHT);
-    const blockTop = bodyY + Math.max(NOTE_TEXT_VERTICAL_PADDING, (bodyHeight - blockHeight) / 2);
-    return blockTop + NOTE_TEXT_BASELINE_OFFSET;
-  }
-
-  function wrapNoteText(text, maxWidth, height) {
-    const lines = wrapNoteTextLines(text, maxWidth);
-    const bodyHeight = Math.max(0, height - NOTE_TIP_HEIGHT);
-    const usableHeight = Math.max(NOTE_LINE_HEIGHT, bodyHeight - NOTE_TEXT_VERTICAL_PADDING * 2);
-    const maxLines = Math.max(1, Math.floor(usableHeight / NOTE_LINE_HEIGHT));
-    if (lines.length <= maxLines) return lines;
-    const visible = lines.slice(0, maxLines);
-    visible[visible.length - 1] = fitNoteText(`${visible[visible.length - 1]}...`, maxWidth);
-    return visible;
-  }
-
-  function wrapNoteTextLines(text, maxWidth) {
-    return String(text || "")
-      .split(/\r?\n/)
-      .flatMap((line) => wrapNoteLine(line, maxWidth));
-  }
-
-  function wrapNoteLine(line, maxWidth) {
-    const value = String(line || "");
-    if (!value.trim()) return [" "];
-    const words = value.split(/\s+/);
-    const lines = [];
-    let current = "";
-    words.forEach((word) => {
-      if (!current) {
-        current = word;
-        return;
-      }
-      const next = `${current} ${word}`;
-      if (measureNoteTextWidth(next) <= maxWidth) {
-        current = next;
-      } else {
-        lines.push(...splitLongNoteWord(current, maxWidth));
-        current = word;
-      }
-    });
-    if (current) lines.push(...splitLongNoteWord(current, maxWidth));
-    return lines.length ? lines : [" "];
-  }
-
-  function splitLongNoteWord(word, maxWidth) {
-    const value = String(word || "");
-    if (measureNoteTextWidth(value) <= maxWidth) return [value];
-    const chunks = [];
-    let current = "";
-    Array.from(value).forEach((char) => {
-      const next = `${current}${char}`;
-      if (current && measureNoteTextWidth(next) > maxWidth) {
-        chunks.push(current);
-        current = char;
-      } else {
-        current = next;
-      }
-    });
-    if (current) chunks.push(current);
-    return chunks;
-  }
-
-  function fitNoteText(text, maxWidth) {
-    const value = String(text || "");
-    if (maxWidth <= 0) return "";
-    if (measureNoteTextWidth(value) <= maxWidth) return value;
-    const suffix = "...";
-    let output = value;
-    while (output.length > 1 && measureNoteTextWidth(`${output}${suffix}`) > maxWidth) {
-      output = output.slice(0, -1);
-    }
-    return `${output}${suffix}`;
-  }
-
   function measureNoteTextWidth(text) {
     const value = String(text || "");
     if (!noteMeasureContext) {
@@ -1256,15 +1193,6 @@ import {
 
   function finiteNumber(value) {
     return Number.isFinite(Number(value));
-  }
-
-  function textDirectionFor(text) {
-    const value = String(text || "");
-    for (const char of value) {
-      if (/[\u0590-\u08FF\uFB1D-\uFEFC]/u.test(char)) return "rtl";
-      if (/[A-Za-z\u00C0-\u024F]/u.test(char)) return "ltr";
-    }
-    return "ltr";
   }
 
   function updateMeta() {
