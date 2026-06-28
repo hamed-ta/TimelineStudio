@@ -65,6 +65,9 @@ import {
   snapEdgeOffset,
   snapMoveDelta,
 } from "./src/features/timeline-editor/interactions/edgeSnap";
+import {
+  canPlaceAxisLabel,
+} from "./src/features/timeline-editor/layout/axisLayout";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -506,7 +509,7 @@ import {
     const centerX = x + cellWidth / 2;
     const label = String(isoDay(date));
     const width = estimateSvgTextWidth(label);
-    if (cellWidth >= 4 && canPlaceAxisLabel(centerX, width, lastLabelEnd, AXIS_DAY_LABEL_GAP)) {
+    if (cellWidth >= 4 && canPlaceAxisLabel({ centerX, width, lastLabelEnd, gap: AXIS_DAY_LABEL_GAP })) {
       svg.append(svgEl("text", { class: "axis-day", x: centerX, y: 105, "text-anchor": "middle" }, label));
       return centerX + width / 2;
     }
@@ -525,23 +528,29 @@ import {
     const iranianY = hasDayLabels ? 74 : 96;
     const compactY = hasDayLabels ? 72 : 88;
 
-    if (cellWidth >= stackedWidth + 18 && canPlaceAxisLabel(centerX, stackedWidth, lastLabelEnd, AXIS_MONTH_LABEL_GAP)) {
+    if (cellWidth >= stackedWidth + 18 && canPlaceAxisLabel({
+      centerX,
+      width: stackedWidth,
+      lastLabelEnd,
+      gap: AXIS_MONTH_LABEL_GAP,
+    })) {
       svg.append(svgEl("text", { class: "axis-month axis-month-gregorian", x: centerX, y: gregorianY, "text-anchor": "middle" }, gregorian));
       svg.append(svgEl("text", { class: "axis-month axis-month-iranian", x: centerX, y: iranianY, "text-anchor": "middle" }, iranian));
       return centerX + stackedWidth / 2;
     }
 
     const compactWidth = estimateSvgTextWidth(gregorian);
-    if (cellWidth >= compactWidth + 12 && canPlaceAxisLabel(centerX, compactWidth, lastLabelEnd, AXIS_MONTH_LABEL_GAP)) {
+    if (cellWidth >= compactWidth + 12 && canPlaceAxisLabel({
+      centerX,
+      width: compactWidth,
+      lastLabelEnd,
+      gap: AXIS_MONTH_LABEL_GAP,
+    })) {
       svg.append(svgEl("text", { class: "axis-month axis-month-compact", x: centerX, y: compactY, "text-anchor": "middle" }, gregorian));
       return centerX + compactWidth / 2;
     }
 
     return lastLabelEnd;
-  }
-
-  function canPlaceAxisLabel(centerX, width, lastLabelEnd, gap) {
-    return centerX - width / 2 >= lastLabelEnd + gap;
   }
 
   function drawLaneLabels(svg, settings, laneCount, rowHeight) {
