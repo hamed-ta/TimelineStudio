@@ -94,6 +94,8 @@ The seventh ADR 0009 implementation slice extracted age and date-span formatting
 
 The eighth ADR 0009 implementation slice centralized color parsing, normalization, readable text color, color adjustment, RGB conversion, and HSV conversion in `src/timeline/colors.ts`. Both `app.js` and `src/timeline/model.ts` now share the same color normalization helpers. `colors.test.js` covers hash and bare hex parsing, fallback colors, readable text choices, channel clamping, and HSV conversion.
 
+The ninth ADR 0009 implementation slice introduced `src/features/timeline-editor/timelineReducer.ts` as the first reducer boundary for editor state. It is not wired into the live app yet; the legacy `app.js` controller still owns runtime state. `timelineReducer.test.js` covers settings updates, item add/update/delete, lane reorder, lane removal, selection clearing, item copying, and dirty-state behavior.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -423,6 +425,8 @@ Firebase should wait until the local Vite app is stable.
 - Seventh ADR 0009 extraction slice: `npm test` passed after moving age and date-span formatting into `src/timeline/dateSpans.ts`.
 - RED: `npm test` failed because `src/timeline/colors.ts` did not exist yet.
 - Eighth ADR 0009 extraction slice: `npm test` passed after centralizing color helpers in `src/timeline/colors.ts` and wiring `app.js` plus `src/timeline/model.ts` to use them.
+- RED: `npm test` failed because `src/features/timeline-editor/timelineReducer.ts` did not exist yet.
+- Ninth ADR 0009 reducer slice: `npm test` passed after adding the initial reducer boundary and tests for core settings, item, line, selection, clipboard, and dirty-state transitions.
 
 ## Open Issues
 
@@ -434,7 +438,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: centralize timeline color helpers`
+`refactor: add timeline editor reducer boundary`
 
 ## Next Safe Step
 

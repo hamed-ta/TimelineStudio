@@ -19,6 +19,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Extracted note text wrapping, truncation, direction, and baseline helpers into `features/timeline-editor/layout` with focused unit tests.
 - Extracted age and date-span formatting helpers into `timeline/dateSpans` with focused unit tests.
 - Centralized timeline color parsing, normalization, readability, adjustment, RGB, and HSV helpers in `timeline/colors` with focused unit tests.
+- Added the first tested `features/timeline-editor` reducer boundary for core timeline settings, item, line, selection, and clipboard state transitions.
 
 ### Fixed
 
