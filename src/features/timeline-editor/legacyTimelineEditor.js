@@ -46,11 +46,6 @@ import {
   monthName,
 } from "../../timeline/formatters";
 import {
-  formatDetailedAgeAtDate,
-  formatDetailedAgeValueAtDate,
-  formatDetailedDateSpan,
-} from "../../timeline/dateSpans";
-import {
   buildPdfFromJpeg,
 } from "../../timeline/export/pdf";
 import {
@@ -118,6 +113,10 @@ import {
 import {
   periodDerivedMeta,
 } from "./items/periodItem";
+import {
+  pointerInfoText,
+  selectionInfoText,
+} from "./timelineInfo";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -1156,18 +1155,10 @@ import {
   function updatePointerInfo() {
     if (!dom.hoverDateLabel || !dom.hoverIranianLabel || !dom.hoverAgeLabel) return;
     const birthItem = getPrimaryBirthItem();
-    if (!hoverDate) {
-      dom.hoverDateLabel.textContent = "Hover over the timeline";
-      dom.hoverIranianLabel.textContent = "Gregorian and Iranian dates";
-      dom.hoverAgeLabel.textContent = birthItem ? "Age appears here" : "Add a birth item to calculate age";
-      return;
-    }
-
-    dom.hoverDateLabel.textContent = formatDisplayDate(hoverDate);
-    dom.hoverIranianLabel.textContent = formatIranianDate(hoverDate);
-    dom.hoverAgeLabel.textContent = birthItem
-      ? formatDetailedAgeAtDate(birthItem.startDate, hoverDate)
-      : "Age: add a birth item";
+    const info = pointerInfoText(hoverDate, birthItem?.startDate);
+    dom.hoverDateLabel.textContent = info.dateLabel;
+    dom.hoverIranianLabel.textContent = info.iranianLabel;
+    dom.hoverAgeLabel.textContent = info.ageLabel;
   }
 
   function updateSelectionInfo() {
@@ -1181,73 +1172,19 @@ import {
       return;
     }
     const item = getItem(selectedId);
-    if (!item) {
-      dom.selectedItemLabel.textContent = "No item selected";
-      dom.selectedItemDateLabel.textContent = "Select an item to inspect dates";
-      setOptionalInfoLine(dom.selectedItemEndLabel, "");
-      setOptionalInfoLine(dom.selectedItemDurationLabel, "");
-      setOptionalInfoLine(dom.selectedItemAgeLabel, "");
-      return;
-    }
-
-    dom.selectedItemLabel.textContent = formatSelectedItemTitle(item);
-    dom.selectedItemDateLabel.textContent = formatSelectedItemStartLine(item);
-    setOptionalInfoLine(dom.selectedItemEndLabel, formatSelectedItemEndLine(item));
-    setOptionalInfoLine(dom.selectedItemDurationLabel, formatSelectedItemDurationLine(item));
-    setOptionalInfoLine(dom.selectedItemAgeLabel, formatSelectedItemAgeLine(item));
+    const birthItem = getPrimaryBirthItem();
+    const info = selectionInfoText(item, birthItem?.startDate);
+    dom.selectedItemLabel.textContent = info.itemLabel;
+    dom.selectedItemDateLabel.textContent = info.dateLine;
+    setOptionalInfoLine(dom.selectedItemEndLabel, info.endLine);
+    setOptionalInfoLine(dom.selectedItemDurationLabel, info.durationLine);
+    setOptionalInfoLine(dom.selectedItemAgeLabel, info.ageLine);
   }
 
   function setOptionalInfoLine(element, text) {
     const value = text || "";
     element.textContent = value;
     element.hidden = !value;
-  }
-
-  function formatSelectedItemTitle(item) {
-    const lineText = isGlobalTimelineItemType(item.type) || item.type === "note" ? "" : ` - Line ${item.lane + 1}`;
-    const lockedText = item.locked ? "Locked - " : "";
-    const title = item.type === "note" ? noteTitleFromText(noteDisplayText(item)) : item.title;
-    return `${lockedText}${itemTypeLabel(item.type)}: ${title}${lineText}`;
-  }
-
-  function formatSelectedItemStartLine(item) {
-    const start = `${formatDisplayDate(item.startDate)} / ${formatIranianDate(item.startDate)}`;
-    return hasEndYear(item.type) ? `Start: ${start}` : `Date: ${start}`;
-  }
-
-  function formatSelectedItemEndLine(item) {
-    if (!hasEndYear(item.type)) return "";
-    const end = `${formatDisplayDate(item.endDate)} / ${formatIranianDate(item.endDate)}`;
-    return `End: ${end}`;
-  }
-
-  function formatSelectedItemDurationLine(item) {
-    if (!hasEndYear(item.type)) return "";
-    return `Duration: ${formatDetailedDateSpan(item.startDate, item.endDate)}`;
-  }
-
-  function formatSelectedItemAgeLine(item) {
-    const birthItem = getPrimaryBirthItem();
-    if (item.type === "birth") {
-      return "Age source";
-    }
-    if (!birthItem) return "";
-    if (hasEndYear(item.type)) {
-      return `Age: ${formatDetailedAgeValueAtDate(birthItem.startDate, item.startDate)} to ${formatDetailedAgeValueAtDate(birthItem.startDate, item.endDate)}`;
-    }
-    return `Age: ${formatDetailedAgeValueAtDate(birthItem.startDate, item.startDate)}`;
-  }
-
-  function itemTypeLabel(type) {
-    return {
-      birth: "Birth",
-      event: "Event",
-      marker: "Marker",
-      note: "Note",
-      period: "Period",
-      line: "Line",
-      text: "Text",
-    }[String(type)] || "Item";
   }
 
   function setCurrentFile(handle, name) {

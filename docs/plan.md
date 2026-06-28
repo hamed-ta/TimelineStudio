@@ -141,6 +141,7 @@ Document and start the modular React timeline editor architecture migration.
 - Extracted period item derived age and duration metadata into `features/timeline-editor/items`.
 - Extracted SVG text fitting, width estimation, and ID sanitizing helpers into `features/timeline-editor/canvas`.
 - Extracted drag-range clamping and overlap-prevention helpers into `features/timeline-editor/interactions`.
+- Extracted timeline info-panel pointer and selection text into a tested feature view-model helper.
 
 ## Risks
 
