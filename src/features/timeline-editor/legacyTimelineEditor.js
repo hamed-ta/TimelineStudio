@@ -59,10 +59,10 @@ import {
 } from "../../timeline/dateSpans";
 import {
   buildPdfFromJpeg,
-} from "../../timeline/pdf";
+} from "../../timeline/export/pdf";
 import {
   serializeTimelineSvg,
-} from "../../timeline/svgExport";
+} from "../../timeline/export/svgExport";
 import {
   canPickFileWithPicker,
   downloadBlob,

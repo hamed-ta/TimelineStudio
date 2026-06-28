@@ -24,6 +24,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Split the React app wrapper, app theme provider, and timeline editor shell into `src/app/providers` and `features/timeline-editor/TimelineEditor`.
 - Extracted timeline editor bridge controls, panel toggle icons, toolbar buttons, and the timeline context menu into feature component files.
 - Split `TimelineEditor` into named feature components for the header, sidebar, toolbar, canvas shell, line editor popover, and info panel.
+- Moved PDF and SVG export helpers under `timeline/export` to match the feature-first source layout.
 
 ### Fixed
 

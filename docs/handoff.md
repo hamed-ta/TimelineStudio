@@ -104,6 +104,8 @@ The twelfth ADR 0009 implementation slice extracted reusable timeline editor bri
 
 The thirteenth ADR 0009 implementation slice split `TimelineEditor.tsx` into named feature components: `TimelineHeader`, `EditorSidebar`, `TimelineToolbar`, `TimelineCanvas`, `LineEditorPopover`, and `TimelineInfoPanel`. `TimelineEditor.tsx` is now a small composition layer that owns only sidebar and toolbar collapse state plus app footer/file input placement.
 
+The fourteenth ADR 0009 implementation slice moved PDF and SVG export helpers into `src/timeline/export/` and updated the legacy runtime imports. This matches the target source layout while preserving export behavior.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -439,6 +441,7 @@ Firebase should wait until the local Vite app is stable.
 - Eleventh ADR 0009 component slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after splitting `AppThemeProvider` and `TimelineEditor`. Vite still reports the expected Ant Design chunk-size warning.
 - Twelfth ADR 0009 component slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after extracting reusable editor bridge controls and the context menu into feature component files. Vite still reports the expected Ant Design chunk-size warning.
 - Thirteenth ADR 0009 component slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after splitting the header, sidebar, toolbar, canvas shell, line editor popover, and info panel into named feature components. Vite still reports the expected Ant Design chunk-size warning.
+- Fourteenth ADR 0009 structure slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving export helpers into `src/timeline/export`. Vite still reports the expected Ant Design chunk-size warning.
 
 ## Open Issues
 
@@ -450,7 +453,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: split timeline editor feature components`
+`refactor: move timeline export helpers`
 
 ## Next Safe Step
 

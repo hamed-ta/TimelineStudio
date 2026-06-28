@@ -100,9 +100,9 @@ Document and start the modular React timeline editor architecture migration.
 - Extracted shared date parsing, date math, snapping, clamping, and numeric normalization helpers into `src/timeline/dates.ts`.
 - Extracted timeline JSON parse and serialize behavior into `src/timeline/json.ts`.
 - Extracted browser download and save-picker helpers into `src/platform/files.ts`.
-- Extracted PDF byte generation into `src/timeline/pdf.ts`.
+- Extracted PDF byte generation into `src/timeline/export/pdf.ts`.
 - Extracted image loading and canvas-to-blob helpers into `src/platform/media.ts`.
-- Extracted SVG export serialization and export CSS into `src/timeline/svgExport.ts`.
+- Extracted SVG export serialization and export CSS into `src/timeline/export/svgExport.ts`.
 - Extracted display date, Iranian date, month, and zoom formatting into `src/timeline/formatters.ts`.
 - Added `CHANGELOG.md` and `docs/versioning.md` without bumping the package version.
 - Added system light/dark theme tokens, component styling, and a theme switcher.
