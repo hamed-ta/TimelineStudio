@@ -40,5 +40,5 @@ Run the relevant checks and record the result in `docs/handoff.md`.
 For this app, the minimum JavaScript check is:
 
 ```sh
-node --check app.js
+node --check src/features/timeline-editor/legacyTimelineEditor.js
 ```

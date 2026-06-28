@@ -10,7 +10,7 @@ Document and start the modular React timeline editor architecture migration.
 
 ## Now
 
-- Use ADR 0009 as the target architecture for shrinking `app.js` into feature-oriented React modules.
+- Use ADR 0009 as the target architecture for shrinking the legacy timeline editor into feature-oriented React modules.
 - Start implementation with pure extraction slices before moving visible UI or SVG rendering.
 - Keep the birthdate label to the left of the vertical line when possible.
 - Show hovered date, Iranian date, and age in a fixed info panel below the timeline instead of a cursor-following tooltip.
@@ -44,7 +44,7 @@ Document and start the modular React timeline editor architecture migration.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 - Adopt Ant Design as the UI system for shell controls, icons, panels, and light/dark theme styling.
-- Keep exact DOM IDs and compatibility bridge controls where the legacy `app.js` controller still requires native element behavior.
+- Keep exact DOM IDs and compatibility bridge controls where the legacy timeline editor controller still requires native element behavior.
 - Add CI validation for branch pushes and pull requests.
 - Add tag-based GitHub Pages deployment for versioned releases.
 - Create or update a GitHub Release with changelog notes and a zipped static build artifact.
@@ -61,10 +61,10 @@ Document and start the modular React timeline editor architecture migration.
 
 ## Next
 
-- Extract pure note layout, axis layout, edge snapping, and keyboard shortcut helpers from `app.js`.
+- Extract pure note layout, axis layout, edge snapping, and keyboard shortcut helpers from the legacy timeline editor controller.
 - Add a `features/timeline-editor/` folder with reducer, action, selector, interaction, layout, component, canvas, and item boundaries.
 - Introduce timeline reducer tests or focused pure helper tests before moving more interactive behavior.
-- Start small UI polish slices in React while preserving the element IDs and behavior expected by `app.js`.
+- Start small UI polish slices in React while preserving the element IDs and behavior expected by the legacy timeline editor controller.
 - Continue migrating remaining custom popovers, menus, picker controls, and timeline controller state into React so more Ant Design components can be used directly.
 - Verify local JSON load, edit, save, pan, zoom, fit, and export before adding Firebase.
 - Add Firebase only after the local app migration is stable.
@@ -142,7 +142,7 @@ Document and start the modular React timeline editor architecture migration.
 - Workflow docs can drift if `/closeup` is not used consistently.
 - Personal JSON files should stay in ignored `user-data/`.
 - The framework migration can accidentally change timeline behavior if it is done as a rewrite instead of small preservation steps.
-- UI changes must preserve the DOM IDs and data attributes that legacy `app.js` still binds to until the controller is migrated.
+- UI changes must preserve the DOM IDs and data attributes that the legacy timeline editor controller still binds to until the controller is migrated.
 - Version changes should be intentional and documented in `CHANGELOG.md`; do not bump `package.json` during routine migration slices.
 - Firebase read/write patterns can create avoidable cost if autosave and realtime listeners are not scoped carefully.
 - Dependencies can increase bundle size, audit noise, and maintenance cost if they are not scoped to real feature value.
@@ -155,7 +155,7 @@ Document and start the modular React timeline editor architecture migration.
 
 During the current legacy-app phase:
 
-- `node --check app.js`
+- `node --check src/features/timeline-editor/legacyTimelineEditor.js`
 - `npm test`
 - `npm run typecheck`
 - `npm run build`

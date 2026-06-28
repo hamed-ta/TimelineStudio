@@ -40,7 +40,7 @@ http://127.0.0.1:8765/
 Run validation:
 
 ```sh
-node --check app.js
+node --check src/features/timeline-editor/legacyTimelineEditor.js
 npm test
 npm run typecheck
 npm run build

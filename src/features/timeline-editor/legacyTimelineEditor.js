@@ -16,7 +16,7 @@ import {
   todayIso,
   toNumber,
   yearStartIso,
-} from "./src/timeline/dates";
+} from "../../timeline/dates";
 import {
   ITEM_COLOR_PALETTE,
   TYPE_COLORS,
@@ -26,7 +26,7 @@ import {
   normalizeItem,
   normalizeTimeline,
   titleForType,
-} from "./src/timeline/model";
+} from "../../timeline/model";
 import {
   adjustColor,
   hexToHsv,
@@ -36,12 +36,12 @@ import {
   normalizeOptionalColor,
   readableTextColor,
   rgbToHex,
-} from "./src/timeline/colors";
+} from "../../timeline/colors";
 import {
   TIMELINE_JSON_MIME,
   parseTimelineJson,
   serializeTimelineJson,
-} from "./src/timeline/json";
+} from "../../timeline/json";
 import {
   formatDatePair,
   formatDisplayDate,
@@ -49,42 +49,42 @@ import {
   formatZoomValue,
   iranianMonthName,
   monthName,
-} from "./src/timeline/formatters";
+} from "../../timeline/formatters";
 import {
   formatAgeAtDate,
   formatCompactDateSpan,
   formatDetailedAgeAtDate,
   formatDetailedAgeValueAtDate,
   formatDetailedDateSpan,
-} from "./src/timeline/dateSpans";
+} from "../../timeline/dateSpans";
 import {
   buildPdfFromJpeg,
-} from "./src/timeline/pdf";
+} from "../../timeline/pdf";
 import {
   serializeTimelineSvg,
-} from "./src/timeline/svgExport";
+} from "../../timeline/svgExport";
 import {
   canPickFileWithPicker,
   downloadBlob,
   pickFileWithPicker,
   saveBlobToHandle,
   saveBlobWithPicker,
-} from "./src/platform/files";
+} from "../../platform/files";
 import {
   canvasToBlob,
   loadImage,
-} from "./src/platform/media";
+} from "../../platform/media";
 import {
   isEditableShortcutTarget,
-} from "./src/features/timeline-editor/interactions/keyboardShortcuts";
+} from "./interactions/keyboardShortcuts";
 import {
   rangesOverlap,
   snapEdgeOffset,
   snapMoveDelta,
-} from "./src/features/timeline-editor/interactions/edgeSnap";
+} from "./interactions/edgeSnap";
 import {
   canPlaceAxisLabel,
-} from "./src/features/timeline-editor/layout/axisLayout";
+} from "./layout/axisLayout";
 import {
   findAvailableNoteY,
   noteBubblePath,
@@ -92,7 +92,7 @@ import {
   textDirectionFor,
   wrapNoteText,
   wrapNoteTextLines,
-} from "./src/features/timeline-editor/layout/noteLayout";
+} from "./layout/noteLayout";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";

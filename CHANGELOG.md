@@ -20,6 +20,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Extracted age and date-span formatting helpers into `timeline/dateSpans` with focused unit tests.
 - Centralized timeline color parsing, normalization, readability, adjustment, RGB, and HSV helpers in `timeline/colors` with focused unit tests.
 - Added the first tested `features/timeline-editor` reducer boundary for core timeline settings, item, line, selection, and clipboard state transitions.
+- Moved the React app shell under `src/app` and the legacy editor runtime under `features/timeline-editor` so the entrypoint follows the feature-first source layout.
 
 ### Fixed
 

@@ -6,7 +6,7 @@ Prepare the modular React timeline editor architecture migration.
 
 ## Last Known State
 
-Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, pan, zoom, fit, lock state, and line renaming.
+Timeline Studio has a Vite, React, and TypeScript shell under `src/app`. The existing legacy timeline editor runtime now lives at `src/features/timeline-editor/legacyTimelineEditor.js` and still owns rendering, DOM events, pan, zoom, fit, lock state, and line renaming during the migration.
 
 ADR 0009 accepts a feature-oriented React timeline editor architecture. The migration target is `features/timeline-editor/` with reducer-owned editor state, React components for UI and SVG rendering, custom hooks for reusable interactions, and pure TypeScript modules for timeline layout and math. The project should not adopt MVC, MVVM, or Redux yet; use `useReducer` and context first.
 
@@ -18,11 +18,11 @@ Typography now uses a dependency-free modern sans-serif stack that prefers Persi
 
 The project no longer treats dependency-free status as absolute. ADR 0006 allows reasonable dependencies when they materially improve accessibility, reliability, maintainability, or complex feature behavior, with documentation requirements based on scope.
 
-ADR 0007 accepts Ant Design as the app UI system. The React shell now uses `antd` for app cards, buttons, inputs, and light/dark theme algorithms, plus `@ant-design/icons` for toolbar and menu iconography. Native bridge controls remain where the legacy `app.js` controller still requires exact DOM behavior, such as real `select`, `range`, and hidden compatibility inputs.
+ADR 0007 accepts Ant Design as the app UI system. The React shell now uses `antd` for app cards, buttons, inputs, and light/dark theme algorithms, plus `@ant-design/icons` for toolbar and menu iconography. Native bridge controls remain where the legacy timeline editor controller still requires exact DOM behavior, such as real `select`, `range`, and hidden compatibility inputs.
 
 ADR 0008 accepts GitHub Pages as the first public deployment path. CI validates branch pushes and pull requests. Version tags such as `v0.2.1` build the Vite app, deploy `dist` to GitHub Pages, and create or update a GitHub Release from the matching `CHANGELOG.md` section.
 
-The next architecture implementation should start with pure extractions from `app.js`: note layout, axis layout, edge snapping, keyboard shortcut guards, and reducer-ready timeline mutations. Keep DOM IDs and data attributes until the owning behavior has fully moved into React.
+The next architecture implementation should continue moving ownership from the legacy timeline editor runtime into `features/timeline-editor` modules while keeping DOM IDs and data attributes until each owning behavior has fully moved into React.
 
 The repository now has root community documents for contributors, vulnerability reporting, and community conduct.
 
@@ -94,7 +94,9 @@ The seventh ADR 0009 implementation slice extracted age and date-span formatting
 
 The eighth ADR 0009 implementation slice centralized color parsing, normalization, readable text color, color adjustment, RGB conversion, and HSV conversion in `src/timeline/colors.ts`. Both `app.js` and `src/timeline/model.ts` now share the same color normalization helpers. `colors.test.js` covers hash and bare hex parsing, fallback colors, readable text choices, channel clamping, and HSV conversion.
 
-The ninth ADR 0009 implementation slice introduced `src/features/timeline-editor/timelineReducer.ts` as the first reducer boundary for editor state. It is not wired into the live app yet; the legacy `app.js` controller still owns runtime state. `timelineReducer.test.js` covers settings updates, item add/update/delete, lane reorder, lane removal, selection clearing, item copying, and dirty-state behavior.
+The ninth ADR 0009 implementation slice introduced `src/features/timeline-editor/timelineReducer.ts` as the first reducer boundary for editor state. It is not wired into the live app yet; the legacy timeline editor controller still owns runtime state. `timelineReducer.test.js` covers settings updates, item add/update/delete, lane reorder, lane removal, selection clearing, item copying, and dirty-state behavior.
+
+The tenth ADR 0009 implementation slice moved the React app shell from `src/App.tsx` to `src/app/App.tsx` and moved the legacy editor runtime from root `app.js` to `src/features/timeline-editor/legacyTimelineEditor.js`. `src/main.tsx` now imports both through the feature-first source tree, and CI/release/docs syntax checks target the feature-owned legacy runtime path.
 
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
@@ -427,6 +429,7 @@ Firebase should wait until the local Vite app is stable.
 - Eighth ADR 0009 extraction slice: `npm test` passed after centralizing color helpers in `src/timeline/colors.ts` and wiring `app.js` plus `src/timeline/model.ts` to use them.
 - RED: `npm test` failed because `src/features/timeline-editor/timelineReducer.ts` did not exist yet.
 - Ninth ADR 0009 reducer slice: `npm test` passed after adding the initial reducer boundary and tests for core settings, item, line, selection, clipboard, and dirty-state transitions.
+- Tenth ADR 0009 structure slice: moved the React shell and legacy editor runtime under `src/app` and `src/features/timeline-editor`; validate with `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build`.
 
 ## Open Issues
 
@@ -438,7 +441,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: add timeline editor reducer boundary`
+`refactor: move legacy editor into timeline feature`
 
 ## Next Safe Step
 
