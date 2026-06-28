@@ -1,29 +1,19 @@
 import {
   AimOutlined,
-  BgColorsOutlined,
-  BulbOutlined,
   CalendarOutlined,
   CloseOutlined,
-  CopyOutlined,
-  DeleteOutlined,
   DesktopOutlined,
-  FileAddOutlined,
   FileImageOutlined,
   FileOutlined,
   FilePdfOutlined,
-  FileTextOutlined,
   FlagOutlined,
   FolderOpenOutlined,
   FontSizeOutlined,
   FormOutlined,
   FullscreenOutlined,
   LockOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   MinusOutlined,
   MoonOutlined,
-  PlusOutlined,
-  RightOutlined,
   SaveOutlined,
   SmileOutlined,
   SunOutlined,
@@ -34,8 +24,13 @@ import {
   ZoomOutOutlined,
 } from "@ant-design/icons";
 import { Button, Card, Input, Space, Typography } from "antd";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useAppTheme, type ThemeMode } from "../../app/providers/AppThemeProvider";
+import { ColorPickerField } from "./components/ColorPickerField";
+import { FieldLabel } from "./components/FieldLabel";
+import { MenuFoldIcon, MenuUnfoldIcon } from "./components/PanelToggleIcons";
+import { TimelineContextMenu } from "./components/TimelineContextMenu";
+import { ToolbarButton } from "./components/ToolbarButton";
 
 declare const __APP_NAME__: string;
 declare const __APP_VERSION__: string;
@@ -67,110 +62,6 @@ function themeIcon(mode: ThemeMode) {
   if (mode === "light") return <SunOutlined />;
   if (mode === "dark") return <MoonOutlined />;
   return <DesktopOutlined />;
-}
-
-function ToneIcon({ tone, children }: { tone: string; children: ReactNode }) {
-  return (
-    <span className="toolbar-icon" data-tone={tone} aria-hidden="true">
-      {children}
-    </span>
-  );
-}
-
-function ToolbarButton({
-  tone,
-  addType,
-  id,
-  title,
-  icon,
-  children,
-}: {
-  tone: string;
-  addType?: string;
-  id?: string;
-  title: string;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <Button
-      id={id}
-      htmlType="button"
-      className="toolbar-button"
-      data-tone={tone}
-      data-add={addType}
-      title={title}
-      icon={<ToneIcon tone={tone}>{icon}</ToneIcon>}
-    >
-      {children}
-    </Button>
-  );
-}
-
-function FieldLabel({ children, id, label }: { children: ReactNode; id?: string; label: string }) {
-  return (
-    <label className="field-label" id={id}>
-      <span>{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function ColorPickerField({ label, prefix, paletteLabel }: { label: string; prefix: "item" | "itemText" | "line"; paletteLabel: string }) {
-  const inputId = `${prefix}ColorInput`;
-  const triggerId = `${prefix}ColorTrigger`;
-  const previewId = `${prefix}ColorPreview`;
-  const valueId = `${prefix}ColorValue`;
-  const panelId = `${prefix}ColorPanel`;
-  const planeId = `${prefix}ColorPlane`;
-  const markerId = `${prefix}ColorPlaneMarker`;
-  const hueId = `${prefix}ColorHueInput`;
-  const hexId = `${prefix}ColorHexInput`;
-  const paletteId = `${prefix}ColorPalette`;
-
-  return (
-    <div className="color-picker-field">
-      <span className="field-caption">{label}</span>
-      <div className="color-picker" data-color-picker={prefix}>
-        <input id={inputId} type="hidden" />
-        <Button
-          htmlType="button"
-          className="color-picker-trigger"
-          id={triggerId}
-          aria-haspopup="dialog"
-          aria-expanded="false"
-          aria-controls={panelId}
-          icon={<BgColorsOutlined />}
-        >
-          <span className="color-picker-preview" id={previewId} aria-hidden="true"></span>
-          <span className="color-picker-value" id={valueId}>#2563EB</span>
-        </Button>
-        <div className="color-picker-panel" id={panelId} role="dialog" aria-label={`${label} picker`} hidden>
-          <div
-            className="color-picker-plane"
-            id={planeId}
-            role="slider"
-            tabIndex={0}
-            aria-label={`${label} saturation and brightness`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={100}
-          >
-            <span className="color-picker-plane-marker" id={markerId}></span>
-          </div>
-          <label className="color-picker-range">
-            Hue
-            <input id={hueId} type="range" min={0} max={360} defaultValue={220} aria-label={`${label} hue`} />
-          </label>
-          <label className="color-picker-hex-row">
-            Hex
-            <Input id={hexId} type="text" inputMode="text" maxLength={7} spellCheck={false} aria-label={`${label} hex color`} />
-          </label>
-          <div className="color-swatch-grid" id={paletteId} role="group" aria-label={paletteLabel}></div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export function TimelineEditor() {
@@ -480,38 +371,7 @@ export function TimelineEditor() {
                 </div>
               </form>
             </div>
-            <div className="context-menu" id="timelineContextMenu" role="menu" aria-label="Timeline item actions" hidden>
-              <div className="context-menu-submenu" data-context-submenu="add">
-                <Button htmlType="button" role="menuitem" data-context-action="add-menu" aria-haspopup="menu" aria-expanded="false">
-                  <span className="context-menu-label">
-                    <PlusOutlined aria-hidden="true" />
-                    <span>Add</span>
-                  </span>
-                  <RightOutlined aria-hidden="true" />
-                </Button>
-                <div className="context-submenu-panel" role="menu" aria-label="Add item type">
-                  <ContextMenuButton action="birth" icon={<SmileOutlined />}>Birth</ContextMenuButton>
-                  <ContextMenuButton action="event" icon={<AimOutlined />}>Event</ContextMenuButton>
-                  <ContextMenuButton action="marker" icon={<FlagOutlined />}>Marker</ContextMenuButton>
-                  <ContextMenuButton action="note" icon={<FormOutlined />}>Note</ContextMenuButton>
-                  <ContextMenuButton action="period" icon={<CalendarOutlined />}>Period</ContextMenuButton>
-                  <ContextMenuButton action="line" icon={<MinusOutlined />}>Line</ContextMenuButton>
-                  <ContextMenuButton action="text" icon={<FontSizeOutlined />}>Text</ContextMenuButton>
-                </div>
-              </div>
-              <div className="context-menu-separator" role="separator"></div>
-              <ContextMenuAction action="copy" icon={<CopyOutlined />} shortcut="Ctrl/Cmd C">Copy</ContextMenuAction>
-              <ContextMenuAction action="paste" icon={<FileAddOutlined />} shortcut="Ctrl/Cmd V">Paste</ContextMenuAction>
-              <ContextMenuAction action="duplicate" icon={<FileTextOutlined />} shortcut="Ctrl/Cmd D">Duplicate</ContextMenuAction>
-              <ContextMenuAction action="lock-item" icon={<LockOutlined />}>Lock item</ContextMenuAction>
-              <ContextMenuAction action="unlock-item" icon={<UnlockOutlined />}>Unlock item</ContextMenuAction>
-              <div className="context-menu-separator" role="separator"></div>
-              <ContextMenuAction action="zoom-in" icon={<ZoomInOutlined />} shortcut="+">Zoom in</ContextMenuAction>
-              <ContextMenuAction action="zoom-out" icon={<ZoomOutOutlined />} shortcut="-">Zoom out</ContextMenuAction>
-              <ContextMenuAction action="fit" icon={<FullscreenOutlined />}>Fit</ContextMenuAction>
-              <div className="context-menu-separator" role="separator"></div>
-              <ContextMenuAction action="delete" icon={<DeleteOutlined />} shortcut="Del" danger>Delete</ContextMenuAction>
-            </div>
+            <TimelineContextMenu />
             <div className="timeline-info-panel" id="timelineInfoPanel" aria-live="polite">
               <div className="timeline-info-block">
                 <span className="timeline-info-kicker">Pointer</span>
@@ -540,48 +400,5 @@ export function TimelineEditor() {
 
       <input id="fileInput" type="file" accept="application/json,.json" hidden />
     </>
-  );
-}
-
-function MenuFoldIcon({ active }: { active: boolean }) {
-  return <MenuFoldOutlined className="toggle-icon-state sidebar-fold-icon" data-active={active} />;
-}
-
-function MenuUnfoldIcon({ active }: { active: boolean }) {
-  return <MenuUnfoldOutlined className="toggle-icon-state sidebar-unfold-icon" data-active={active} />;
-}
-
-function ContextMenuButton({ action, icon, children }: { action: string; icon: ReactNode; children: ReactNode }) {
-  return (
-    <Button htmlType="button" role="menuitem" data-context-add={action}>
-      <span className="context-menu-label">
-        {icon}
-        <span>{children}</span>
-      </span>
-    </Button>
-  );
-}
-
-function ContextMenuAction({
-  action,
-  icon,
-  shortcut,
-  danger = false,
-  children,
-}: {
-  action: string;
-  icon: ReactNode;
-  shortcut?: string;
-  danger?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <Button htmlType="button" role="menuitem" className={danger ? "danger" : undefined} data-context-action={action}>
-      <span className="context-menu-label">
-        {icon}
-        <span>{children}</span>
-      </span>
-      {shortcut ? <kbd>{shortcut}</kbd> : <span aria-hidden="true"></span>}
-    </Button>
   );
 }
