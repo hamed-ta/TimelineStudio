@@ -92,6 +92,8 @@ The sixth ADR 0009 implementation slice extracted note text wrapping, truncation
 
 The seventh ADR 0009 implementation slice extracted age and date-span formatting into `src/timeline/dateSpans.ts`. `app.js` still decides which selected or hovered item needs age context, but now imports the pure span formatters used by period labels and the timeline info panel. `dateSpans.test.js` covers borrowed month/day spans, compact and detailed labels, reversed ranges, age labels, and before-birth output.
 
+The eighth ADR 0009 implementation slice centralized color parsing, normalization, readable text color, color adjustment, RGB conversion, and HSV conversion in `src/timeline/colors.ts`. Both `app.js` and `src/timeline/model.ts` now share the same color normalization helpers. `colors.test.js` covers hash and bare hex parsing, fallback colors, readable text choices, channel clamping, and HSV conversion.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -419,6 +421,8 @@ Firebase should wait until the local Vite app is stable.
 - Sixth ADR 0009 extraction slice: `npm test` passed after moving note text wrapping, truncation, text direction, and first-baseline helpers into `features/timeline-editor/layout`.
 - RED: `npm test` failed because `src/timeline/dateSpans.ts` did not exist yet.
 - Seventh ADR 0009 extraction slice: `npm test` passed after moving age and date-span formatting into `src/timeline/dateSpans.ts`.
+- RED: `npm test` failed because `src/timeline/colors.ts` did not exist yet.
+- Eighth ADR 0009 extraction slice: `npm test` passed after centralizing color helpers in `src/timeline/colors.ts` and wiring `app.js` plus `src/timeline/model.ts` to use them.
 
 ## Open Issues
 
@@ -430,7 +434,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract date span formatters`
+`refactor: centralize timeline color helpers`
 
 ## Next Safe Step
 

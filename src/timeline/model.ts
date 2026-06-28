@@ -12,6 +12,10 @@ import {
   yearStartIso,
   type TimelineSnap,
 } from "./dates";
+import {
+  normalizeColor,
+  normalizeOptionalColor,
+} from "./colors";
 
 const DEFAULT_ROW_HEIGHT = 68;
 
@@ -277,16 +281,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isTimelineItemType(value: unknown): value is TimelineItemType {
   return ["birth", "event", "marker", "note", "period", "line", "text"].includes(String(value));
-}
-
-function normalizeColor(value: unknown): string {
-  const text = String(value || "").trim();
-  return /^#[0-9a-fA-F]{6}$/.test(text) ? text : ITEM_COLOR_PALETTE[6].value;
-}
-
-function normalizeOptionalColor(value: unknown): string {
-  const text = String(value || "").trim();
-  return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "";
 }
 
 function assignOptionalNumber<T extends keyof TimelineItem>(

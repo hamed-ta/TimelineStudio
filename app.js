@@ -28,6 +28,16 @@ import {
   titleForType,
 } from "./src/timeline/model";
 import {
+  adjustColor,
+  hexToHsv,
+  hexToRgb,
+  hsvToHex,
+  normalizeColor,
+  normalizeOptionalColor,
+  readableTextColor,
+  rgbToHex,
+} from "./src/timeline/colors";
+import {
   TIMELINE_JSON_MIME,
   parseTimelineJson,
   serializeTimelineJson,
@@ -3353,96 +3363,6 @@ import {
 
   function estimateSvgTextWidth(text) {
     return String(text || "").length * AXIS_LABEL_CHAR_WIDTH;
-  }
-
-  function readableTextColor(hex) {
-    const clean = normalizeColor(hex).slice(1);
-    const red = parseInt(clean.slice(0, 2), 16);
-    const green = parseInt(clean.slice(2, 4), 16);
-    const blue = parseInt(clean.slice(4, 6), 16);
-    const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-    return luminance > 0.56 ? "#1d2732" : "#ffffff";
-  }
-
-  function adjustColor(hex, amount) {
-    const clean = normalizeColor(hex).slice(1);
-    const red = clamp(parseInt(clean.slice(0, 2), 16) + amount, 0, 255);
-    const green = clamp(parseInt(clean.slice(2, 4), 16) + amount, 0, 255);
-    const blue = clamp(parseInt(clean.slice(4, 6), 16) + amount, 0, 255);
-    return `#${[red, green, blue].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
-  }
-
-  function parseHexColor(value) {
-    const text = String(value || "").trim();
-    if (/^#[0-9a-fA-F]{6}$/.test(text)) return text.toLowerCase();
-    if (/^[0-9a-fA-F]{6}$/.test(text)) return `#${text.toLowerCase()}`;
-    return null;
-  }
-
-  function normalizeColor(value) {
-    return parseHexColor(value) || ITEM_COLOR_PALETTE[6].value;
-  }
-
-  function normalizeOptionalColor(value) {
-    return parseHexColor(value) || "";
-  }
-
-  function hexToRgb(hex) {
-    const clean = normalizeColor(hex).slice(1);
-    return {
-      red: parseInt(clean.slice(0, 2), 16),
-      green: parseInt(clean.slice(2, 4), 16),
-      blue: parseInt(clean.slice(4, 6), 16),
-    };
-  }
-
-  function rgbToHex(red, green, blue) {
-    return `#${[red, green, blue].map((value) => Math.round(clamp(value, 0, 255)).toString(16).padStart(2, "0")).join("")}`;
-  }
-
-  function hexToHsv(hex) {
-    const { red, green, blue } = hexToRgb(hex);
-    const r = red / 255;
-    const g = green / 255;
-    const b = blue / 255;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const delta = max - min;
-    let hue = 0;
-
-    if (delta !== 0) {
-      if (max === r) hue = 60 * (((g - b) / delta) % 6);
-      else if (max === g) hue = 60 * ((b - r) / delta + 2);
-      else hue = 60 * ((r - g) / delta + 4);
-    }
-    if (hue < 0) hue += 360;
-
-    return {
-      h: hue,
-      s: max === 0 ? 0 : (delta / max) * 100,
-      v: max * 100,
-    };
-  }
-
-  function hsvToHex(hue, saturation, value) {
-    const h = ((Number(hue) % 360) + 360) % 360;
-    const s = clamp(Number(saturation), 0, 100) / 100;
-    const v = clamp(Number(value), 0, 100) / 100;
-    const chroma = v * s;
-    const x = chroma * (1 - Math.abs(((h / 60) % 2) - 1));
-    const m = v - chroma;
-    let red = 0;
-    let green = 0;
-    let blue = 0;
-
-    if (h < 60) [red, green, blue] = [chroma, x, 0];
-    else if (h < 120) [red, green, blue] = [x, chroma, 0];
-    else if (h < 180) [red, green, blue] = [0, chroma, x];
-    else if (h < 240) [red, green, blue] = [0, x, chroma];
-    else if (h < 300) [red, green, blue] = [x, 0, chroma];
-    else [red, green, blue] = [chroma, 0, x];
-
-    return rgbToHex((red + m) * 255, (green + m) * 255, (blue + m) * 255);
   }
 
   function randomPaletteColor() {
