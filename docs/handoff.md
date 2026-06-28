@@ -98,6 +98,8 @@ The ninth ADR 0009 implementation slice introduced `src/features/timeline-editor
 
 The tenth ADR 0009 implementation slice moved the React app shell from `src/App.tsx` to `src/app/App.tsx` and moved the legacy editor runtime from root `app.js` to `src/features/timeline-editor/legacyTimelineEditor.js`. `src/main.tsx` now imports both through the feature-first source tree, and CI/release/docs syntax checks target the feature-owned legacy runtime path.
 
+The eleventh ADR 0009 implementation slice split app and feature responsibilities in React. `src/app/App.tsx` is now a small provider wrapper, `src/app/providers/AppThemeProvider.tsx` owns Ant Design theme configuration and System/Light/Dark preference state, and `src/features/timeline-editor/TimelineEditor.tsx` owns the timeline editor shell, toolbar/sidebar collapse state, and legacy DOM bridge IDs.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -430,6 +432,7 @@ Firebase should wait until the local Vite app is stable.
 - RED: `npm test` failed because `src/features/timeline-editor/timelineReducer.ts` did not exist yet.
 - Ninth ADR 0009 reducer slice: `npm test` passed after adding the initial reducer boundary and tests for core settings, item, line, selection, clipboard, and dirty-state transitions.
 - Tenth ADR 0009 structure slice: moved the React shell and legacy editor runtime under `src/app` and `src/features/timeline-editor`; validate with `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build`.
+- Eleventh ADR 0009 component slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after splitting `AppThemeProvider` and `TimelineEditor`. Vite still reports the expected Ant Design chunk-size warning.
 
 ## Open Issues
 
@@ -441,7 +444,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: move legacy editor into timeline feature`
+`refactor: split app provider and timeline editor shell`
 
 ## Next Safe Step
 

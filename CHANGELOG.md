@@ -21,6 +21,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Centralized timeline color parsing, normalization, readability, adjustment, RGB, and HSV helpers in `timeline/colors` with focused unit tests.
 - Added the first tested `features/timeline-editor` reducer boundary for core timeline settings, item, line, selection, and clipboard state transitions.
 - Moved the React app shell under `src/app` and the legacy editor runtime under `features/timeline-editor` so the entrypoint follows the feature-first source layout.
+- Split the React app wrapper, app theme provider, and timeline editor shell into `src/app/providers` and `features/timeline-editor/TimelineEditor`.
 
 ### Fixed
 

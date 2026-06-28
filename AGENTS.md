@@ -6,8 +6,10 @@ Timeline Studio is a Vite, React, and TypeScript web app for building personal h
 
 Main files:
 - `index.html`: app shell
-- `src/app/App.tsx`: React-rendered app shell
+- `src/app/App.tsx`: app-level provider wrapper
+- `src/app/providers/AppThemeProvider.tsx`: Ant Design theme provider and theme preference state
 - `src/main.tsx`: React entrypoint and timeline editor bootstrap
+- `src/features/timeline-editor/TimelineEditor.tsx`: React-rendered timeline editor shell
 - `src/features/timeline-editor/legacyTimelineEditor.js`: timeline state, rendering, import/export, and interactions during the migration
 - `styles.css`: layout and visual design
 - `README.md`: user-facing project notes
