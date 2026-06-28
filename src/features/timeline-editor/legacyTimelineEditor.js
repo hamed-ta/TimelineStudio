@@ -79,10 +79,15 @@ import {
   isEditableShortcutTarget,
 } from "./interactions/keyboardShortcuts";
 import {
-  rangesOverlap,
   snapEdgeOffset,
   snapMoveDelta,
 } from "./interactions/edgeSnap";
+import {
+  clampMovedRange,
+  preventMovedRangeOverlap,
+  preventResizedEndOverlap,
+  preventResizedStartOverlap,
+} from "./interactions/dragRange";
 import {
   canPlaceAxisLabel,
 } from "./layout/axisLayout";
@@ -2912,18 +2917,34 @@ import {
     if (mode === "start" && hasRange) {
       start = snapEdgeOffset(start, neighbors, threshold);
       start = clamp(start, minOffset, end - minDurationDays());
-      start = preventResizedStartOverlap(start, end, neighbors);
+      start = preventResizedStartOverlap(start, end, neighbors, minDurationDays());
     } else if (mode === "end" && hasRange) {
       end = snapEdgeOffset(end, neighbors, threshold);
       end = clamp(end, start + minDurationDays(), maxRangeEnd);
-      end = preventResizedEndOverlap(start, end, neighbors);
+      end = preventResizedEndOverlap(start, end, neighbors, minDurationDays());
     } else {
       const delta = snapMoveDelta(start, end, neighbors, threshold);
       start += delta;
       end += delta;
-      [start, end] = clampMovedRange(start, end, duration, hasRange, maxRangeEnd, maxPoint);
+      [start, end] = clampMovedRange({
+        start,
+        end,
+        duration,
+        hasRange,
+        minOffset,
+        maxRangeEnd,
+        maxPoint,
+      });
       if (hasRange) {
-        [start, end] = preventMovedRangeOverlap(start, end, duration, neighbors, originalStart, maxRangeEnd);
+        [start, end] = preventMovedRangeOverlap({
+          start,
+          end,
+          duration,
+          neighbors,
+          originalStart,
+          minOffset,
+          maxRangeEnd,
+        });
       }
     }
 
@@ -2957,66 +2978,6 @@ import {
 
   function edgeSnapThresholdDays() {
     return clamp(Math.ceil(EDGE_SNAP_PIXELS / pixelsPerDay()), 1, EDGE_SNAP_MAX_DAYS);
-  }
-
-  function preventResizedStartOverlap(start, end, neighbors) {
-    return neighbors
-      .filter((neighbor) => neighbor.hasRange)
-      .reduce((nextStart, neighbor) => (
-        rangesOverlap(nextStart, end, neighbor.start, neighbor.end)
-          ? Math.min(end - minDurationDays(), neighbor.end)
-          : nextStart
-      ), start);
-  }
-
-  function preventResizedEndOverlap(start, end, neighbors) {
-    return neighbors
-      .filter((neighbor) => neighbor.hasRange)
-      .reduce((nextEnd, neighbor) => (
-        rangesOverlap(start, nextEnd, neighbor.start, neighbor.end)
-          ? Math.max(start + minDurationDays(), neighbor.start)
-          : nextEnd
-      ), end);
-  }
-
-  function preventMovedRangeOverlap(start, end, duration, neighbors, originalStart, maxRangeEnd) {
-    let nextStart = start;
-    let nextEnd = end;
-    const movingRight = nextStart >= originalStart;
-    const blockers = neighbors.filter((neighbor) => neighbor.hasRange);
-
-    for (let index = 0; index < blockers.length; index += 1) {
-      const overlap = blockers.find((neighbor) => rangesOverlap(nextStart, nextEnd, neighbor.start, neighbor.end));
-      if (!overlap) break;
-      if (movingRight) {
-        nextEnd = overlap.start;
-        nextStart = nextEnd - duration;
-      } else {
-        nextStart = overlap.end;
-        nextEnd = nextStart + duration;
-      }
-      [nextStart, nextEnd] = clampMovedRange(nextStart, nextEnd, duration, true, maxRangeEnd, maxRangeEnd);
-    }
-
-    return [nextStart, nextEnd];
-  }
-
-  function clampMovedRange(start, end, duration, hasRange, maxRangeEnd, maxPoint) {
-    if (!hasRange) {
-      const point = clamp(start, dateOffset(timeline.settings.startDate), maxPoint);
-      return [point, point];
-    }
-    let nextStart = start;
-    let nextEnd = end;
-    if (nextStart < dateOffset(timeline.settings.startDate)) {
-      nextStart = dateOffset(timeline.settings.startDate);
-      nextEnd = nextStart + duration;
-    }
-    if (nextEnd > maxRangeEnd) {
-      nextEnd = maxRangeEnd;
-      nextStart = nextEnd - duration;
-    }
-    return [nextStart, nextEnd];
   }
 
   function dateOffset(isoDate) {

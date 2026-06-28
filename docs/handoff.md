@@ -122,6 +122,8 @@ The twenty-first ADR 0009 implementation slice introduced `src/features/timeline
 
 The twenty-second ADR 0009 implementation slice extracted SVG text fitting, text-width estimation, and generated-ID sanitizing into `src/features/timeline-editor/canvas/svgText.ts`. The legacy renderer still creates SVG DOM nodes, but shared canvas text/id helpers are now pure and tested in `svgText.test.js`.
 
+The twenty-third ADR 0009 implementation slice extracted drag-range clamping, resized-start/end overlap prevention, and moved-range overlap prevention into `src/features/timeline-editor/interactions/dragRange.ts`. Pointer handling still lives in the legacy runtime, but the same-line range safety math is now pure and tested in `dragRange.test.js`.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -468,6 +470,7 @@ Firebase should wait until the local Vite app is stable.
 - Twentieth ADR 0009 interaction slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving context-menu action state derivation into `features/timeline-editor/interactions`. The test suite now has 61 passing tests.
 - Twenty-first ADR 0009 item slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving period derived label metadata into `features/timeline-editor/items`. The test suite now has 65 passing tests.
 - Twenty-second ADR 0009 canvas slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving SVG text/id helpers into `features/timeline-editor/canvas`. The test suite now has 68 passing tests.
+- Twenty-third ADR 0009 interaction slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving drag-range clamping and overlap prevention into `features/timeline-editor/interactions`. The test suite now has 73 passing tests.
 
 ## Open Issues
 
@@ -479,7 +482,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`refactor: extract svg text helpers`
+`refactor: extract drag range helpers`
 
 ## Next Safe Step
 
