@@ -6,10 +6,12 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Improve note balloons with wrapped text, automatic stacking, drag positioning, and resizing.
+Document and start the modular React timeline editor architecture migration.
 
 ## Now
 
+- Use ADR 0009 as the target architecture for shrinking `app.js` into feature-oriented React modules.
+- Start implementation with pure extraction slices before moving visible UI or SVG rendering.
 - Keep the birthdate label to the left of the vertical line when possible.
 - Show hovered date, Iranian date, and age in a fixed info panel below the timeline instead of a cursor-following tooltip.
 - Show selected item dates, duration, line, and age context in the same info panel.
@@ -59,6 +61,9 @@ Improve note balloons with wrapped text, automatic stacking, drag positioning, a
 
 ## Next
 
+- Extract pure note layout, axis layout, edge snapping, and keyboard shortcut helpers from `app.js`.
+- Add a `features/timeline-editor/` folder with reducer, action, selector, interaction, layout, component, canvas, and item boundaries.
+- Introduce timeline reducer tests or focused pure helper tests before moving more interactive behavior.
 - Start small UI polish slices in React while preserving the element IDs and behavior expected by `app.js`.
 - Continue migrating remaining custom popovers, menus, picker controls, and timeline controller state into React so more Ant Design components can be used directly.
 - Verify local JSON load, edit, save, pan, zoom, fit, and export before adding Firebase.
@@ -127,6 +132,7 @@ Improve note balloons with wrapped text, automatic stacking, drag positioning, a
 - Removed the tracked `.DS_Store` file from the repository.
 - Added the app name/version footer.
 - Updated manual release dispatch for same-version release refreshes from main.
+- Accepted the modular React timeline editor architecture in ADR 0009.
 
 ## Risks
 
@@ -142,6 +148,8 @@ Improve note balloons with wrapped text, automatic stacking, drag positioning, a
 - Dependencies can increase bundle size, audit noise, and maintenance cost if they are not scoped to real feature value.
 - Ant Design adds a larger dependency footprint; use it as the shared UI system rather than mixing unrelated component libraries.
 - GitHub Pages project deployments need the Vite base path to match the repository path unless a custom domain is configured.
+- Modularization can make the app harder to follow if files are split by generic type instead of timeline-editor feature boundaries.
+- Moving rendering into React must preserve existing local JSON behavior, item interactions, exports, and manual browser smoke checks.
 
 ## Verification Checklist
 

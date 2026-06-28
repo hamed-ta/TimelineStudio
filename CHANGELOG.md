@@ -10,6 +10,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 
 - Improved note balloons with shaped bubble bodies, movable tips, dotted highlighted background leaders, separate balloon and text colors, multi-line text wrapping, automatic direction alignment, automatic vertical stacking at lower zoom levels, manual drag positioning from the balloon body, resizing, inline timeline text editing, a larger sidebar text editor, hidden note title controls, derived internal note titles, and simpler selection headings.
 - Tightened note balloon padding and minimum resize limits, reduced the top tip size, and replaced the selected-note corner square with a smaller diagonal resize grip.
+- Documented the modular React timeline editor architecture in ADR 0009, including reducer-owned editor state, feature-oriented folders, React item components, custom interaction hooks, and pure layout modules.
 
 ### Fixed
 

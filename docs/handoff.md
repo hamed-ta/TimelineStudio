@@ -2,11 +2,13 @@
 
 ## Current Goal
 
-Improve note item layout and editing.
+Prepare the modular React timeline editor architecture migration.
 
 ## Last Known State
 
 Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, pan, zoom, fit, lock state, and line renaming.
+
+ADR 0009 accepts a feature-oriented React timeline editor architecture. The migration target is `features/timeline-editor/` with reducer-owned editor state, React components for UI and SVG rendering, custom hooks for reusable interactions, and pure TypeScript modules for timeline layout and math. The project should not adopt MVC, MVVM, or Redux yet; use `useReducer` and context first.
 
 Typed helper modules own timeline model, dates, formatters, JSON, PDF, SVG export, file, and media helpers.
 
@@ -19,6 +21,8 @@ The project no longer treats dependency-free status as absolute. ADR 0006 allows
 ADR 0007 accepts Ant Design as the app UI system. The React shell now uses `antd` for app cards, buttons, inputs, and light/dark theme algorithms, plus `@ant-design/icons` for toolbar and menu iconography. Native bridge controls remain where the legacy `app.js` controller still requires exact DOM behavior, such as real `select`, `range`, and hidden compatibility inputs.
 
 ADR 0008 accepts GitHub Pages as the first public deployment path. CI validates branch pushes and pull requests. Version tags such as `v0.2.1` build the Vite app, deploy `dist` to GitHub Pages, and create or update a GitHub Release from the matching `CHANGELOG.md` section.
+
+The next architecture implementation should start with pure extractions from `app.js`: note layout, axis layout, edge snapping, keyboard shortcut guards, and reducer-ready timeline mutations. Keep DOM IDs and data attributes until the owning behavior has fully moved into React.
 
 The repository now has root community documents for contributors, vulnerability reporting, and community conduct.
 
