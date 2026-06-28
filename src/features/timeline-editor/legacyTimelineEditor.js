@@ -3,6 +3,7 @@ import {
   addMonthsIso,
   clamp,
   clampIso,
+  compareIso,
   daysBetween,
   isoDay,
   isoFromParts,
@@ -3120,9 +3121,7 @@ import {
         setStatus("Load canceled");
         return;
       }
-      console.error(error);
-      setStatus("Could not load JSON");
-      window.alert("The selected file is not a valid timeline JSON file.");
+      handleLoadTimelineError(error);
     }
   }
 
@@ -3132,9 +3131,7 @@ import {
     try {
       await loadTimelineFromFile(file, null);
     } catch (error) {
-      console.error(error);
-      setStatus("Could not load JSON");
-      window.alert("The selected file is not a valid timeline JSON file.");
+      handleLoadTimelineError(error);
     } finally {
       dom.fileInput.value = "";
     }
@@ -3142,12 +3139,34 @@ import {
 
   async function loadTimelineFromFile(file, handle) {
     const text = await file.text();
-    timeline = parseTimelineJson(text);
+    timeline = parseTimelineFileText(text);
     selectedId = null;
     setCurrentFile(handle, file.name);
     renderAll({ save: false });
     setDirty(false);
     setStatus(handle ? `Loaded ${file.name}` : "JSON loaded; Save downloads a copy");
+  }
+
+  function parseTimelineFileText(text) {
+    try {
+      return parseTimelineJson(text);
+    } catch (error) {
+      const parseError = new Error("Invalid timeline JSON file");
+      parseError.code = "INVALID_TIMELINE_JSON";
+      parseError.cause = error;
+      throw parseError;
+    }
+  }
+
+  function handleLoadTimelineError(error) {
+    console.error(error);
+    if (error?.code === "INVALID_TIMELINE_JSON") {
+      setStatus("Could not load JSON");
+      window.alert("The selected file is not a valid timeline JSON file.");
+      return;
+    }
+    setStatus("Could not render timeline");
+    window.alert("The timeline file loaded, but the app could not render it.");
   }
 
   function exportSvgFile() {

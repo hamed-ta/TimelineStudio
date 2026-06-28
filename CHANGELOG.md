@@ -38,6 +38,8 @@ This project follows semantic versioning. The current package version is `0.2.1`
 
 ### Fixed
 
+- Restored the missing timeline date comparison import so the legacy renderer draws the timeline grid and loaded files again.
+- Made timeline load errors distinguish invalid JSON from render failures after a valid parse.
 - Aligned the selected note outline to the balloon shape, kept sidebar balloon text visible while editing, and centered note text more evenly within the balloon body.
 - Made note inline editing easier to trigger, kept note selection visible for context menu actions, and angled note balloon tips toward slanted leader lines.
 - Kept `Delete` and `Backspace` available for text editing inside timeline editor fields instead of deleting the selected item.

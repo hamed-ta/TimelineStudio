@@ -128,6 +128,8 @@ The twenty-third ADR 0009 implementation slice extracted drag-range clamping, re
 
 The twenty-fourth ADR 0009 implementation slice extracted info-panel pointer and selection text into `src/features/timeline-editor/timelineInfo.ts`. The legacy runtime still writes text into DOM nodes, but note title, selected item date, period duration, and age-line formatting now live in a tested feature view-model helper.
 
+The renderer regression after ADR 0009 extractions has been fixed. `compareIso` is imported again by the legacy runtime, so the grid, default empty timeline, and loaded-file render path no longer fail before drawing. Timeline load errors now distinguish invalid JSON parse failures from render failures after a valid parse.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -311,6 +313,9 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke: the Ant read-only button toggled `aria-pressed`, disabled item editing and duplicate controls, applied the locked viewport class, and toggled back off.
 - Browser smoke: context menu opened with Ant buttons, Add submenu was closed by default, old Lock all / Unlock all actions were absent, opening Add showed Birth/Event/Marker/Note/Period/Line/Text, and choosing Period created `New period`.
 - Browser smoke: no console warnings or errors were reported for the Ant shell checks.
+- Renderer regression fix: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed. The build still reports the expected Vite chunk-size warning.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: the default empty timeline rendered an SVG grid with one visible axis year, five lane labels, the empty state overlay, and no new console errors.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: creating Event, Period, Note, and Birth items from the toolbar produced four visible timeline items, including one note and one birth item, with no new console errors.
 - RED/documented: product scenarios now require context-menu Add submenu creation, individual item locking, and toolbar-only read-only mode.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
@@ -487,7 +492,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Suggested Commit Message
 
-`docs: update architecture refactor handoff`
+`fix: restore timeline renderer after refactor`
 
 ## Next Safe Step
 
