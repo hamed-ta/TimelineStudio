@@ -2,11 +2,15 @@
 
 ## Current Goal
 
-Improve note item layout and editing.
+Prepare the modular React timeline editor architecture migration.
 
 ## Last Known State
 
-Timeline Studio has a Vite, React, and TypeScript shell. The existing legacy `app.js` timeline engine still owns rendering, DOM events, pan, zoom, fit, lock state, and line renaming.
+Timeline Studio has a Vite, React, and TypeScript shell under `src/app`. The existing legacy timeline editor runtime now lives at `src/features/timeline-editor/legacyTimelineEditor.js` and still owns rendering, DOM events, pan, zoom, fit, lock state, and line renaming during the migration.
+
+ADR 0009 accepts a feature-oriented React timeline editor architecture. The migration target is `features/timeline-editor/` with reducer-owned editor state, React components for UI and SVG rendering, custom hooks for reusable interactions, and pure TypeScript modules for timeline layout and math. The project should not adopt MVC, MVVM, or Redux yet; use `useReducer` and context first.
+
+The ADR 0009 source boundaries now exist across `src/app`, `features/timeline-editor/components`, `canvas`, `interactions`, `items`, `layout`, reducer/action/selector modules, `src/shared/hooks`, `src/platform`, and `src/timeline`. The biggest remaining architecture work is moving live state ownership and SVG rendering out of the legacy runtime.
 
 Typed helper modules own timeline model, dates, formatters, JSON, PDF, SVG export, file, and media helpers.
 
@@ -16,9 +20,11 @@ Typography now uses a dependency-free modern sans-serif stack that prefers Persi
 
 The project no longer treats dependency-free status as absolute. ADR 0006 allows reasonable dependencies when they materially improve accessibility, reliability, maintainability, or complex feature behavior, with documentation requirements based on scope.
 
-ADR 0007 accepts Ant Design as the app UI system. The React shell now uses `antd` for app cards, buttons, inputs, and light/dark theme algorithms, plus `@ant-design/icons` for toolbar and menu iconography. Native bridge controls remain where the legacy `app.js` controller still requires exact DOM behavior, such as real `select`, `range`, and hidden compatibility inputs.
+ADR 0007 accepts Ant Design as the app UI system. The React shell now uses `antd` for app cards, buttons, inputs, and light/dark theme algorithms, plus `@ant-design/icons` for toolbar and menu iconography. Native bridge controls remain where the legacy timeline editor controller still requires exact DOM behavior, such as real `select`, `range`, and hidden compatibility inputs.
 
 ADR 0008 accepts GitHub Pages as the first public deployment path. CI validates branch pushes and pull requests. Version tags such as `v0.2.1` build the Vite app, deploy `dist` to GitHub Pages, and create or update a GitHub Release from the matching `CHANGELOG.md` section.
+
+The next architecture implementation should continue moving ownership from the legacy timeline editor runtime into `features/timeline-editor` modules while keeping DOM IDs and data attributes until each owning behavior has fully moved into React.
 
 The repository now has root community documents for contributors, vulnerability reporting, and community conduct.
 
@@ -74,6 +80,56 @@ Timeline items now include a note type for point annotations. Notes render with 
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
 
+The first ADR 0009 implementation slice is in place. `app.js` imports the editable shortcut target guard from `src/features/timeline-editor/interactions/keyboardShortcuts.ts`, and `src/features/timeline-editor/interactions/keyboardShortcuts.test.js` covers editable, non-editable, and non-element event targets. The built-in Node test runner is exposed as `npm test`, and CI/release workflows now run it before typecheck and build.
+
+The second ADR 0009 implementation slice extracted same-line edge-snap primitives into `src/features/timeline-editor/interactions/edgeSnap.ts`. `app.js` still owns date conversion and item mutation, but now imports `snapEdgeOffset`, `snapMoveDelta`, and `rangesOverlap` from the feature interaction module. `src/features/timeline-editor/interactions/edgeSnap.test.js` covers nearest-edge snapping, unchanged out-of-threshold edges, move-delta snapping, and half-open range overlap semantics.
+
+The third ADR 0009 implementation slice extracted the axis label collision helper into `src/features/timeline-editor/layout/axisLayout.ts`. `app.js` still owns SVG label drawing for now, but month and day label placement now delegates the pure collision check to the feature layout module. `src/features/timeline-editor/layout/axisLayout.test.js` covers allowed, blocked, and exactly-at-gap placement.
+
+The fourth ADR 0009 implementation slice extracted note stacking collision helpers into `src/features/timeline-editor/layout/noteLayout.ts`. `app.js` still owns note sizing, text wrapping, and SVG drawing, but automatic vertical stacking now delegates `findAvailableNoteY` to the feature layout module. `src/features/timeline-editor/layout/noteLayout.test.js` covers gap-based rectangle overlap, non-overlap at touching edges, and stacking through one or more blockers.
+
+The fifth ADR 0009 implementation slice extracted note bubble SVG path geometry into `src/features/timeline-editor/layout/noteLayout.ts`. `app.js` still owns note constants and drawing, but now passes the note tip geometry options into the pure layout helper. `noteLayout.test.js` covers centered tip paths, tip lean toward the anchor, and clamping the tip into the rounded body.
+
+The sixth ADR 0009 implementation slice extracted note text wrapping, truncation, text direction, and first-baseline calculations into `src/features/timeline-editor/layout/noteLayout.ts`. `app.js` still owns browser text measurement and note drawing, but injects the measurement callback into the pure helper functions. `noteLayout.test.js` covers measured wrapping, long-word splitting, visible-line truncation, fitted ellipsis text, RTL/LTR detection, and baseline centering.
+
+The seventh ADR 0009 implementation slice extracted age and date-span formatting into `src/timeline/dateSpans.ts`. `app.js` still decides which selected or hovered item needs age context, but now imports the pure span formatters used by period labels and the timeline info panel. `dateSpans.test.js` covers borrowed month/day spans, compact and detailed labels, reversed ranges, age labels, and before-birth output.
+
+The eighth ADR 0009 implementation slice centralized color parsing, normalization, readable text color, color adjustment, RGB conversion, and HSV conversion in `src/timeline/colors.ts`. Both `app.js` and `src/timeline/model.ts` now share the same color normalization helpers. `colors.test.js` covers hash and bare hex parsing, fallback colors, readable text choices, channel clamping, and HSV conversion.
+
+The ninth ADR 0009 implementation slice introduced `src/features/timeline-editor/timelineReducer.ts` as the first reducer boundary for editor state. It is not wired into the live app yet; the legacy timeline editor controller still owns runtime state. `timelineReducer.test.js` covers settings updates, item add/update/delete, lane reorder, lane removal, selection clearing, item copying, and dirty-state behavior.
+
+The tenth ADR 0009 implementation slice moved the React app shell from `src/App.tsx` to `src/app/App.tsx` and moved the legacy editor runtime from root `app.js` to `src/features/timeline-editor/legacyTimelineEditor.js`. `src/main.tsx` now imports both through the feature-first source tree, and CI/release/docs syntax checks target the feature-owned legacy runtime path.
+
+The eleventh ADR 0009 implementation slice split app and feature responsibilities in React. `src/app/App.tsx` is now a small provider wrapper, `src/app/providers/AppThemeProvider.tsx` owns Ant Design theme configuration and System/Light/Dark preference state, and `src/features/timeline-editor/TimelineEditor.tsx` owns the timeline editor shell, toolbar/sidebar collapse state, and legacy DOM bridge IDs.
+
+The twelfth ADR 0009 implementation slice extracted reusable timeline editor bridge components into `src/features/timeline-editor/components/`: `FieldLabel`, `ColorPickerField`, `ToolbarButton`, `PanelToggleIcons`, and `TimelineContextMenu`. `TimelineEditor.tsx` now composes those feature components while preserving the existing DOM IDs and data attributes required by the legacy runtime.
+
+The thirteenth ADR 0009 implementation slice split `TimelineEditor.tsx` into named feature components: `TimelineHeader`, `EditorSidebar`, `TimelineToolbar`, `TimelineCanvas`, `LineEditorPopover`, and `TimelineInfoPanel`. `TimelineEditor.tsx` is now a small composition layer that owns only sidebar and toolbar collapse state plus app footer/file input placement.
+
+The fourteenth ADR 0009 implementation slice moved PDF and SVG export helpers into `src/timeline/export/` and updated the legacy runtime imports. This matches the target source layout while preserving export behavior.
+
+The fifteenth ADR 0009 implementation slice added `src/features/timeline-editor/timelineActions.ts`, `timelineSelectors.ts`, and `useTimelineEditor.ts`. The live runtime is still legacy-owned, but the reducer boundary now has action creators, selectors, and a hook factory ready for a later React state wiring slice. `timelineSelectors.test.js` covers selected-item lookup, earliest birth selection, lane count derivation, create/paste permission, and read-only state.
+
+The sixteenth ADR 0009 implementation slice extracted timeline coordinate conversion, fit-zoom calculation, snap rounding, minimum durations, and default end-date math into `src/features/timeline-editor/layout/timelineLayout.ts`. The legacy runtime still calls thin wrappers for DOM-specific state, but the reusable layout math now has focused tests in `timelineLayout.test.js`.
+
+The seventeenth ADR 0009 implementation slice moved the React timeline SVG shell from `components/TimelineCanvas.tsx` into `src/features/timeline-editor/canvas/TimelineCanvas.tsx`. The markup, DOM IDs, and legacy runtime bindings are unchanged.
+
+The eighteenth ADR 0009 implementation slice extracted reusable browser-storage-backed boolean state into `src/shared/hooks/usePersistentBoolean.ts`. `TimelineEditor.tsx` now uses the shared hook for sidebar and toolbar collapse preferences instead of owning local storage helpers directly.
+
+The nineteenth ADR 0009 implementation slice introduced `src/features/timeline-editor/items/noteItem.ts` for note display text, derived titles, text color, border color, finite-number checks, and size calculation. The legacy SVG renderer still draws notes, but note-specific pure behavior now lives in the feature `items` boundary with tests in `noteItem.test.js`.
+
+The twentieth ADR 0009 implementation slice extracted context-menu action enablement, hidden-state, and add-item disabled rules into `src/features/timeline-editor/interactions/contextMenu.ts`. The legacy runtime still owns DOM placement and event dispatch, but menu capability calculation is now pure and tested in `contextMenu.test.js`.
+
+The twenty-first ADR 0009 implementation slice introduced `src/features/timeline-editor/items/periodItem.ts` for period derived age and duration metadata. The legacy SVG renderer still draws labels, but the label visibility and value calculation are now pure and tested in `periodItem.test.js`.
+
+The twenty-second ADR 0009 implementation slice extracted SVG text fitting, text-width estimation, and generated-ID sanitizing into `src/features/timeline-editor/canvas/svgText.ts`. The legacy renderer still creates SVG DOM nodes, but shared canvas text/id helpers are now pure and tested in `svgText.test.js`.
+
+The twenty-third ADR 0009 implementation slice extracted drag-range clamping, resized-start/end overlap prevention, and moved-range overlap prevention into `src/features/timeline-editor/interactions/dragRange.ts`. Pointer handling still lives in the legacy runtime, but the same-line range safety math is now pure and tested in `dragRange.test.js`.
+
+The twenty-fourth ADR 0009 implementation slice extracted info-panel pointer and selection text into `src/features/timeline-editor/timelineInfo.ts`. The legacy runtime still writes text into DOM nodes, but note title, selected item date, period duration, and age-line formatting now live in a tested feature view-model helper.
+
+The renderer regression after ADR 0009 extractions has been fixed. `compareIso` is imported again by the legacy runtime, so the grid, default empty timeline, and loaded-file render path no longer fail before drawing. Timeline load errors now distinguish invalid JSON parse failures from render failures after a valid parse.
+
 Period bars now have a restrained color background and light shadow. The radius is moderate to avoid a fully rounded pill look.
 
 Wide period bars can show derived labels for age at the start, age at the end, and period duration. Period label settings are saved, but the generated age and duration text is calculated live from dates.
@@ -90,7 +146,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`feat: show app version footer` on the current `main` tip
+`refactor: extract timeline info helpers` on the current `feature/fo` tip
 
 ## Work Completed This Session
 
@@ -257,6 +313,9 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke: the Ant read-only button toggled `aria-pressed`, disabled item editing and duplicate controls, applied the locked viewport class, and toggled back off.
 - Browser smoke: context menu opened with Ant buttons, Add submenu was closed by default, old Lock all / Unlock all actions were absent, opening Add showed Birth/Event/Marker/Note/Period/Line/Text, and choosing Period created `New period`.
 - Browser smoke: no console warnings or errors were reported for the Ant shell checks.
+- Renderer regression fix: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed. The build still reports the expected Vite chunk-size warning.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: the default empty timeline rendered an SVG grid with one visible axis year, five lane labels, the empty state overlay, and no new console errors.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: creating Event, Period, Note, and Birth items from the toolbar produced four visible timeline items, including one note and one birth item, with no new console errors.
 - RED/documented: product scenarios now require context-menu Add submenu creation, individual item locking, and toolbar-only read-only mode.
 - `node --check app.js`: passed.
 - `npm run typecheck`: passed.
@@ -387,19 +446,54 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: two fast clicks at the center of a note balloon body opened `#noteInlineEditor` with the existing note text selected.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: pressing `Backspace` inside `#noteInlineEditor` edited the note text, kept one note item on the timeline, and did not open the delete-item confirmation.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: clicking outside `#noteInlineEditor` committed `Outside commit`, hid the editor, and kept one note item on the timeline.
+- RED: `npm test` failed because `src/features/timeline-editor/interactions/keyboardShortcuts.ts` did not exist yet.
+- First ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving `isEditableShortcutTarget` into `features/timeline-editor/interactions`. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/interactions/edgeSnap.ts` did not exist yet.
+- Second ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving edge-snap primitives into `features/timeline-editor/interactions`. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/layout/axisLayout.ts` did not exist yet.
+- Third ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving axis label collision checking into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/layout/noteLayout.ts` did not exist yet.
+- Fourth ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving note stacking collision helpers into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/layout/noteLayout.ts` did not export `noteBubblePath`.
+- Fifth ADR 0009 extraction slice: `npm test`, `node --check app.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving note bubble SVG path geometry into `features/timeline-editor/layout`. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/layout/noteLayout.ts` did not export `fitNoteText`.
+- Sixth ADR 0009 extraction slice: `npm test` passed after moving note text wrapping, truncation, text direction, and first-baseline helpers into `features/timeline-editor/layout`.
+- RED: `npm test` failed because `src/timeline/dateSpans.ts` did not exist yet.
+- Seventh ADR 0009 extraction slice: `npm test` passed after moving age and date-span formatting into `src/timeline/dateSpans.ts`.
+- RED: `npm test` failed because `src/timeline/colors.ts` did not exist yet.
+- Eighth ADR 0009 extraction slice: `npm test` passed after centralizing color helpers in `src/timeline/colors.ts` and wiring `app.js` plus `src/timeline/model.ts` to use them.
+- RED: `npm test` failed because `src/features/timeline-editor/timelineReducer.ts` did not exist yet.
+- Ninth ADR 0009 reducer slice: `npm test` passed after adding the initial reducer boundary and tests for core settings, item, line, selection, clipboard, and dirty-state transitions.
+- Tenth ADR 0009 structure slice: moved the React shell and legacy editor runtime under `src/app` and `src/features/timeline-editor`; validate with `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build`.
+- Eleventh ADR 0009 component slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after splitting `AppThemeProvider` and `TimelineEditor`. Vite still reports the expected Ant Design chunk-size warning.
+- Twelfth ADR 0009 component slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after extracting reusable editor bridge controls and the context menu into feature component files. Vite still reports the expected Ant Design chunk-size warning.
+- Thirteenth ADR 0009 component slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after splitting the header, sidebar, toolbar, canvas shell, line editor popover, and info panel into named feature components. Vite still reports the expected Ant Design chunk-size warning.
+- Fourteenth ADR 0009 structure slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving export helpers into `src/timeline/export`. Vite still reports the expected Ant Design chunk-size warning.
+- Fifteenth ADR 0009 reducer-support slice: `npm test`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after adding action creators, selectors, and `useTimelineEditor`. The test suite now has 47 passing tests. Vite still reports the expected Ant Design chunk-size warning.
+- RED: `npm test` failed because `src/features/timeline-editor/layout/timelineLayout.ts` did not exist yet.
+- Sixteenth ADR 0009 layout slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after extracting timeline coordinate, fit, snap, and duration helpers into `features/timeline-editor/layout`. The test suite now has 52 passing tests.
+- Seventeenth ADR 0009 canvas structure slice: moved `TimelineCanvas` into `features/timeline-editor/canvas` without changing legacy DOM bridge IDs.
+- Eighteenth ADR 0009 shared-hook slice: extracted persistent boolean UI preference state into `src/shared/hooks/usePersistentBoolean.ts`.
+- RED: `npm test` first failed because the note item helper pulled in a runtime `model.ts` import whose internal extensionless imports are not resolvable by the Node strip-types runner.
+- Nineteenth ADR 0009 item slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving note item text, title, color, finite-number, and sizing rules into `features/timeline-editor/items`. The test suite now has 57 passing tests.
+- Twentieth ADR 0009 interaction slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving context-menu action state derivation into `features/timeline-editor/interactions`. The test suite now has 61 passing tests.
+- Twenty-first ADR 0009 item slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving period derived label metadata into `features/timeline-editor/items`. The test suite now has 65 passing tests.
+- Twenty-second ADR 0009 canvas slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving SVG text/id helpers into `features/timeline-editor/canvas`. The test suite now has 68 passing tests.
+- Twenty-third ADR 0009 interaction slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving drag-range clamping and overlap prevention into `features/timeline-editor/interactions`. The test suite now has 73 passing tests.
+- Twenty-fourth ADR 0009 view-model slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving info-panel pointer and selection text into `features/timeline-editor/timelineInfo.ts`. The test suite now has 78 passing tests.
 
 ## Open Issues
 
 - No automated browser test harness exists yet.
 - Timeline info panel and period labels may need visual tuning after testing with a real personal timeline.
 - Firebase is not installed or configured yet.
-- Rendering and interaction behavior still lives in legacy `app.js`.
+- Live rendering and most DOM interaction behavior still lives in `src/features/timeline-editor/legacyTimelineEditor.js`.
 - `npm audit` reports one low-severity transitive `esbuild` advisory for Windows dev-server use.
 
 ## Suggested Commit Message
 
-`feat: improve note balloon layout editing`
+`fix: restore timeline renderer after refactor`
 
 ## Next Safe Step
 
-Open the local app, create several nearby notes with English and Persian text, zoom out to confirm vertical stacking, verify dotted leaders stay behind balloons and highlight on selection, check separate balloon/text colors, drag and resize a selected note balloon, then commit if the behavior feels right.
+Continue ADR 0009 by moving live state ownership into the reducer/context boundary or converting SVG rendering item by item, starting with a tested `NoteItem` React/canvas component.

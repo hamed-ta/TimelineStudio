@@ -6,10 +6,12 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Improve note balloons with wrapped text, automatic stacking, drag positioning, and resizing.
+Continue the modular React timeline editor architecture migration.
 
 ## Now
 
+- Use ADR 0009 as the target architecture for shrinking the legacy timeline editor into feature-oriented React modules.
+- Use the tested feature boundaries as the base for moving live state ownership and SVG rendering out of the legacy runtime.
 - Keep the birthdate label to the left of the vertical line when possible.
 - Show hovered date, Iranian date, and age in a fixed info panel below the timeline instead of a cursor-following tooltip.
 - Show selected item dates, duration, line, and age context in the same info panel.
@@ -42,7 +44,7 @@ Improve note balloons with wrapped text, automatic stacking, drag positioning, a
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
 - Keep personal timeline JSON files in ignored `user-data/`.
 - Adopt Ant Design as the UI system for shell controls, icons, panels, and light/dark theme styling.
-- Keep exact DOM IDs and compatibility bridge controls where the legacy `app.js` controller still requires native element behavior.
+- Keep exact DOM IDs and compatibility bridge controls where the legacy timeline editor controller still requires native element behavior.
 - Add CI validation for branch pushes and pull requests.
 - Add tag-based GitHub Pages deployment for versioned releases.
 - Create or update a GitHub Release with changelog notes and a zipped static build artifact.
@@ -59,7 +61,10 @@ Improve note balloons with wrapped text, automatic stacking, drag positioning, a
 
 ## Next
 
-- Start small UI polish slices in React while preserving the element IDs and behavior expected by `app.js`.
+- Move live timeline state ownership into the reducer/context boundary in small behavior-preserving slices.
+- Convert SVG rendering item by item, starting with note rendering because note item behavior now has the strongest helper coverage.
+- Add focused tests before each state or rendering migration slice.
+- Preserve the element IDs and behavior expected by the legacy timeline editor controller until each behavior has moved into React.
 - Continue migrating remaining custom popovers, menus, picker controls, and timeline controller state into React so more Ant Design components can be used directly.
 - Verify local JSON load, edit, save, pan, zoom, fit, and export before adding Firebase.
 - Add Firebase only after the local app migration is stable.
@@ -95,9 +100,9 @@ Improve note balloons with wrapped text, automatic stacking, drag positioning, a
 - Extracted shared date parsing, date math, snapping, clamping, and numeric normalization helpers into `src/timeline/dates.ts`.
 - Extracted timeline JSON parse and serialize behavior into `src/timeline/json.ts`.
 - Extracted browser download and save-picker helpers into `src/platform/files.ts`.
-- Extracted PDF byte generation into `src/timeline/pdf.ts`.
+- Extracted PDF byte generation into `src/timeline/export/pdf.ts`.
 - Extracted image loading and canvas-to-blob helpers into `src/platform/media.ts`.
-- Extracted SVG export serialization and export CSS into `src/timeline/svgExport.ts`.
+- Extracted SVG export serialization and export CSS into `src/timeline/export/svgExport.ts`.
 - Extracted display date, Iranian date, month, and zoom formatting into `src/timeline/formatters.ts`.
 - Added `CHANGELOG.md` and `docs/versioning.md` without bumping the package version.
 - Added system light/dark theme tokens, component styling, and a theme switcher.
@@ -127,6 +132,16 @@ Improve note balloons with wrapped text, automatic stacking, drag positioning, a
 - Removed the tracked `.DS_Store` file from the repository.
 - Added the app name/version footer.
 - Updated manual release dispatch for same-version release refreshes from main.
+- Accepted the modular React timeline editor architecture in ADR 0009.
+- Extracted timeline editor keyboard, edge-snap, axis, note-layout, date-span, color, reducer, selector, export, and timeline-layout boundaries as ADR 0009 migration slices.
+- Moved the timeline SVG shell into the ADR 0009 `features/timeline-editor/canvas` boundary.
+- Extracted persistent boolean UI preference state into `src/shared/hooks`.
+- Extracted note item display, color, finite-number, and sizing rules into `features/timeline-editor/items`.
+- Extracted context-menu action state rules into `features/timeline-editor/interactions`.
+- Extracted period item derived age and duration metadata into `features/timeline-editor/items`.
+- Extracted SVG text fitting, width estimation, and ID sanitizing helpers into `features/timeline-editor/canvas`.
+- Extracted drag-range clamping and overlap-prevention helpers into `features/timeline-editor/interactions`.
+- Extracted timeline info-panel pointer and selection text into a tested feature view-model helper.
 
 ## Risks
 
@@ -136,18 +151,21 @@ Improve note balloons with wrapped text, automatic stacking, drag positioning, a
 - Workflow docs can drift if `/closeup` is not used consistently.
 - Personal JSON files should stay in ignored `user-data/`.
 - The framework migration can accidentally change timeline behavior if it is done as a rewrite instead of small preservation steps.
-- UI changes must preserve the DOM IDs and data attributes that legacy `app.js` still binds to until the controller is migrated.
+- UI changes must preserve the DOM IDs and data attributes that the legacy timeline editor controller still binds to until the controller is migrated.
 - Version changes should be intentional and documented in `CHANGELOG.md`; do not bump `package.json` during routine migration slices.
 - Firebase read/write patterns can create avoidable cost if autosave and realtime listeners are not scoped carefully.
 - Dependencies can increase bundle size, audit noise, and maintenance cost if they are not scoped to real feature value.
 - Ant Design adds a larger dependency footprint; use it as the shared UI system rather than mixing unrelated component libraries.
 - GitHub Pages project deployments need the Vite base path to match the repository path unless a custom domain is configured.
+- Modularization can make the app harder to follow if files are split by generic type instead of timeline-editor feature boundaries.
+- Moving rendering into React must preserve existing local JSON behavior, item interactions, exports, and manual browser smoke checks.
 
 ## Verification Checklist
 
 During the current legacy-app phase:
 
-- `node --check app.js`
+- `node --check src/features/timeline-editor/legacyTimelineEditor.js`
+- `npm test`
 - `npm run typecheck`
 - `npm run build`
 - App loads at `http://127.0.0.1:8765/`

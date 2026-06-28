@@ -6,10 +6,12 @@ Timeline Studio is a Vite, React, and TypeScript web app for building personal h
 
 Main files:
 - `index.html`: app shell
-- `src/App.tsx`: React-rendered legacy DOM shell
-- `src/main.tsx`: React entrypoint and legacy app bootstrap
+- `src/app/App.tsx`: app-level provider wrapper
+- `src/app/providers/AppThemeProvider.tsx`: Ant Design theme provider and theme preference state
+- `src/main.tsx`: React entrypoint and timeline editor bootstrap
+- `src/features/timeline-editor/TimelineEditor.tsx`: React-rendered timeline editor shell
+- `src/features/timeline-editor/legacyTimelineEditor.js`: timeline state, rendering, import/export, and interactions during the migration
 - `styles.css`: layout and visual design
-- `app.js`: timeline state, rendering, import/export, and interactions
 - `README.md`: user-facing project notes
 
 Dependencies are allowed when they are the reasonable way to deliver a feature safely, accessibly, or maintainably. Prefer native browser APIs and existing project code for small features, but do not preserve dependency-free status at the cost of fragile custom implementations. Document narrow feature dependencies in `docs/plan.md` and `docs/handoff.md`; add an ADR for lasting, cross-cutting, runtime, backend, or architectural dependencies. ADR 0005 accepts the Vite, React, TypeScript, Firebase Auth, Firestore, and Firebase Hosting direction. ADR 0006 defines the general dependency policy.
@@ -37,7 +39,8 @@ npm install
 Check JavaScript syntax and TypeScript:
 
 ```sh
-node --check app.js
+node --check src/features/timeline-editor/legacyTimelineEditor.js
+npm test
 npm run typecheck
 ```
 

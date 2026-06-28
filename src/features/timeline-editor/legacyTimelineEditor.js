@@ -1,22 +1,18 @@
 import {
   addDaysIso,
   addMonthsIso,
-  addYearsIso,
   clamp,
   clampIso,
   compareIso,
   daysBetween,
   isoDay,
   isoFromParts,
-  isoMonth,
   isoYear,
-  monthsBetween,
   normalizeDateInput,
   normalizeSnap,
   todayIso,
   toNumber,
-  yearStartIso,
-} from "./src/timeline/dates";
+} from "../../timeline/dates";
 import {
   ITEM_COLOR_PALETTE,
   TYPE_COLORS,
@@ -26,12 +22,22 @@ import {
   normalizeItem,
   normalizeTimeline,
   titleForType,
-} from "./src/timeline/model";
+} from "../../timeline/model";
+import {
+  adjustColor,
+  hexToHsv,
+  hexToRgb,
+  hsvToHex,
+  normalizeColor,
+  normalizeOptionalColor,
+  readableTextColor,
+  rgbToHex,
+} from "../../timeline/colors";
 import {
   TIMELINE_JSON_MIME,
   parseTimelineJson,
   serializeTimelineJson,
-} from "./src/timeline/json";
+} from "../../timeline/json";
 import {
   formatDatePair,
   formatDisplayDate,
@@ -39,24 +45,79 @@ import {
   formatZoomValue,
   iranianMonthName,
   monthName,
-} from "./src/timeline/formatters";
+} from "../../timeline/formatters";
 import {
   buildPdfFromJpeg,
-} from "./src/timeline/pdf";
+} from "../../timeline/export/pdf";
 import {
   serializeTimelineSvg,
-} from "./src/timeline/svgExport";
+} from "../../timeline/export/svgExport";
 import {
   canPickFileWithPicker,
   downloadBlob,
   pickFileWithPicker,
   saveBlobToHandle,
   saveBlobWithPicker,
-} from "./src/platform/files";
+} from "../../platform/files";
 import {
   canvasToBlob,
   loadImage,
-} from "./src/platform/media";
+} from "../../platform/media";
+import {
+  deriveTimelineContextMenuState,
+} from "./interactions/contextMenu";
+import {
+  estimateSvgTextWidth,
+  fitSvgText,
+  safeSvgId,
+} from "./canvas/svgText";
+import {
+  isEditableShortcutTarget,
+} from "./interactions/keyboardShortcuts";
+import {
+  snapEdgeOffset,
+  snapMoveDelta,
+} from "./interactions/edgeSnap";
+import {
+  clampMovedRange,
+  preventMovedRangeOverlap,
+  preventResizedEndOverlap,
+  preventResizedStartOverlap,
+} from "./interactions/dragRange";
+import {
+  canPlaceAxisLabel,
+} from "./layout/axisLayout";
+import {
+  defaultEndDateForSnap,
+  fitZoomForTimeline,
+  minDurationDaysForSnap,
+  snapTimelineDate,
+  timelineDateToX,
+  timelinePixelsPerDay,
+  timelineXToDate,
+} from "./layout/timelineLayout";
+import {
+  findAvailableNoteY,
+  noteBubblePath,
+  noteTextFirstBaseline,
+  textDirectionFor,
+  wrapNoteText,
+} from "./layout/noteLayout";
+import {
+  hasFiniteNumber,
+  noteBorderColor,
+  noteDisplayText,
+  noteSizeForItem,
+  noteTextColorForItem,
+  noteTitleFromText,
+} from "./items/noteItem";
+import {
+  periodDerivedMeta,
+} from "./items/periodItem";
+import {
+  pointerInfoText,
+  selectionInfoText,
+} from "./timelineInfo";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -497,8 +558,8 @@ import {
     const cellWidth = Math.max(0, dateToX(cellEndDate) - x);
     const centerX = x + cellWidth / 2;
     const label = String(isoDay(date));
-    const width = estimateSvgTextWidth(label);
-    if (cellWidth >= 4 && canPlaceAxisLabel(centerX, width, lastLabelEnd, AXIS_DAY_LABEL_GAP)) {
+    const width = estimateSvgTextWidth(label, AXIS_LABEL_CHAR_WIDTH);
+    if (cellWidth >= 4 && canPlaceAxisLabel({ centerX, width, lastLabelEnd, gap: AXIS_DAY_LABEL_GAP })) {
       svg.append(svgEl("text", { class: "axis-day", x: centerX, y: 105, "text-anchor": "middle" }, label));
       return centerX + width / 2;
     }
@@ -512,28 +573,37 @@ import {
     const centerX = x + cellWidth / 2;
     const gregorian = monthName(date);
     const iranian = iranianMonthName(date);
-    const stackedWidth = Math.max(estimateSvgTextWidth(gregorian), estimateSvgTextWidth(iranian));
+    const stackedWidth = Math.max(
+      estimateSvgTextWidth(gregorian, AXIS_LABEL_CHAR_WIDTH),
+      estimateSvgTextWidth(iranian, AXIS_LABEL_CHAR_WIDTH),
+    );
     const gregorianY = hasDayLabels ? 58 : 78;
     const iranianY = hasDayLabels ? 74 : 96;
     const compactY = hasDayLabels ? 72 : 88;
 
-    if (cellWidth >= stackedWidth + 18 && canPlaceAxisLabel(centerX, stackedWidth, lastLabelEnd, AXIS_MONTH_LABEL_GAP)) {
+    if (cellWidth >= stackedWidth + 18 && canPlaceAxisLabel({
+      centerX,
+      width: stackedWidth,
+      lastLabelEnd,
+      gap: AXIS_MONTH_LABEL_GAP,
+    })) {
       svg.append(svgEl("text", { class: "axis-month axis-month-gregorian", x: centerX, y: gregorianY, "text-anchor": "middle" }, gregorian));
       svg.append(svgEl("text", { class: "axis-month axis-month-iranian", x: centerX, y: iranianY, "text-anchor": "middle" }, iranian));
       return centerX + stackedWidth / 2;
     }
 
-    const compactWidth = estimateSvgTextWidth(gregorian);
-    if (cellWidth >= compactWidth + 12 && canPlaceAxisLabel(centerX, compactWidth, lastLabelEnd, AXIS_MONTH_LABEL_GAP)) {
+    const compactWidth = estimateSvgTextWidth(gregorian, AXIS_LABEL_CHAR_WIDTH);
+    if (cellWidth >= compactWidth + 12 && canPlaceAxisLabel({
+      centerX,
+      width: compactWidth,
+      lastLabelEnd,
+      gap: AXIS_MONTH_LABEL_GAP,
+    })) {
       svg.append(svgEl("text", { class: "axis-month axis-month-compact", x: centerX, y: compactY, "text-anchor": "middle" }, gregorian));
       return centerX + compactWidth / 2;
     }
 
     return lastLabelEnd;
-  }
-
-  function canPlaceAxisLabel(centerX, width, lastLabelEnd, gap) {
-    return centerX - width / 2 >= lastLabelEnd + gap;
   }
 
   function drawLaneLabels(svg, settings, laneCount, rowHeight) {
@@ -560,7 +630,7 @@ import {
       [-7, 0, 7].forEach((offset) => {
         group.append(svgEl("circle", { class: "lane-label-grip", cx: 18, cy: centerY + offset, r: 1.7 }));
       });
-      group.append(svgEl("text", { class: "lane-label", x: 28, y: centerY + 4 }, fitText(label, LEFT_GUTTER - 66)));
+      group.append(svgEl("text", { class: "lane-label", x: 28, y: centerY + 4 }, fitSvgText(label, LEFT_GUTTER - 66, AXIS_LABEL_CHAR_WIDTH)));
       svg.append(group);
     }
     const addY = AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT / 2;
@@ -659,7 +729,7 @@ import {
 
     const periodMeta = getPeriodDerivedMeta(item, width);
     const titleY = periodMeta ? y - 2 : y + 5;
-    const label = fitText(item.title, width - 16);
+    const label = fitSvgText(item.title, width - 16, AXIS_LABEL_CHAR_WIDTH);
     group.append(
       svgEl("text", {
         class: "title-label",
@@ -704,77 +774,14 @@ import {
   }
 
   function getPeriodDerivedMeta(item, width) {
-    if (item.type !== "period") return null;
-    const showAges = item.showAgeLabels !== false && width >= 230;
-    const showDuration = item.showDurationLabel !== false && width >= 150;
-    if (!showAges && !showDuration) return null;
     const birthItem = getPrimaryBirthItem();
-    const meta = {
-      startAge: showAges && birthItem ? formatAgeAtDate(birthItem.startDate, item.startDate) : "",
-      endAge: showAges && birthItem ? formatAgeAtDate(birthItem.startDate, item.endDate) : "",
-      duration: showDuration ? formatCompactDateSpan(item.startDate, item.endDate) : "",
-    };
-    return meta.startAge || meta.endAge || meta.duration ? meta : null;
+    return periodDerivedMeta(item, width, birthItem?.startDate);
   }
 
   function getPrimaryBirthItem() {
     return timeline.items
       .filter((item) => item.type === "birth")
       .sort((a, b) => compareIso(a.startDate, b.startDate))[0] || null;
-  }
-
-  function formatAgeAtDate(birthDate, targetDate) {
-    if (compareIso(targetDate, birthDate) < 0) return "Before birth";
-    return `Age ${formatCompactDateSpan(birthDate, targetDate)}`;
-  }
-
-  function formatDetailedAgeAtDate(birthDate, targetDate) {
-    if (compareIso(targetDate, birthDate) < 0) return "Before birth";
-    return `Age ${formatDetailedDateSpan(birthDate, targetDate)}`;
-  }
-
-  function formatDetailedAgeValueAtDate(birthDate, targetDate) {
-    if (compareIso(targetDate, birthDate) < 0) return "before birth";
-    return formatDetailedDateSpan(birthDate, targetDate);
-  }
-
-  function formatCompactDateSpan(startDate, endDate) {
-    if (compareIso(endDate, startDate) < 0) return "before";
-    const span = getDateSpanParts(startDate, endDate);
-    const parts = [];
-    if (span.years) parts.push(`${span.years}y`);
-    if (span.months) parts.push(`${span.months}m`);
-    if (span.days || parts.length === 0) parts.push(`${span.days}d`);
-    return parts.join(" ");
-  }
-
-  function formatDetailedDateSpan(startDate, endDate) {
-    if (compareIso(endDate, startDate) < 0) return "before";
-    const span = getDateSpanParts(startDate, endDate);
-    const parts = [];
-    if (span.years) parts.push(`${span.years} ${span.years === 1 ? "year" : "years"}`);
-    if (span.months) parts.push(`${span.months} ${span.months === 1 ? "month" : "months"}`);
-    if (span.days || parts.length === 0) parts.push(`${span.days} ${span.days === 1 ? "day" : "days"}`);
-    return parts.join(", ");
-  }
-
-  function getDateSpanParts(startDate, endDate) {
-    let years = isoYear(endDate) - isoYear(startDate);
-    let months = isoMonth(endDate) - isoMonth(startDate);
-    let days = isoDay(endDate) - isoDay(startDate);
-    if (days < 0) {
-      months -= 1;
-      days += daysInIsoMonth(isoYear(endDate), isoMonth(endDate) - 1);
-    }
-    if (months < 0) {
-      years -= 1;
-      months += 12;
-    }
-    return { years: Math.max(0, years), months: Math.max(0, months), days: Math.max(0, days) };
-  }
-
-  function daysInIsoMonth(year, monthIndex) {
-    return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
   }
 
   function updateHoverReadout(event) {
@@ -819,7 +826,7 @@ import {
         "marker-end": `url(#${markerId})`,
       }),
     );
-    group.append(svgEl("text", { class: "note-label", x: x1 + 8, y: y - 11 }, fitText(item.title, Math.max(80, x2 - x1 - 20))));
+    group.append(svgEl("text", { class: "note-label", x: x1 + 8, y: y - 11 }, fitSvgText(item.title, Math.max(80, x2 - x1 - 20), AXIS_LABEL_CHAR_WIDTH)));
   }
 
   function drawEvent(group, defs, item, x, y) {
@@ -860,7 +867,7 @@ import {
   function drawBirth(group, item, x, laneAreaBottom) {
     const y1 = AXIS_HEIGHT - 8;
     const y2 = laneAreaBottom;
-    const label = fitText(item.title || titleForType("birth"), 116);
+    const label = fitSvgText(item.title || titleForType("birth"), 116, AXIS_LABEL_CHAR_WIDTH);
     const labelWidth = Math.max(70, label.length * 7.2 + 22);
     const labelX = Math.max(8, x - labelWidth - 10);
     const labelY = AXIS_HEIGHT + 10;
@@ -927,7 +934,7 @@ import {
       class: "note-balloon",
       "data-note-drag": "true",
       "data-note-edit": "true",
-      d: noteBubblePath(layout),
+      d: noteBubblePath(layout, noteBubblePathOptions()),
       fill: `url(#${gradientId})`,
       stroke: noteBorderColor(item.color),
     }));
@@ -985,7 +992,7 @@ import {
       const handleY = layout.y + layout.height - handleSize - 1;
       group.append(svgEl("path", {
         class: "selection-outline note-selection-outline",
-        d: noteBubblePath(layout),
+        d: noteBubblePath(layout, noteBubblePathOptions()),
       }));
       group.append(svgEl("rect", {
         class: "resize-handle note-resize-handle note-resize-hit",
@@ -1013,20 +1020,22 @@ import {
     const layouts = new Map();
     const placedLayouts = [];
     const baseY = noteBaseY(laneCount, rowHeight);
+    const textLayoutOptions = noteTextLayoutOptions();
     timeline.items
       .filter((item) => item.type === "note")
       .slice()
       .sort((a, b) => compareIso(a.startDate, b.startDate) || a.lane - b.lane || String(a.id).localeCompare(String(b.id)))
       .forEach((item) => {
         const anchorX = dateToX(item.startDate);
-        const size = noteSize(item);
-        const rawX = finiteNumber(item.noteOffsetX)
+        const size = noteSizeForItem(item, noteSizeOptions());
+        const rawX = hasFiniteNumber(item.noteOffsetX)
           ? anchorX + Number(item.noteOffsetX)
           : anchorX - size.width / 2;
         const x = clamp(rawX, 12, Math.max(12, contentWidth - size.width - 12));
-        const y = finiteNumber(item.noteOffsetY)
+        const y = hasFiniteNumber(item.noteOffsetY)
           ? baseY + Number(item.noteOffsetY)
-          : findAvailableNoteY({ x, y: baseY, width: size.width, height: size.height }, placedLayouts, baseY);
+          : findAvailableNoteY({ x, y: baseY, width: size.width, height: size.height }, placedLayouts, baseY, NOTE_STACK_GAP);
+        const text = noteDisplayText(item);
         const layout = {
           itemId: item.id,
           anchorX,
@@ -1034,10 +1043,10 @@ import {
           y,
           width: size.width,
           height: size.height,
-          text: noteText(item),
-          textColor: noteTextColor(item),
-          direction: textDirectionFor(noteText(item)),
-          lines: wrapNoteText(noteText(item), size.width - NOTE_PADDING_X * 2, size.height),
+          text,
+          textColor: noteTextColorForItem(item),
+          direction: textDirectionFor(text),
+          lines: wrapNoteText(text, size.width - NOTE_PADDING_X * 2, size.height, textLayoutOptions),
           tipX: clamp(anchorX, x + NOTE_TIP_HALF_WIDTH + 10, x + size.width - NOTE_TIP_HALF_WIDTH - 10),
           tipY: y,
         };
@@ -1060,109 +1069,45 @@ import {
     return AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT + NOTE_AREA_TOP_GAP;
   }
 
-  function noteSize(item) {
-    const text = noteText(item);
-    const naturalWidth = Math.min(
-      NOTE_MAX_WIDTH,
-      Math.max(NOTE_DEFAULT_WIDTH, longestNoteLineWidth(text) + NOTE_PADDING_X * 2),
-    );
-    const width = clamp(
-      finiteNumber(item.noteWidth) ? Number(item.noteWidth) : naturalWidth,
-      NOTE_MIN_WIDTH,
-      NOTE_MAX_WIDTH,
-    );
-    const naturalLineCount = wrapNoteTextLines(text, width - NOTE_PADDING_X * 2).length;
-    const naturalHeight = NOTE_TIP_HEIGHT + NOTE_TEXT_VERTICAL_PADDING * 2 + naturalLineCount * NOTE_LINE_HEIGHT;
-    const height = clamp(
-      finiteNumber(item.noteHeight) ? Number(item.noteHeight) : Math.max(NOTE_DEFAULT_HEIGHT, naturalHeight),
-      NOTE_MIN_HEIGHT,
-      NOTE_MAX_HEIGHT,
-    );
-    return { width, height };
+  function noteBubblePathOptions(pad = 0) {
+    return {
+      tipHeight: NOTE_TIP_HEIGHT,
+      tipHalfWidth: NOTE_TIP_HALF_WIDTH,
+      tipMaxLean: NOTE_TIP_MAX_LEAN,
+      pad,
+    };
   }
 
-  function noteText(item) {
-    return String(item.notes || item.title || titleForType("note")).trim() || titleForType("note");
+  function noteSizeOptions() {
+    return {
+      defaultWidth: NOTE_DEFAULT_WIDTH,
+      defaultHeight: NOTE_DEFAULT_HEIGHT,
+      minWidth: NOTE_MIN_WIDTH,
+      maxWidth: NOTE_MAX_WIDTH,
+      minHeight: NOTE_MIN_HEIGHT,
+      maxHeight: NOTE_MAX_HEIGHT,
+      paddingX: NOTE_PADDING_X,
+      tipHeight: NOTE_TIP_HEIGHT,
+      textVerticalPadding: NOTE_TEXT_VERTICAL_PADDING,
+      lineHeight: NOTE_LINE_HEIGHT,
+      measureText: measureNoteTextWidth,
+    };
   }
 
-  function noteTitleFromText(text) {
-    const firstLine = String(text || "")
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .find(Boolean);
-    if (!firstLine) return titleForType("note");
-    return firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
-  }
-
-  function noteTextColor(item) {
-    return normalizeOptionalColor(item.textColor) || readableTextColor(item.color);
-  }
-
-  function noteBorderColor(color) {
-    return adjustColor(color, 34);
-  }
-
-  function noteBubblePath(layout, pad = 0) {
-    const x = layout.x - pad;
-    const y = layout.y - pad;
-    const width = layout.width + pad * 2;
-    const height = layout.height + pad * 2;
-    const right = x + width;
-    const bottom = y + height;
-    const tipHeight = NOTE_TIP_HEIGHT + pad;
-    const tipHalf = NOTE_TIP_HALF_WIDTH + pad / 2;
-    const bodyY = y + tipHeight;
-    const radius = Math.min(14 + pad / 2, width / 4, Math.max(4, (height - tipHeight) / 3));
-    const tipApexX = clamp(layout.tipX, x + radius + tipHalf, right - radius - tipHalf);
-    const tipLean = clamp((layout.anchorX - tipApexX) * 0.18, -NOTE_TIP_MAX_LEAN, NOTE_TIP_MAX_LEAN);
-    const tipBaseX = clamp(tipApexX - tipLean, x + radius + tipHalf, right - radius - tipHalf);
-    const tipLeft = tipBaseX - tipHalf;
-    const tipRight = tipBaseX + tipHalf;
-
-    return [
-      `M ${x + radius} ${bodyY}`,
-      `H ${tipLeft}`,
-      `L ${tipApexX} ${y}`,
-      `L ${tipRight} ${bodyY}`,
-      `H ${right - radius}`,
-      `Q ${right} ${bodyY} ${right} ${bodyY + radius}`,
-      `V ${bottom - radius}`,
-      `Q ${right} ${bottom} ${right - radius} ${bottom}`,
-      `H ${x + radius}`,
-      `Q ${x} ${bottom} ${x} ${bottom - radius}`,
-      `V ${bodyY + radius}`,
-      `Q ${x} ${bodyY} ${x + radius} ${bodyY}`,
-      "Z",
-    ].join(" ");
-  }
-
-  function longestNoteLineWidth(text) {
-    return String(text || "")
-      .split(/\r?\n/)
-      .reduce((max, line) => Math.max(max, measureNoteTextWidth(line)), 0);
-  }
-
-  function findAvailableNoteY(rect, placedLayouts, baseY) {
-    const candidate = { ...rect, y: baseY };
-    for (let attempt = 0; attempt < 200; attempt += 1) {
-      const blocker = placedLayouts.find((layout) => noteRectsOverlap(candidate, layout));
-      if (!blocker) return candidate.y;
-      candidate.y = blocker.y + blocker.height + NOTE_STACK_GAP;
-    }
-    return candidate.y;
-  }
-
-  function noteRectsOverlap(a, b) {
-    return a.x < b.x + b.width + NOTE_STACK_GAP
-      && a.x + a.width + NOTE_STACK_GAP > b.x
-      && a.y < b.y + b.height + NOTE_STACK_GAP
-      && a.y + a.height + NOTE_STACK_GAP > b.y;
+  function noteTextLayoutOptions() {
+    return {
+      tipHeight: NOTE_TIP_HEIGHT,
+      verticalPadding: NOTE_TEXT_VERTICAL_PADDING,
+      baselineOffset: NOTE_TEXT_BASELINE_OFFSET,
+      lineHeight: NOTE_LINE_HEIGHT,
+      measureText: measureNoteTextWidth,
+    };
   }
 
   function drawNoteText(group, layout) {
     const isRtl = layout.direction === "rtl";
     const textX = isRtl ? layout.x + layout.width - NOTE_PADDING_X : layout.x + NOTE_PADDING_X;
-    const textY = noteTextFirstBaseline(layout);
+    const textY = noteTextFirstBaseline(layout, noteTextLayoutOptions());
     const text = svgEl("text", {
       class: "note-balloon-text",
       "data-note-drag": "true",
@@ -1183,109 +1128,18 @@ import {
     group.append(text);
   }
 
-  function noteTextFirstBaseline(layout) {
-    const bodyY = layout.y + NOTE_TIP_HEIGHT;
-    const bodyHeight = Math.max(0, layout.height - NOTE_TIP_HEIGHT);
-    const blockHeight = Math.max(NOTE_LINE_HEIGHT, layout.lines.length * NOTE_LINE_HEIGHT);
-    const blockTop = bodyY + Math.max(NOTE_TEXT_VERTICAL_PADDING, (bodyHeight - blockHeight) / 2);
-    return blockTop + NOTE_TEXT_BASELINE_OFFSET;
-  }
-
-  function wrapNoteText(text, maxWidth, height) {
-    const lines = wrapNoteTextLines(text, maxWidth);
-    const bodyHeight = Math.max(0, height - NOTE_TIP_HEIGHT);
-    const usableHeight = Math.max(NOTE_LINE_HEIGHT, bodyHeight - NOTE_TEXT_VERTICAL_PADDING * 2);
-    const maxLines = Math.max(1, Math.floor(usableHeight / NOTE_LINE_HEIGHT));
-    if (lines.length <= maxLines) return lines;
-    const visible = lines.slice(0, maxLines);
-    visible[visible.length - 1] = fitNoteText(`${visible[visible.length - 1]}...`, maxWidth);
-    return visible;
-  }
-
-  function wrapNoteTextLines(text, maxWidth) {
-    return String(text || "")
-      .split(/\r?\n/)
-      .flatMap((line) => wrapNoteLine(line, maxWidth));
-  }
-
-  function wrapNoteLine(line, maxWidth) {
-    const value = String(line || "");
-    if (!value.trim()) return [" "];
-    const words = value.split(/\s+/);
-    const lines = [];
-    let current = "";
-    words.forEach((word) => {
-      if (!current) {
-        current = word;
-        return;
-      }
-      const next = `${current} ${word}`;
-      if (measureNoteTextWidth(next) <= maxWidth) {
-        current = next;
-      } else {
-        lines.push(...splitLongNoteWord(current, maxWidth));
-        current = word;
-      }
-    });
-    if (current) lines.push(...splitLongNoteWord(current, maxWidth));
-    return lines.length ? lines : [" "];
-  }
-
-  function splitLongNoteWord(word, maxWidth) {
-    const value = String(word || "");
-    if (measureNoteTextWidth(value) <= maxWidth) return [value];
-    const chunks = [];
-    let current = "";
-    Array.from(value).forEach((char) => {
-      const next = `${current}${char}`;
-      if (current && measureNoteTextWidth(next) > maxWidth) {
-        chunks.push(current);
-        current = char;
-      } else {
-        current = next;
-      }
-    });
-    if (current) chunks.push(current);
-    return chunks;
-  }
-
-  function fitNoteText(text, maxWidth) {
-    const value = String(text || "");
-    if (maxWidth <= 0) return "";
-    if (measureNoteTextWidth(value) <= maxWidth) return value;
-    const suffix = "...";
-    let output = value;
-    while (output.length > 1 && measureNoteTextWidth(`${output}${suffix}`) > maxWidth) {
-      output = output.slice(0, -1);
-    }
-    return `${output}${suffix}`;
-  }
-
   function measureNoteTextWidth(text) {
     const value = String(text || "");
     if (!noteMeasureContext) {
       noteMeasureContext = document.createElement("canvas").getContext("2d");
     }
-    if (!noteMeasureContext) return estimateSvgTextWidth(value);
+    if (!noteMeasureContext) return estimateSvgTextWidth(value, AXIS_LABEL_CHAR_WIDTH);
     if (!noteMeasureFont) {
       const rootStyle = getComputedStyle(document.documentElement);
       noteMeasureFont = `700 13px ${rootStyle.fontFamily || "sans-serif"}`;
     }
     noteMeasureContext.font = noteMeasureFont;
     return noteMeasureContext.measureText(value).width;
-  }
-
-  function finiteNumber(value) {
-    return Number.isFinite(Number(value));
-  }
-
-  function textDirectionFor(text) {
-    const value = String(text || "");
-    for (const char of value) {
-      if (/[\u0590-\u08FF\uFB1D-\uFEFC]/u.test(char)) return "rtl";
-      if (/[A-Za-z\u00C0-\u024F]/u.test(char)) return "ltr";
-    }
-    return "ltr";
   }
 
   function updateMeta() {
@@ -1302,18 +1156,10 @@ import {
   function updatePointerInfo() {
     if (!dom.hoverDateLabel || !dom.hoverIranianLabel || !dom.hoverAgeLabel) return;
     const birthItem = getPrimaryBirthItem();
-    if (!hoverDate) {
-      dom.hoverDateLabel.textContent = "Hover over the timeline";
-      dom.hoverIranianLabel.textContent = "Gregorian and Iranian dates";
-      dom.hoverAgeLabel.textContent = birthItem ? "Age appears here" : "Add a birth item to calculate age";
-      return;
-    }
-
-    dom.hoverDateLabel.textContent = formatDisplayDate(hoverDate);
-    dom.hoverIranianLabel.textContent = formatIranianDate(hoverDate);
-    dom.hoverAgeLabel.textContent = birthItem
-      ? formatDetailedAgeAtDate(birthItem.startDate, hoverDate)
-      : "Age: add a birth item";
+    const info = pointerInfoText(hoverDate, birthItem?.startDate);
+    dom.hoverDateLabel.textContent = info.dateLabel;
+    dom.hoverIranianLabel.textContent = info.iranianLabel;
+    dom.hoverAgeLabel.textContent = info.ageLabel;
   }
 
   function updateSelectionInfo() {
@@ -1327,73 +1173,19 @@ import {
       return;
     }
     const item = getItem(selectedId);
-    if (!item) {
-      dom.selectedItemLabel.textContent = "No item selected";
-      dom.selectedItemDateLabel.textContent = "Select an item to inspect dates";
-      setOptionalInfoLine(dom.selectedItemEndLabel, "");
-      setOptionalInfoLine(dom.selectedItemDurationLabel, "");
-      setOptionalInfoLine(dom.selectedItemAgeLabel, "");
-      return;
-    }
-
-    dom.selectedItemLabel.textContent = formatSelectedItemTitle(item);
-    dom.selectedItemDateLabel.textContent = formatSelectedItemStartLine(item);
-    setOptionalInfoLine(dom.selectedItemEndLabel, formatSelectedItemEndLine(item));
-    setOptionalInfoLine(dom.selectedItemDurationLabel, formatSelectedItemDurationLine(item));
-    setOptionalInfoLine(dom.selectedItemAgeLabel, formatSelectedItemAgeLine(item));
+    const birthItem = getPrimaryBirthItem();
+    const info = selectionInfoText(item, birthItem?.startDate);
+    dom.selectedItemLabel.textContent = info.itemLabel;
+    dom.selectedItemDateLabel.textContent = info.dateLine;
+    setOptionalInfoLine(dom.selectedItemEndLabel, info.endLine);
+    setOptionalInfoLine(dom.selectedItemDurationLabel, info.durationLine);
+    setOptionalInfoLine(dom.selectedItemAgeLabel, info.ageLine);
   }
 
   function setOptionalInfoLine(element, text) {
     const value = text || "";
     element.textContent = value;
     element.hidden = !value;
-  }
-
-  function formatSelectedItemTitle(item) {
-    const lineText = isGlobalTimelineItemType(item.type) || item.type === "note" ? "" : ` - Line ${item.lane + 1}`;
-    const lockedText = item.locked ? "Locked - " : "";
-    const title = item.type === "note" ? noteTitleFromText(noteText(item)) : item.title;
-    return `${lockedText}${itemTypeLabel(item.type)}: ${title}${lineText}`;
-  }
-
-  function formatSelectedItemStartLine(item) {
-    const start = `${formatDisplayDate(item.startDate)} / ${formatIranianDate(item.startDate)}`;
-    return hasEndYear(item.type) ? `Start: ${start}` : `Date: ${start}`;
-  }
-
-  function formatSelectedItemEndLine(item) {
-    if (!hasEndYear(item.type)) return "";
-    const end = `${formatDisplayDate(item.endDate)} / ${formatIranianDate(item.endDate)}`;
-    return `End: ${end}`;
-  }
-
-  function formatSelectedItemDurationLine(item) {
-    if (!hasEndYear(item.type)) return "";
-    return `Duration: ${formatDetailedDateSpan(item.startDate, item.endDate)}`;
-  }
-
-  function formatSelectedItemAgeLine(item) {
-    const birthItem = getPrimaryBirthItem();
-    if (item.type === "birth") {
-      return "Age source";
-    }
-    if (!birthItem) return "";
-    if (hasEndYear(item.type)) {
-      return `Age: ${formatDetailedAgeValueAtDate(birthItem.startDate, item.startDate)} to ${formatDetailedAgeValueAtDate(birthItem.startDate, item.endDate)}`;
-    }
-    return `Age: ${formatDetailedAgeValueAtDate(birthItem.startDate, item.startDate)}`;
-  }
-
-  function itemTypeLabel(type) {
-    return {
-      birth: "Birth",
-      event: "Event",
-      marker: "Marker",
-      note: "Note",
-      period: "Period",
-      line: "Line",
-      text: "Text",
-    }[String(type)] || "Item";
   }
 
   function setCurrentFile(handle, name) {
@@ -1512,13 +1304,13 @@ import {
     dom.itemLaneInput.value = item.lane;
     setColorPickerValue(itemColorPicker, item.color, { emit: false });
     setColorPickerDisabled(itemColorPicker, itemReadOnly);
-    setColorPickerValue(itemTextColorPicker, item.type === "note" ? noteTextColor(item) : "#111827", { emit: false });
+    setColorPickerValue(itemTextColorPicker, item.type === "note" ? noteTextColorForItem(item) : "#111827", { emit: false });
     setColorPickerDisabled(itemTextColorPicker, itemReadOnly || item.type !== "note");
     dom.itemStartInput.value = item.startDate;
     dom.itemEndInput.value = item.endDate;
     dom.itemAgeLabelsInput.checked = item.showAgeLabels !== false;
     dom.itemDurationLabelInput.checked = item.showDurationLabel !== false;
-    dom.itemNotesInput.value = item.type === "note" ? noteText(item) : item.notes;
+    dom.itemNotesInput.value = item.type === "note" ? noteDisplayText(item) : item.notes;
     updateItemFieldVisibilityForType(item.type);
     updateItemNotesLabel(item);
     updateNotesInputDirection();
@@ -1840,7 +1632,7 @@ import {
   function applyItemTextColorFromControl() {
     const item = getItem(selectedId);
     if (!item || item.type !== "note") return;
-    const color = normalizeColor(dom.itemTextColorInput.value || noteTextColor(item));
+    const color = normalizeColor(dom.itemTextColorInput.value || noteTextColorForItem(item));
     setColorPickerValue(itemTextColorPicker, color, { emit: false });
     setColorPickerDisabled(itemTextColorPicker, false);
     if (item.textColor === color) return;
@@ -2214,11 +2006,6 @@ import {
     if (pasteCopiedItem()) event.preventDefault();
   }
 
-  function isEditableShortcutTarget(target) {
-    return target instanceof Element
-      && Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
-  }
-
   function canCreateOrPasteItems() {
     if (!timeline.settings.itemsLocked) return true;
     setStatus("Turn off read only to edit the timeline");
@@ -2266,7 +2053,7 @@ import {
     item.showDurationLabel = dom.itemDurationLabelInput.checked;
     item.notes = notes;
     if (type === "note") {
-      item.textColor = normalizeColor(dom.itemTextColorInput.value || noteTextColor(item));
+      item.textColor = normalizeColor(dom.itemTextColorInput.value || noteTextColorForItem(item));
     } else {
       delete item.textColor;
     }
@@ -2635,24 +2422,15 @@ import {
   function updateContextMenuItems() {
     if (!dom.timelineContextMenu) return;
     const item = getItem(contextMenuTarget?.itemId || selectedId);
-    const hasSelection = Boolean(item);
-    const allLocked = timeline.settings.itemsLocked;
-    const itemLocked = Boolean(item?.locked);
-    const canModifySelection = hasSelection && !allLocked && !itemLocked;
-    const canAdd = !allLocked;
-    setContextMenuActionState("add-menu", { disabled: !canAdd });
-    setContextMenuAddState({ disabled: !canAdd });
-    setContextMenuActionState("copy", { disabled: !hasSelection });
-    setContextMenuActionState("paste", { disabled: !copiedItem || allLocked });
-    setContextMenuActionState("duplicate", { disabled: !canModifySelection });
-    setContextMenuActionState("delete", { disabled: !canModifySelection });
-    setContextMenuActionState("lock-item", {
-      disabled: !hasSelection,
-      hidden: itemLocked,
+    const menuState = deriveTimelineContextMenuState({
+      hasSelection: Boolean(item),
+      allItemsLocked: timeline.settings.itemsLocked,
+      selectedItemLocked: Boolean(item?.locked),
+      hasCopiedItem: Boolean(copiedItem),
     });
-    setContextMenuActionState("unlock-item", {
-      disabled: !hasSelection,
-      hidden: !itemLocked,
+    setContextMenuAddState({ disabled: menuState.addItemsDisabled });
+    Object.entries(menuState.actions).forEach(([action, state]) => {
+      setContextMenuActionState(action, state);
     });
   }
 
@@ -2769,7 +2547,7 @@ import {
     if (!item || item.type !== "note" || !layout || !dom.noteInlineEditor) return;
     editingNoteId = item.id;
     editingNoteOriginalNotes = item.notes;
-    editingNoteOriginalDisplayText = noteText(item);
+    editingNoteOriginalDisplayText = noteDisplayText(item);
     dom.noteInlineEditor.value = editingNoteOriginalDisplayText;
     dom.noteInlineEditor.hidden = false;
     updateNoteInlineEditorDirection();
@@ -2790,7 +2568,7 @@ import {
     dom.noteInlineEditor.style.top = `${layout.y + NOTE_TIP_HEIGHT}px`;
     dom.noteInlineEditor.style.width = `${layout.width}px`;
     dom.noteInlineEditor.style.height = `${Math.max(NOTE_MIN_HEIGHT - NOTE_TIP_HEIGHT, layout.height - NOTE_TIP_HEIGHT)}px`;
-    dom.noteInlineEditor.style.color = noteTextColor(item);
+    dom.noteInlineEditor.style.color = noteTextColorForItem(item);
     dom.noteInlineEditor.style.background = item.color;
   }
 
@@ -3077,18 +2855,34 @@ import {
     if (mode === "start" && hasRange) {
       start = snapEdgeOffset(start, neighbors, threshold);
       start = clamp(start, minOffset, end - minDurationDays());
-      start = preventResizedStartOverlap(start, end, neighbors);
+      start = preventResizedStartOverlap(start, end, neighbors, minDurationDays());
     } else if (mode === "end" && hasRange) {
       end = snapEdgeOffset(end, neighbors, threshold);
       end = clamp(end, start + minDurationDays(), maxRangeEnd);
-      end = preventResizedEndOverlap(start, end, neighbors);
+      end = preventResizedEndOverlap(start, end, neighbors, minDurationDays());
     } else {
       const delta = snapMoveDelta(start, end, neighbors, threshold);
       start += delta;
       end += delta;
-      [start, end] = clampMovedRange(start, end, duration, hasRange, maxRangeEnd, maxPoint);
+      [start, end] = clampMovedRange({
+        start,
+        end,
+        duration,
+        hasRange,
+        minOffset,
+        maxRangeEnd,
+        maxPoint,
+      });
       if (hasRange) {
-        [start, end] = preventMovedRangeOverlap(start, end, duration, neighbors, originalStart, maxRangeEnd);
+        [start, end] = preventMovedRangeOverlap({
+          start,
+          end,
+          duration,
+          neighbors,
+          originalStart,
+          minOffset,
+          maxRangeEnd,
+        });
       }
     }
 
@@ -3122,102 +2916,6 @@ import {
 
   function edgeSnapThresholdDays() {
     return clamp(Math.ceil(EDGE_SNAP_PIXELS / pixelsPerDay()), 1, EDGE_SNAP_MAX_DAYS);
-  }
-
-  function snapEdgeOffset(edge, neighbors, threshold) {
-    let bestDelta = 0;
-    let bestDistance = threshold + 1;
-    neighbors.forEach((neighbor) => {
-      [neighbor.start, neighbor.end].forEach((target) => {
-        const distance = Math.abs(edge - target);
-        if (distance <= threshold && distance < bestDistance) {
-          bestDistance = distance;
-          bestDelta = target - edge;
-        }
-      });
-    });
-    return edge + bestDelta;
-  }
-
-  function snapMoveDelta(start, end, neighbors, threshold) {
-    let bestDelta = 0;
-    let bestDistance = threshold + 1;
-    neighbors.forEach((neighbor) => {
-      [neighbor.start, neighbor.end].forEach((target) => {
-        [target - start, target - end].forEach((delta) => {
-          const distance = Math.abs(delta);
-          if (distance <= threshold && distance < bestDistance) {
-            bestDistance = distance;
-            bestDelta = delta;
-          }
-        });
-      });
-    });
-    return bestDelta;
-  }
-
-  function preventResizedStartOverlap(start, end, neighbors) {
-    return neighbors
-      .filter((neighbor) => neighbor.hasRange)
-      .reduce((nextStart, neighbor) => (
-        rangesOverlap(nextStart, end, neighbor.start, neighbor.end)
-          ? Math.min(end - minDurationDays(), neighbor.end)
-          : nextStart
-      ), start);
-  }
-
-  function preventResizedEndOverlap(start, end, neighbors) {
-    return neighbors
-      .filter((neighbor) => neighbor.hasRange)
-      .reduce((nextEnd, neighbor) => (
-        rangesOverlap(start, nextEnd, neighbor.start, neighbor.end)
-          ? Math.max(start + minDurationDays(), neighbor.start)
-          : nextEnd
-      ), end);
-  }
-
-  function preventMovedRangeOverlap(start, end, duration, neighbors, originalStart, maxRangeEnd) {
-    let nextStart = start;
-    let nextEnd = end;
-    const movingRight = nextStart >= originalStart;
-    const blockers = neighbors.filter((neighbor) => neighbor.hasRange);
-
-    for (let index = 0; index < blockers.length; index += 1) {
-      const overlap = blockers.find((neighbor) => rangesOverlap(nextStart, nextEnd, neighbor.start, neighbor.end));
-      if (!overlap) break;
-      if (movingRight) {
-        nextEnd = overlap.start;
-        nextStart = nextEnd - duration;
-      } else {
-        nextStart = overlap.end;
-        nextEnd = nextStart + duration;
-      }
-      [nextStart, nextEnd] = clampMovedRange(nextStart, nextEnd, duration, true, maxRangeEnd, maxRangeEnd);
-    }
-
-    return [nextStart, nextEnd];
-  }
-
-  function clampMovedRange(start, end, duration, hasRange, maxRangeEnd, maxPoint) {
-    if (!hasRange) {
-      const point = clamp(start, dateOffset(timeline.settings.startDate), maxPoint);
-      return [point, point];
-    }
-    let nextStart = start;
-    let nextEnd = end;
-    if (nextStart < dateOffset(timeline.settings.startDate)) {
-      nextStart = dateOffset(timeline.settings.startDate);
-      nextEnd = nextStart + duration;
-    }
-    if (nextEnd > maxRangeEnd) {
-      nextEnd = maxRangeEnd;
-      nextStart = nextEnd - duration;
-    }
-    return [nextStart, nextEnd];
-  }
-
-  function rangesOverlap(startA, endA, startB, endB) {
-    return startA < endB && endA > startB;
   }
 
   function dateOffset(isoDate) {
@@ -3308,9 +3006,15 @@ import {
   }
 
   function fitTimelineToViewport() {
-    const months = Math.max(1, monthsBetween(timeline.settings.startDate, addDaysIso(timeline.settings.endDate, 1)));
-    const available = Math.max(200, dom.timelineViewport.clientWidth - LEFT_GUTTER - RIGHT_GUTTER - 24);
-    const fittedZoom = clamp(available / months, MIN_ZOOM, MAX_ZOOM);
+    const fittedZoom = fitZoomForTimeline({
+      startDate: timeline.settings.startDate,
+      endDate: timeline.settings.endDate,
+      viewportWidth: dom.timelineViewport.clientWidth,
+      leftGutter: LEFT_GUTTER,
+      rightGutter: RIGHT_GUTTER,
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
+    });
     const readableZoom = Math.max(fittedZoom, FIT_MIN_ZOOM);
     setZoom(readableZoom);
     dom.timelineViewport.scrollLeft = 0;
@@ -3323,11 +3027,11 @@ import {
   }
 
   function dateToX(isoDate) {
-    return LEFT_GUTTER + daysBetween(timeline.settings.startDate, isoDate) * pixelsPerDay();
+    return timelineDateToX(isoDate, timeline.settings.startDate, LEFT_GUTTER, pixelsPerDay());
   }
 
   function xToDate(x) {
-    return addDaysIso(timeline.settings.startDate, Math.round((Number(x) - LEFT_GUTTER) / pixelsPerDay()));
+    return timelineXToDate(x, timeline.settings.startDate, LEFT_GUTTER, pixelsPerDay());
   }
 
   function svgPoint(event) {
@@ -3417,9 +3121,7 @@ import {
         setStatus("Load canceled");
         return;
       }
-      console.error(error);
-      setStatus("Could not load JSON");
-      window.alert("The selected file is not a valid timeline JSON file.");
+      handleLoadTimelineError(error);
     }
   }
 
@@ -3429,9 +3131,7 @@ import {
     try {
       await loadTimelineFromFile(file, null);
     } catch (error) {
-      console.error(error);
-      setStatus("Could not load JSON");
-      window.alert("The selected file is not a valid timeline JSON file.");
+      handleLoadTimelineError(error);
     } finally {
       dom.fileInput.value = "";
     }
@@ -3439,12 +3139,34 @@ import {
 
   async function loadTimelineFromFile(file, handle) {
     const text = await file.text();
-    timeline = parseTimelineJson(text);
+    timeline = parseTimelineFileText(text);
     selectedId = null;
     setCurrentFile(handle, file.name);
     renderAll({ save: false });
     setDirty(false);
     setStatus(handle ? `Loaded ${file.name}` : "JSON loaded; Save downloads a copy");
+  }
+
+  function parseTimelineFileText(text) {
+    try {
+      return parseTimelineJson(text);
+    } catch (error) {
+      const parseError = new Error("Invalid timeline JSON file");
+      parseError.code = "INVALID_TIMELINE_JSON";
+      parseError.cause = error;
+      throw parseError;
+    }
+  }
+
+  function handleLoadTimelineError(error) {
+    console.error(error);
+    if (error?.code === "INVALID_TIMELINE_JSON") {
+      setStatus("Could not load JSON");
+      window.alert("The selected file is not a valid timeline JSON file.");
+      return;
+    }
+    setStatus("Could not render timeline");
+    window.alert("The timeline file loaded, but the app could not render it.");
   }
 
   function exportSvgFile() {
@@ -3523,109 +3245,6 @@ import {
     return node;
   }
 
-  function fitText(text, maxWidth) {
-    const value = String(text || "");
-    if (maxWidth <= 0) return "";
-    const estimatedWidth = estimateSvgTextWidth(value);
-    if (estimatedWidth <= maxWidth) return value;
-    const maxChars = Math.max(3, Math.floor(maxWidth / AXIS_LABEL_CHAR_WIDTH) - 3);
-    return `${value.slice(0, maxChars)}...`;
-  }
-
-  function estimateSvgTextWidth(text) {
-    return String(text || "").length * AXIS_LABEL_CHAR_WIDTH;
-  }
-
-  function readableTextColor(hex) {
-    const clean = normalizeColor(hex).slice(1);
-    const red = parseInt(clean.slice(0, 2), 16);
-    const green = parseInt(clean.slice(2, 4), 16);
-    const blue = parseInt(clean.slice(4, 6), 16);
-    const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-    return luminance > 0.56 ? "#1d2732" : "#ffffff";
-  }
-
-  function adjustColor(hex, amount) {
-    const clean = normalizeColor(hex).slice(1);
-    const red = clamp(parseInt(clean.slice(0, 2), 16) + amount, 0, 255);
-    const green = clamp(parseInt(clean.slice(2, 4), 16) + amount, 0, 255);
-    const blue = clamp(parseInt(clean.slice(4, 6), 16) + amount, 0, 255);
-    return `#${[red, green, blue].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
-  }
-
-  function parseHexColor(value) {
-    const text = String(value || "").trim();
-    if (/^#[0-9a-fA-F]{6}$/.test(text)) return text.toLowerCase();
-    if (/^[0-9a-fA-F]{6}$/.test(text)) return `#${text.toLowerCase()}`;
-    return null;
-  }
-
-  function normalizeColor(value) {
-    return parseHexColor(value) || ITEM_COLOR_PALETTE[6].value;
-  }
-
-  function normalizeOptionalColor(value) {
-    return parseHexColor(value) || "";
-  }
-
-  function hexToRgb(hex) {
-    const clean = normalizeColor(hex).slice(1);
-    return {
-      red: parseInt(clean.slice(0, 2), 16),
-      green: parseInt(clean.slice(2, 4), 16),
-      blue: parseInt(clean.slice(4, 6), 16),
-    };
-  }
-
-  function rgbToHex(red, green, blue) {
-    return `#${[red, green, blue].map((value) => Math.round(clamp(value, 0, 255)).toString(16).padStart(2, "0")).join("")}`;
-  }
-
-  function hexToHsv(hex) {
-    const { red, green, blue } = hexToRgb(hex);
-    const r = red / 255;
-    const g = green / 255;
-    const b = blue / 255;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const delta = max - min;
-    let hue = 0;
-
-    if (delta !== 0) {
-      if (max === r) hue = 60 * (((g - b) / delta) % 6);
-      else if (max === g) hue = 60 * ((b - r) / delta + 2);
-      else hue = 60 * ((r - g) / delta + 4);
-    }
-    if (hue < 0) hue += 360;
-
-    return {
-      h: hue,
-      s: max === 0 ? 0 : (delta / max) * 100,
-      v: max * 100,
-    };
-  }
-
-  function hsvToHex(hue, saturation, value) {
-    const h = ((Number(hue) % 360) + 360) % 360;
-    const s = clamp(Number(saturation), 0, 100) / 100;
-    const v = clamp(Number(value), 0, 100) / 100;
-    const chroma = v * s;
-    const x = chroma * (1 - Math.abs(((h / 60) % 2) - 1));
-    const m = v - chroma;
-    let red = 0;
-    let green = 0;
-    let blue = 0;
-
-    if (h < 60) [red, green, blue] = [chroma, x, 0];
-    else if (h < 120) [red, green, blue] = [x, chroma, 0];
-    else if (h < 180) [red, green, blue] = [0, chroma, x];
-    else if (h < 240) [red, green, blue] = [0, x, chroma];
-    else if (h < 300) [red, green, blue] = [x, 0, chroma];
-    else [red, green, blue] = [chroma, 0, x];
-
-    return rgbToHex((red + m) * 255, (green + m) * 255, (blue + m) * 255);
-  }
-
   function randomPaletteColor() {
     if (!ITEM_COLOR_PALETTE.length) return TYPE_COLORS.event;
     let index = randomIndex(ITEM_COLOR_PALETTE.length);
@@ -3646,51 +3265,24 @@ import {
   }
 
   function pixelsPerDay() {
-    return zoom / AVG_DAYS_PER_MONTH;
+    return timelinePixelsPerDay(zoom, AVG_DAYS_PER_MONTH);
   }
 
   function snapDate(isoDate) {
-    const date = normalizeDateInput(isoDate, timeline.settings.startDate);
-    const snap = normalizeSnap(timeline.settings.snap);
-    if (snap === "year") {
-      const currentYear = isoYear(date);
-      const midYear = `${currentYear}-07-02`;
-      return yearStartIso(compareIso(date, midYear) < 0 ? currentYear : currentYear + 1);
-    }
-    if (snap === "month") {
-      const year = isoYear(date);
-      const month = isoMonth(date);
-      const day = isoDay(date);
-      return isoFromParts(month === 11 && day >= 16 ? year + 1 : year, day >= 16 ? (month + 1) % 12 : month, 1);
-    }
-    if (snap === "week") {
-      const days = daysBetween(timeline.settings.startDate, date);
-      return addDaysIso(timeline.settings.startDate, Math.round(days / 7) * 7);
-    }
-    return addDaysIso(timeline.settings.startDate, daysBetween(timeline.settings.startDate, date));
+    return snapTimelineDate(isoDate, timeline.settings.startDate, timeline.settings.snap);
   }
 
   function minDurationDays() {
-    if (timeline.settings.snap === "year") return 365;
-    if (timeline.settings.snap === "month") return 28;
-    if (timeline.settings.snap === "week") return 7;
-    return 1;
+    return minDurationDaysForSnap(timeline.settings.snap);
   }
 
   function defaultEndDate(startDate) {
-    if (timeline.settings.snap === "year") return addYearsIso(startDate, 1);
-    if (timeline.settings.snap === "week") return addDaysIso(startDate, 7);
-    if (timeline.settings.snap === "day") return addDaysIso(startDate, 1);
-    return addMonthsIso(startDate, 1);
+    return defaultEndDateForSnap(startDate, timeline.settings.snap);
   }
 
   function createId(prefix) {
     if (window.crypto && crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
     return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  function safeSvgId(value) {
-    return String(value).replace(/[^a-zA-Z0-9_-]/g, "-");
   }
 
   function filenameBase() {

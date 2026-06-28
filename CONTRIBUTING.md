@@ -33,6 +33,7 @@ Run validation before opening a pull request:
 
 ```sh
 node --check app.js
+npm test
 npm run typecheck
 npm run build
 ```

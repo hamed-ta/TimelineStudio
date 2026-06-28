@@ -1,4 +1,4 @@
-import { dateFromIso } from "./dates";
+import { dateFromIso } from "./dates.ts";
 
 const EN_DATE_FORMAT = new Intl.DateTimeFormat("en", {
   month: "short",

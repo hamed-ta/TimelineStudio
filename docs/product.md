@@ -439,6 +439,13 @@ When the user saves the timeline as JSON
 And later loads the JSON file
 Then the title, date range, lines, events, periods, and text items are restored.
 
+### Report Timeline Load Failures Clearly
+
+Given the user selects a timeline file
+When the file cannot be parsed as timeline JSON
+Then the app tells the user the selected file is not valid timeline JSON
+And runtime rendering errors after a valid parse are not reported as invalid JSON.
+
 ### Save Current File
 
 Given the browser grants writable access to a loaded or saved JSON file

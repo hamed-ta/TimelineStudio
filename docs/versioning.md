@@ -23,7 +23,8 @@ Use `Unreleased` for work that has not been released yet. When a release is cut:
 GitHub Actions validates normal branch pushes and pull requests with:
 
 ```sh
-node --check app.js
+node --check src/features/timeline-editor/legacyTimelineEditor.js
+npm test
 npm run typecheck
 npm run build
 ```

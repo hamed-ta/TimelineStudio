@@ -3,7 +3,7 @@
 Use this workflow before ending a meaningful work session or when the user says `/closeup`.
 
 1. Run relevant verification.
-   - Always run `node --check app.js` after JavaScript changes.
+   - Always run `node --check src/features/timeline-editor/legacyTimelineEditor.js` after legacy editor JavaScript changes.
    - Run `docs/workflows/browser-smoke.md` checks after UI behavior changes.
 2. Check repository status with `git status --short`.
 3. Update `docs/handoff.md`.
