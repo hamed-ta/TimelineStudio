@@ -6,12 +6,12 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Document and start the modular React timeline editor architecture migration.
+Continue the modular React timeline editor architecture migration.
 
 ## Now
 
 - Use ADR 0009 as the target architecture for shrinking the legacy timeline editor into feature-oriented React modules.
-- Start implementation with pure extraction slices before moving visible UI or SVG rendering.
+- Use the tested feature boundaries as the base for moving live state ownership and SVG rendering out of the legacy runtime.
 - Keep the birthdate label to the left of the vertical line when possible.
 - Show hovered date, Iranian date, and age in a fixed info panel below the timeline instead of a cursor-following tooltip.
 - Show selected item dates, duration, line, and age context in the same info panel.
@@ -61,10 +61,10 @@ Document and start the modular React timeline editor architecture migration.
 
 ## Next
 
-- Continue extracting pure timeline layout, rendering, and interaction helpers from the legacy timeline editor controller.
-- Add a `features/timeline-editor/` folder with reducer, action, selector, interaction, layout, component, canvas, and item boundaries.
-- Introduce timeline reducer tests or focused pure helper tests before moving more interactive behavior.
-- Start small UI polish slices in React while preserving the element IDs and behavior expected by the legacy timeline editor controller.
+- Move live timeline state ownership into the reducer/context boundary in small behavior-preserving slices.
+- Convert SVG rendering item by item, starting with note rendering because note item behavior now has the strongest helper coverage.
+- Add focused tests before each state or rendering migration slice.
+- Preserve the element IDs and behavior expected by the legacy timeline editor controller until each behavior has moved into React.
 - Continue migrating remaining custom popovers, menus, picker controls, and timeline controller state into React so more Ant Design components can be used directly.
 - Verify local JSON load, edit, save, pan, zoom, fit, and export before adding Firebase.
 - Add Firebase only after the local app migration is stable.

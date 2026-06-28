@@ -10,6 +10,8 @@ Timeline Studio has a Vite, React, and TypeScript shell under `src/app`. The exi
 
 ADR 0009 accepts a feature-oriented React timeline editor architecture. The migration target is `features/timeline-editor/` with reducer-owned editor state, React components for UI and SVG rendering, custom hooks for reusable interactions, and pure TypeScript modules for timeline layout and math. The project should not adopt MVC, MVVM, or Redux yet; use `useReducer` and context first.
 
+The ADR 0009 source boundaries now exist across `src/app`, `features/timeline-editor/components`, `canvas`, `interactions`, `items`, `layout`, reducer/action/selector modules, `src/shared/hooks`, `src/platform`, and `src/timeline`. The biggest remaining architecture work is moving live state ownership and SVG rendering out of the legacy runtime.
+
 Typed helper modules own timeline model, dates, formatters, JSON, PDF, SVG export, file, and media helpers.
 
 The stylesheet uses semantic design tokens for light and dark color schemes. The app has a single cycling System/Light/Dark theme button that stores Light/Dark overrides in browser local storage and leaves timeline JSON unchanged.
@@ -142,7 +144,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`feat: show app version footer` on the current `main` tip
+`refactor: extract timeline info helpers` on the current `feature/fo` tip
 
 ## Work Completed This Session
 
@@ -480,13 +482,13 @@ Firebase should wait until the local Vite app is stable.
 - No automated browser test harness exists yet.
 - Timeline info panel and period labels may need visual tuning after testing with a real personal timeline.
 - Firebase is not installed or configured yet.
-- Rendering and interaction behavior still lives in legacy `app.js`.
+- Live rendering and most DOM interaction behavior still lives in `src/features/timeline-editor/legacyTimelineEditor.js`.
 - `npm audit` reports one low-severity transitive `esbuild` advisory for Windows dev-server use.
 
 ## Suggested Commit Message
 
-`refactor: extract timeline info helpers`
+`docs: update architecture refactor handoff`
 
 ## Next Safe Step
 
-Continue ADR 0009 by moving canvas-facing shell files into the target `canvas/` folder or extracting another focused pure helper from the legacy runtime before moving state ownership into React.
+Continue ADR 0009 by moving live state ownership into the reducer/context boundary or converting SVG rendering item by item, starting with a tested `NoteItem` React/canvas component.
