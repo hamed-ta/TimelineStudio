@@ -12,6 +12,7 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Tightened note balloon padding and minimum resize limits, reduced the top tip size, and replaced the selected-note corner square with a smaller diagonal resize grip.
 - Documented the modular React timeline editor architecture in ADR 0009, including reducer-owned editor state, feature-oriented folders, React item components, custom interaction hooks, and pure layout modules.
 - Started the modular architecture migration by extracting the editable-shortcut guard into `features/timeline-editor/interactions` and adding a focused `npm test` command.
+- Extracted same-line edge-snap primitives into `features/timeline-editor/interactions` with focused unit tests.
 
 ### Fixed
 

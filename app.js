@@ -60,6 +60,11 @@ import {
 import {
   isEditableShortcutTarget,
 } from "./src/features/timeline-editor/interactions/keyboardShortcuts";
+import {
+  rangesOverlap,
+  snapEdgeOffset,
+  snapMoveDelta,
+} from "./src/features/timeline-editor/interactions/edgeSnap";
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
@@ -3122,38 +3127,6 @@ import {
     return clamp(Math.ceil(EDGE_SNAP_PIXELS / pixelsPerDay()), 1, EDGE_SNAP_MAX_DAYS);
   }
 
-  function snapEdgeOffset(edge, neighbors, threshold) {
-    let bestDelta = 0;
-    let bestDistance = threshold + 1;
-    neighbors.forEach((neighbor) => {
-      [neighbor.start, neighbor.end].forEach((target) => {
-        const distance = Math.abs(edge - target);
-        if (distance <= threshold && distance < bestDistance) {
-          bestDistance = distance;
-          bestDelta = target - edge;
-        }
-      });
-    });
-    return edge + bestDelta;
-  }
-
-  function snapMoveDelta(start, end, neighbors, threshold) {
-    let bestDelta = 0;
-    let bestDistance = threshold + 1;
-    neighbors.forEach((neighbor) => {
-      [neighbor.start, neighbor.end].forEach((target) => {
-        [target - start, target - end].forEach((delta) => {
-          const distance = Math.abs(delta);
-          if (distance <= threshold && distance < bestDistance) {
-            bestDistance = distance;
-            bestDelta = delta;
-          }
-        });
-      });
-    });
-    return bestDelta;
-  }
-
   function preventResizedStartOverlap(start, end, neighbors) {
     return neighbors
       .filter((neighbor) => neighbor.hasRange)
@@ -3212,10 +3185,6 @@ import {
       nextStart = nextEnd - duration;
     }
     return [nextStart, nextEnd];
-  }
-
-  function rangesOverlap(startA, endA, startB, endB) {
-    return startA < endB && endA > startB;
   }
 
   function dateOffset(isoDate) {
