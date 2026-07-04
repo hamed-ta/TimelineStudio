@@ -46,7 +46,10 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Keep note leaders and anchors terminating at the central timeline axis.
 - Keep the toolbar and timeline info panel fixed outside the scrollable timeline viewport.
 - Reorder central-axis line labels by visual top-to-bottom order so swapping below-axis lines does not affect above-axis lanes.
-- Let users resize central-axis track height with `Ctrl`/`Command` + mouse wheel and timeline area height with `Ctrl`/`Command` + `Alt` + mouse wheel, a compact header height control, or a drag handle below the timeline.
+- Let users zoom horizontally with `Ctrl`/`Command` + mouse wheel, resize central-axis track height with `Ctrl`/`Command` + `Shift` + mouse wheel, and resize timeline area height with `Ctrl`/`Command` + `Alt` + mouse wheel, a compact toolbar height control, or a drag handle below the timeline.
+- Let users collapse the bottom timeline information panel and keep header/action controls compact.
+- Fix legacy-bound sidebar fields so focusing them does not clear values and timeline titles can include spaces while editing.
+- Move Fit, zoom, height, read-only, and right-aligned theme controls into the action toolbar, remove the toolbar heading/collapse row, and center the compact app header metadata line.
 - Preserve line reorder, remove, save/load, and item lane assignment behavior.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
@@ -152,7 +155,7 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Extracted timeline info-panel pointer and selection text into a tested feature view-model helper.
 - Added tested central-axis lane geometry helpers and wired the legacy SVG renderer to draw tracks above and below the axis.
 - Refined the central-axis renderer so only the timeline canvas scrolls, note leaders end at the axis, and dense day/month detail is hidden until readable.
-- Fixed central-axis line reordering to use visual lane order, added wheel shortcuts for line spacing and timeline area height, and compacted the zoom/height controls behind popovers.
+- Fixed central-axis line reordering to use visual lane order, restored `Ctrl`/`Command` + mouse wheel horizontal zoom, reduced zoom increments, added wheel shortcuts for line spacing and timeline area height, compacted the zoom/height controls behind overlay popovers, added a collapsible info panel, fixed Ant input focus value resets in legacy-bound fields, and consolidated view controls into the action toolbar.
 
 ## Risks
 

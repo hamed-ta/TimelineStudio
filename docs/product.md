@@ -102,21 +102,28 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 ## Layout Behavior
 
 - The timeline editor sidebar should be collapsible.
-- The timeline action toolbar should be collapsible.
+- The timeline action toolbar should stay compact enough that it does not need its own collapse control on desktop.
 - The timeline editor sidebar should stay on the left side of the workspace on wider screens.
 - The timeline action toolbar should stay near the top of the timeline stage.
-- The current timeline title, date range, and Fit action should stay in the main app header.
+- The current timeline title, date range, and file state should stay in a single compact metadata row in the main app header.
 - The timeline action toolbar should not duplicate the timeline title or date range.
+- The main header and action toolbar should stay compact so the timeline canvas gets most of the vertical space.
+- View actions such as read-only, Fit, theme, zoom, and height controls should live in the action toolbar with create, file, and export actions.
+- View actions should remain pinned on the right side of the toolbar, with the theme switcher as the right-most control.
 - Timeline action buttons should use recognizable icons with short labels.
 - Timeline action icons should use distinct accent color treatment while preserving text contrast.
 - Create-item actions should be grouped separately from file and export actions.
 - Item locking should be an icon toggle near toolbar controls instead of a checkbox mixed into create-item actions.
-- Zoom controls should use a compact icon control with the current value visible, reveal the slider only when opened, and should not allow the timeline to zoom out below the readable minimum.
+- Zoom controls should use a compact icon control with the current value visible, reveal the slider in an overlay when opened, and should not allow the timeline to zoom out below the readable minimum.
+- Zoom buttons, shortcuts, context-menu commands, and wheel zoom should use small enough increments for controlled timeline inspection.
 - Collapse and expand controls should use panel-specific recognizable icon buttons rather than text characters or generic arrows.
 - Collapse and expand transitions should be animated.
 - The timeline viewport height should fit the rendered axis, lines, and note area instead of stretching to fill unused workspace height.
-- The user should be able to use `Ctrl`/`Command` + mouse wheel to make line tracks taller or shorter within readable limits.
+- The user should be able to use `Ctrl`/`Command` + mouse wheel to zoom the timeline horizontally.
+- The user should be able to use `Ctrl`/`Command` + `Shift` + mouse wheel to make line tracks taller or shorter within readable limits.
 - The user should be able to drag a handle below the timeline, use `Ctrl`/`Command` + `Alt` + mouse wheel, or open a compact height control to make the timeline area taller or shorter so more vertical canvas is visible with less internal timeline scrolling.
+- The timeline pointer and selection information panel should be collapsible so users can give more vertical space to the timeline canvas.
+- Editing fields should preserve their current values when focused and should allow normal text entry, including spaces in timeline and item names.
 - Empty timelines should show a clear centered empty state instead of a visually unbalanced blank canvas.
 - Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
 - Layout preferences should be remembered in the browser.
@@ -433,7 +440,7 @@ And lines above the axis keep their assigned items and visible order.
 ### Resize Timeline Line Spacing
 
 Given the timeline has multiple lines
-When the user holds `Ctrl` or `Command` and scrolls the mouse wheel over the timeline
+When the user holds `Ctrl+Shift` or `Command+Shift` and scrolls the mouse wheel over the timeline
 Then the visible line tracks become taller or shorter within readable limits
 And the line spacing is preserved after save/load.
 
@@ -447,6 +454,28 @@ Then the timeline area becomes taller or shorter within reasonable limits
 And the page can grow vertically so more of the timeline canvas is visible
 And the toolbar and info panel remain outside the scrollable timeline canvas
 And timeline area height is remembered in the browser without changing timeline JSON.
+
+### Open Toolbar View Controls
+
+Given the compact toolbar is visible
+When the user opens the zoom or height control
+Then its slider appears as an overlay near the triggering button
+And the toolbar layout does not resize or push other toolbar controls out of place.
+
+### Collapse Timeline Information
+
+Given the timeline information panel is visible below the canvas
+When the user collapses the information panel
+Then the pointer and selection details are hidden in a compact row
+And the timeline canvas has more vertical room
+And the user can expand the information panel again.
+
+### Edit Text Fields Without Losing Values
+
+Given the timeline sidebar has existing text and date values
+When the user focuses a legacy-bound field
+Then the existing value remains visible
+And typing spaces in the timeline title preserves normal text entry.
 
 ### Remove A Line
 
@@ -468,6 +497,13 @@ And no item changes date or line.
 Given the user zooms into a timeline
 When the zoom level is high enough for day-level detail
 Then day ticks or day labels are visible.
+
+### Zoom Timeline With Mouse Wheel
+
+Given the user is hovering over the timeline canvas
+When the user holds `Ctrl` or `Command` and scrolls the mouse wheel
+Then the timeline zooms horizontally
+And line track height does not change.
 
 ### Keep Zoom Readable
 

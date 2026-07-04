@@ -37,8 +37,13 @@ This project follows semantic versioning. The current package version is `0.2.2`
 - Extracted timeline info-panel pointer and selection text into a feature view-model helper with focused tests.
 - Changed the timeline canvas to use a central date axis with lanes alternating above and below it, central-axis default line labels, zoom-responsive ticks, subtle alternating month bands, and a hover guide from the cursor to the axis.
 - Refined the central-axis canvas so dense day/month detail is hidden until readable, note leaders terminate at the central axis, and only the timeline viewport scrolls while the toolbar and info panel stay fixed.
-- Added vertical timeline controls: `Ctrl`/`Command` + mouse wheel resizes line spacing, and `Ctrl`/`Command` + `Alt` + mouse wheel, a compact header height control, or the timeline bottom drag handle resizes the timeline area height without changing timeline JSON.
-- Replaced always-visible zoom and height sliders with compact header controls that show the current value and reveal sliders only while adjusting.
+- Added vertical timeline controls: `Ctrl`/`Command` + `Shift` + mouse wheel resizes line spacing, and `Ctrl`/`Command` + `Alt` + mouse wheel, a compact toolbar height control, or the timeline bottom drag handle resizes the timeline area height without changing timeline JSON.
+- Restored `Ctrl`/`Command` + mouse wheel as horizontal timeline zoom.
+- Replaced always-visible zoom and height sliders with compact toolbar controls that show the current value and reveal fixed overlay sliders only while adjusting.
+- Reduced incremental zoom steps for wheel, keyboard, context-menu, and popover zoom controls.
+- Added a collapsible timeline information panel and tightened header/action-toolbar spacing to give more vertical room to the canvas.
+- Fixed legacy-bound text/date fields losing their displayed values on focus under Ant Design input wrappers, and preserved normal spaces while editing the timeline title.
+- Moved read-only, Fit, zoom, height, and right-aligned theme controls into the action toolbar, removed the toolbar title/collapse row, and compressed the app header into a centered metadata line.
 
 ### Fixed
 

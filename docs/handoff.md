@@ -60,7 +60,13 @@ The timeline canvas now uses a central date axis. Existing numeric item lanes ar
 
 Timeline line reordering on the central-axis canvas now uses visual top-to-bottom order. Moving a below-axis line above another below-axis line remaps only those below-axis lanes, so above-axis labels, colors, and assigned items are not accidentally moved.
 
-Timeline vertical controls combine shortcuts with compact controls. `Ctrl`/`Command` + mouse wheel over the timeline resizes `settings.rowHeight` within the existing `48` to `120` model clamp, making central-axis tracks taller or shorter. `Ctrl`/`Command` + `Alt` + mouse wheel, the compact header Height control, or the drag handle below the timeline viewport resizes the timeline stage height as a browser layout preference, allowing the page to grow vertically so the timeline viewport can show more vertical canvas with less internal scrolling. The Zoom control is also compact: its header button shows the current zoom value and opens the slider/buttons only while adjusting.
+Timeline view controls combine shortcuts with compact controls. `Ctrl`/`Command` + mouse wheel over the timeline zooms horizontally again, using smaller wheel steps for controlled inspection. Keyboard, context-menu, and popover zoom buttons also use smaller increments. `Ctrl`/`Command` + `Shift` + mouse wheel resizes `settings.rowHeight` within the existing `48` to `120` model clamp, making central-axis tracks taller or shorter. `Ctrl`/`Command` + `Alt` + mouse wheel, the compact toolbar Height control, or the drag handle below the timeline viewport resizes the timeline stage height as a browser layout preference, allowing the page to grow vertically so the timeline viewport can show more vertical canvas with less internal scrolling. The Zoom and Height controls use fixed overlay panels so opening a slider does not resize the toolbar.
+
+The bottom pointer/selection information panel is collapsible. It keeps the legacy-updated pointer and selection nodes mounted for runtime updates, but hides their content in a compact row when collapsed so the timeline canvas has more vertical room. The main header, timeline context card, timeline stage padding, and action toolbar spacing are also tighter.
+
+Legacy-bound text and date fields use native inputs with Ant styling instead of Ant `Input` wrappers. This avoids Ant's internal uncontrolled state overwriting values that the legacy runtime writes directly to the DOM. Timeline title editing now preserves typed spaces while the user is editing instead of trimming on every keystroke.
+
+The header is now a compact centered metadata row. It shows the app brand/status plus timeline title, date range, file state, and unsaved state in one horizontal row. Read-only, Fit, zoom, timeline height, and the right-most theme switcher moved into the action toolbar, and the action toolbar no longer has a separate title/collapse row.
 
 Timeline month and day labels adapt to available horizontal space. Month labels stack Gregorian and Iranian names when there is room, fall back to compact Gregorian labels when space is tighter, and skip labels that would collide. Day labels are centered in their day cells and skipped when they would collide.
 
@@ -192,7 +198,11 @@ Firebase should wait until the local Vite app is stable.
 - Constrained the app shell so only the timeline viewport scrolls while the toolbar and info panel remain fixed.
 - Added tested visual lane-order remapping for central-axis line reordering.
 - Wired timeline-label dragging to use visual lane order so below-axis swaps do not affect above-axis lanes.
-- Replaced the rejected line-spacing handle with `Ctrl`/`Command` + mouse wheel line-spacing zoom and `Ctrl`/`Command` + `Alt` + mouse wheel/compact header control/bottom drag handle timeline area height resizing.
+- Replaced the rejected line-spacing handle with `Ctrl`/`Command` + `Shift` + mouse wheel line-spacing zoom and `Ctrl`/`Command` + `Alt` + mouse wheel/compact toolbar control/bottom drag handle timeline area height resizing.
+- Added a collapsible bottom timeline information panel.
+- Tightened the main header, action toolbar, and timeline stage spacing.
+- Replaced legacy-bound Ant `Input` wrappers with native Ant-styled inputs so focus no longer clears runtime-managed values.
+- Moved Read only, Fit, Theme, Zoom, and Height into the action toolbar and removed the toolbar heading/collapse control.
 - Standardized odd intermediate font weights to common values like 500, 600, 700, and 800.
 - Applied the shared font stack to the timeline SVG labels.
 - Removed the old Rows / Lines editor sidebar section.
@@ -309,10 +319,12 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
-- Current vertical control validation: `npm test` passed with 83 tests, including wheel shortcut routing and `getModifierState` fallback coverage; `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The build still reports the expected Vite chunk-size warning.
+- Current view-control validation: pending after restoring `Ctrl`/`Command` + mouse wheel horizontal zoom and moving Zoom/Height sliders to fixed overlay panels.
 - Browser smoke through Vite at `http://127.0.0.1:8765/`: compact Zoom and Height panels started hidden, opened one at a time, and closed on outside click; changing Height to `+96px` increased the stage height without dirtying timeline JSON.
 - Browser smoke: the bottom height grip was visible on first load (`840` to `858` px in a `900` px viewport), dragging it down by `120` px resized the timeline area to `+120px`, and the dirty indicator stayed hidden.
 - Browser smoke: `Ctrl+wheel` increased line spacing while keeping horizontal zoom at `18 px/month`; `Ctrl+Alt+wheel` and `Command+Alt+wheel` each resized the timeline area to `+72px`; no browser console warnings or errors were reported.
+- Browser smoke: focusing `#timelineTitleInput`, `#startDateInput`, and `#itemTitleInput` preserved their current values; typing `My Timeline Test` updated the header title with spaces intact, and submitting `Event With Space` updated the selected item label with spaces intact.
+- Browser smoke: collapsing the timeline info panel changed its height from `131` px to `42` px and increased the timeline viewport from `601` px to `690` px; expanding restored the full panel. The compact visual screenshot was saved to `/private/tmp/timeline-collapsed-info-layout.png`.
 - RED/documented: versioning docs now require tag-based releases, matching changelog headings, GitHub Pages setup, and manual workflow support.
 - `node --check app.js`: passed.
 - `node --check scripts/extract-release-notes.mjs`: passed.
@@ -436,8 +448,8 @@ Firebase should wait until the local Vite app is stable.
 - Browser smoke: Fit, Zoom in, and Zoom out controls each rendered recognizable icons.
 - Browser smoke: repeated header Zoom out stopped at `18 px/month` and showed `Minimum readable zoom reached`.
 - Browser smoke: the context menu exposed Zoom in, Zoom out, and Fit actions, each with one SVG icon.
-- Browser smoke: context-menu Zoom out at the minimum stayed at `18 px/month`, and context-menu Zoom in moved to `38 px/month`.
-- Browser smoke: pressing `-` zoomed out to `18 px/month`, and pressing `+` zoomed back to `38 px/month` when focus was not in an editor field.
+- Browser smoke: context-menu Zoom out at the minimum stayed at `18 px/month`, and context-menu Zoom in moved above the minimum.
+- Browser smoke: pressing `-` zoomed out to `18 px/month`, and pressing `+` zoomed back above the minimum when focus was not in an editor field.
 - Browser smoke: opening the context menu on an empty timeline disabled copy, paste, duplicate, and delete while keeping zoom and lock commands available.
 - Browser smoke: adding an event from the toolbar hid the empty state and removed the `is-empty` viewport class.
 - Browser smoke: the live tab was reset to the empty state at `18 px/month`, and no console warnings or errors were reported.

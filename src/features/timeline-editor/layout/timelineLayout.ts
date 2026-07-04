@@ -59,10 +59,11 @@ export type TimelineWheelInput = {
   altKey?: boolean;
   ctrlKey?: boolean;
   metaKey?: boolean;
+  shiftKey?: boolean;
   getModifierState?: (key: string) => boolean;
 };
 
-export type TimelineWheelAction = "timeline-area" | "row-height" | "none";
+export type TimelineWheelAction = "timeline-area" | "row-height" | "horizontal-zoom" | "none";
 
 export function timelinePixelsPerDay(zoom: number, avgDaysPerMonth: number): number {
   return zoom / avgDaysPerMonth;
@@ -100,6 +101,7 @@ export function axisDetailForZoom(zoom: number, avgDaysPerMonth = 365.2425 / 12)
 
 export function timelineWheelAction(input: TimelineWheelInput): TimelineWheelAction {
   const hasAlt = Boolean(input.altKey || input.getModifierState?.("Alt") || input.getModifierState?.("Option"));
+  const hasShift = Boolean(input.shiftKey || input.getModifierState?.("Shift"));
   const hasPrimaryModifier = Boolean(
     input.ctrlKey
     || input.metaKey
@@ -108,7 +110,8 @@ export function timelineWheelAction(input: TimelineWheelInput): TimelineWheelAct
     || input.getModifierState?.("OS"),
   );
   if (hasAlt && hasPrimaryModifier) return "timeline-area";
-  if (hasPrimaryModifier) return "row-height";
+  if (hasShift && hasPrimaryModifier) return "row-height";
+  if (hasPrimaryModifier) return "horizontal-zoom";
   return "none";
 }
 

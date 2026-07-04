@@ -167,6 +167,8 @@ import {
   const MAX_ZOOM = 360;
   const DEFAULT_ZOOM = 18;
   const FIT_MIN_ZOOM = MIN_ZOOM;
+  const ZOOM_STEP = 8;
+  const ZOOM_WHEEL_STEP = 4;
   const EDGE_SNAP_PIXELS = 14;
   const EDGE_SNAP_MAX_DAYS = 14;
   const AVG_DAYS_PER_MONTH = 365.2425 / 12;
@@ -403,8 +405,8 @@ import {
     if (dom.timelineHeightControlButton) {
       dom.timelineHeightControlButton.addEventListener("click", () => toggleRangeControlPanel("height"));
     }
-    dom.zoomInButton.addEventListener("click", () => zoomBy(20));
-    dom.zoomOutButton.addEventListener("click", () => zoomBy(-20));
+    dom.zoomInButton.addEventListener("click", () => zoomBy(ZOOM_STEP));
+    dom.zoomOutButton.addEventListener("click", () => zoomBy(-ZOOM_STEP));
     dom.fitButton.addEventListener("click", fitTimelineToViewport);
     if (dom.timelineHeightGrip) {
       dom.timelineHeightGrip.addEventListener("pointerdown", beginTimelineAreaHeightDrag);
@@ -461,6 +463,7 @@ import {
       closeContextMenu();
       closeLineEditor();
       closeColorPickers();
+      repositionOpenRangeControlPanels();
     });
   }
 
@@ -1432,8 +1435,40 @@ import {
     button.setAttribute("aria-expanded", String(open));
     if (open) {
       const range = kind === "zoom" ? dom.zoomRange : dom.timelineHeightRange;
-      window.requestAnimationFrame(() => range?.focus?.());
+      positionRangeControlPanel(button, panel);
+      window.requestAnimationFrame(() => {
+        positionRangeControlPanel(button, panel);
+        range?.focus?.();
+      });
     }
+  }
+
+  function positionRangeControlPanel(button, panel) {
+    if (!button || !panel || panel.hidden) return;
+    const margin = 8;
+    const gap = 8;
+    const panelWidth = Math.min(286, Math.max(220, window.innerWidth - margin * 2));
+    panel.style.width = `${panelWidth}px`;
+    const buttonRect = button.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const measuredWidth = panelRect.width || panelWidth;
+    const measuredHeight = panelRect.height || panel.offsetHeight || 76;
+    const maxLeft = Math.max(margin, window.innerWidth - measuredWidth - margin);
+    const anchorRight = clamp(buttonRect.right, margin + measuredWidth, window.innerWidth - margin);
+    const preferredLeft = anchorRight - measuredWidth;
+    const left = clamp(preferredLeft, margin, maxLeft);
+    const belowTop = buttonRect.bottom + gap;
+    const aboveTop = buttonRect.top - measuredHeight - gap;
+    const top = belowTop + measuredHeight <= window.innerHeight - margin
+      ? belowTop
+      : Math.max(margin, aboveTop);
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+  }
+
+  function repositionOpenRangeControlPanels() {
+    if (isRangeControlPanelOpen("zoom")) positionRangeControlPanel(dom.zoomControlButton, dom.zoomControlPanel);
+    if (isRangeControlPanelOpen("height")) positionRangeControlPanel(dom.timelineHeightControlButton, dom.timelineHeightControlPanel);
   }
 
   function closeRangeControlPanels() {
@@ -2189,7 +2224,7 @@ import {
     if (suppressControlEvents) return;
     const previousSnapshot = timelineDataSnapshot();
     const settings = timeline.settings;
-    settings.title = dom.timelineTitleInput.value.trim() || "New Timeline";
+    settings.title = dom.timelineTitleInput.value || "New Timeline";
     settings.startDate = normalizeDateInput(dom.startDateInput.value, settings.startDate);
     settings.autoEndDate = dom.autoEndDateInput.checked;
     if (event && event.currentTarget === dom.endDateInput) {
@@ -2263,13 +2298,13 @@ import {
 
     if (!event.ctrlKey && !event.metaKey && !event.altKey && (key === "+" || key === "=")) {
       event.preventDefault();
-      zoomBy(20);
+      zoomBy(ZOOM_STEP);
       return;
     }
 
     if (!event.ctrlKey && !event.metaKey && !event.altKey && key === "-") {
       event.preventDefault();
-      zoomBy(-20);
+      zoomBy(-ZOOM_STEP);
       return;
     }
 
@@ -2663,9 +2698,9 @@ import {
     } else if (action === "unlock-item") {
       setSelectedItemLocked(false, actionItemId);
     } else if (action === "zoom-in") {
-      zoomBy(20);
+      zoomBy(ZOOM_STEP);
     } else if (action === "zoom-out") {
-      zoomBy(-20);
+      zoomBy(-ZOOM_STEP);
     } else if (action === "fit") {
       fitTimelineToViewport();
     } else if (action === "delete") {
@@ -3270,6 +3305,12 @@ import {
       event.preventDefault();
       const rowDelta = event.deltaY > 0 ? -4 : 4;
       setTimelineRowHeight((timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT) + rowDelta);
+      return;
+    }
+
+    if (action === "horizontal-zoom") {
+      event.preventDefault();
+      zoomBy(event.deltaY > 0 ? -ZOOM_WHEEL_STEP : ZOOM_WHEEL_STEP);
       return;
     }
 

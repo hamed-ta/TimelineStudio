@@ -1,5 +1,5 @@
 import { CloseOutlined } from "@ant-design/icons";
-import { Button, Input } from "antd";
+import { Button } from "antd";
 import { ColorPickerField } from "./ColorPickerField";
 import { FieldLabel } from "./FieldLabel";
 
@@ -12,7 +12,7 @@ export function LineEditorPopover() {
           <Button htmlType="button" className="icon-button line-editor-close" id="lineEditorCloseButton" aria-label="Close line editor" icon={<CloseOutlined />} />
         </div>
         <FieldLabel label="Name">
-          <Input id="lineNameInput" type="text" autoComplete="off" />
+          <input id="lineNameInput" className="ant-input legacy-input" type="text" autoComplete="off" />
         </FieldLabel>
         <ColorPickerField label="Background" prefix="line" paletteLabel="Preset line background colors" />
         <div className="line-editor-actions">

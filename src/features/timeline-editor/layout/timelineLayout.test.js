@@ -116,12 +116,17 @@ test("central timeline visual order keeps below-axis swaps below the axis", () =
 test("timeline wheel actions route vertical spacing and area shortcuts", () => {
   assert.equal(timelineWheelAction({}), "none");
   assert.equal(timelineWheelAction({ altKey: true }), "none");
-  assert.equal(timelineWheelAction({ ctrlKey: true }), "row-height");
-  assert.equal(timelineWheelAction({ metaKey: true }), "row-height");
+  assert.equal(timelineWheelAction({ ctrlKey: true }), "horizontal-zoom");
+  assert.equal(timelineWheelAction({ metaKey: true }), "horizontal-zoom");
+  assert.equal(timelineWheelAction({ ctrlKey: true, shiftKey: true }), "row-height");
+  assert.equal(timelineWheelAction({ metaKey: true, shiftKey: true }), "row-height");
   assert.equal(timelineWheelAction({ altKey: true, ctrlKey: true }), "timeline-area");
   assert.equal(timelineWheelAction({ altKey: true, metaKey: true }), "timeline-area");
   assert.equal(timelineWheelAction({
     getModifierState: (key) => key === "Control",
+  }), "horizontal-zoom");
+  assert.equal(timelineWheelAction({
+    getModifierState: (key) => key === "Shift" || key === "Meta",
   }), "row-height");
   assert.equal(timelineWheelAction({
     getModifierState: (key) => key === "Alt" || key === "Meta",

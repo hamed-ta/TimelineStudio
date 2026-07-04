@@ -1,4 +1,4 @@
-import { Button, Card, Input, Typography } from "antd";
+import { Button, Card, Typography } from "antd";
 import { ColorPickerField } from "./ColorPickerField";
 import { FieldLabel } from "./FieldLabel";
 import { MenuFoldIcon, MenuUnfoldIcon } from "./PanelToggleIcons";
@@ -43,15 +43,15 @@ export function EditorSidebar({
           title={<Typography.Title level={2}>Timeline</Typography.Title>}
         >
           <FieldLabel label="Title">
-            <Input id="timelineTitleInput" type="text" autoComplete="off" />
+            <input id="timelineTitleInput" className="ant-input legacy-input" type="text" autoComplete="off" />
           </FieldLabel>
 
           <div className="field-grid">
             <FieldLabel label="Start date">
-              <Input id="startDateInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
+              <input id="startDateInput" className="ant-input legacy-input" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
             </FieldLabel>
             <FieldLabel label="End date">
-              <Input id="endDateInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
+              <input id="endDateInput" className="ant-input legacy-input" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
             </FieldLabel>
           </div>
 
@@ -94,12 +94,12 @@ export function EditorSidebar({
             </FieldLabel>
 
             <FieldLabel id="itemTitleField" label="Title">
-              <Input id="itemTitleInput" type="text" autoComplete="off" />
+              <input id="itemTitleInput" className="ant-input legacy-input" type="text" autoComplete="off" />
             </FieldLabel>
 
             <div className="field-grid">
               <FieldLabel label="Lane">
-                <Input id="itemLaneInput" type="number" min="0" max="20" step="1" />
+                <input id="itemLaneInput" className="ant-input legacy-input" type="number" min="0" max="20" step="1" />
               </FieldLabel>
               <div className="color-field" id="itemColorField">
                 <ColorPickerField label="Color" prefix="item" paletteLabel="Preset item colors" />
@@ -108,10 +108,10 @@ export function EditorSidebar({
                 <ColorPickerField label="Text" prefix="itemText" paletteLabel="Preset note text colors" />
               </div>
               <FieldLabel label="Start date">
-                <Input id="itemStartInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
+                <input id="itemStartInput" className="ant-input legacy-input" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
               </FieldLabel>
               <FieldLabel id="itemEndField" label="End date">
-                <Input id="itemEndInput" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
+                <input id="itemEndInput" className="ant-input legacy-input" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" autoComplete="off" />
               </FieldLabel>
             </div>
             <p className="calendar-preview" id="itemCalendarPreview"></p>

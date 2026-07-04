@@ -24,9 +24,10 @@ export function ToolbarButton({
       data-tone={tone}
       data-add={addType}
       title={title}
+      aria-label={title}
       icon={<ToneIcon tone={tone}>{icon}</ToneIcon>}
     >
-      {children}
+      <span className="toolbar-button-label">{children}</span>
     </Button>
   );
 }

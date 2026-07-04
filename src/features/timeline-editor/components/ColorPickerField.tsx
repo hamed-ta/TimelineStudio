@@ -1,5 +1,5 @@
 import { BgColorsOutlined } from "@ant-design/icons";
-import { Button, Input } from "antd";
+import { Button } from "antd";
 
 export function ColorPickerField({
   label,
@@ -57,7 +57,7 @@ export function ColorPickerField({
           </label>
           <label className="color-picker-hex-row">
             Hex
-            <Input id={hexId} type="text" inputMode="text" maxLength={7} spellCheck={false} aria-label={`${label} hex color`} />
+            <input id={hexId} className="ant-input legacy-input" type="text" inputMode="text" maxLength={7} spellCheck={false} aria-label={`${label} hex color`} />
           </label>
           <div className="color-swatch-grid" id={paletteId} role="group" aria-label={paletteLabel}></div>
         </div>

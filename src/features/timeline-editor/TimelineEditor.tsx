@@ -11,11 +11,11 @@ declare const __APP_NAME__: string;
 declare const __APP_VERSION__: string;
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "timeline-studio-sidebar-collapsed";
-const TOOLBAR_COLLAPSED_STORAGE_KEY = "timeline-studio-toolbar-collapsed";
+const INFO_PANEL_COLLAPSED_STORAGE_KEY = "timeline-studio-info-panel-collapsed";
 
 export function TimelineEditor() {
   const [sidebarCollapsed, setSidebarCollapsed] = usePersistentBoolean(SIDEBAR_COLLAPSED_STORAGE_KEY);
-  const [toolbarCollapsed, setToolbarCollapsed] = usePersistentBoolean(TOOLBAR_COLLAPSED_STORAGE_KEY);
+  const [infoPanelCollapsed, setInfoPanelCollapsed] = usePersistentBoolean(INFO_PANEL_COLLAPSED_STORAGE_KEY);
 
   return (
     <>
@@ -29,14 +29,14 @@ export function TimelineEditor() {
           />
 
           <section className="timeline-stage" id="timelineStage" aria-label="Timeline canvas">
-            <TimelineToolbar
-              collapsed={toolbarCollapsed}
-              onToggleCollapsed={() => setToolbarCollapsed((collapsed) => !collapsed)}
-            />
+            <TimelineToolbar />
             <TimelineCanvas />
             <LineEditorPopover />
             <TimelineContextMenu />
-            <TimelineInfoPanel />
+            <TimelineInfoPanel
+              collapsed={infoPanelCollapsed}
+              onToggleCollapsed={() => setInfoPanelCollapsed((collapsed) => !collapsed)}
+            />
           </section>
         </main>
 
