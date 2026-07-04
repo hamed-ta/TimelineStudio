@@ -2,9 +2,11 @@
 
 All notable project changes should be recorded here.
 
-This project follows semantic versioning. The current package version is `0.2.2`.
+This project follows semantic versioning. The current package version is `0.3.0`.
 
 ## Unreleased
+
+## 0.3.0 - 2026-07-04
 
 ### Changed
 

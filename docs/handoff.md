@@ -156,7 +156,7 @@ The app now tracks a current JSON file when the browser grants a File System Acc
 
 The main header shows the current file/copy state and an unsaved changes indicator. Timeline data mutations mark the document dirty; saving or loading clears the indicator.
 
-Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version is `0.2.2`.
+Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version is `0.3.0`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
@@ -325,6 +325,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
+- Release 0.3.0 prep: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `node scripts/extract-release-notes.mjs 0.3.0 /private/tmp/timeline-release-notes-0.3.0.md`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The build still reports the expected Vite chunk-size warning.
 - Current zoom performance and empty-start slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The test suite now has 93 passing tests. The build still reports the expected Vite chunk-size warning.
 - Browser smoke through Vite at `http://127.0.0.1:8766/`: the empty timeline loaded from `2025-07-04` to `2026-07-04`, fitted at `50 px/month`, had SVG width `919` matching the viewport width, and started with `scrollLeft` `0`.
 - Browser smoke: in Persian-only mode at `320 px/month`, the axis still labeled the Persian year start as `1 Farvardin 1405`, dense daily grid and daily ticks rendered as one SVG path each, and no `line.grid-day` or `line.axis-tick-day` nodes were created. The page was reloaded back to both display calendars at the fitted empty range.
