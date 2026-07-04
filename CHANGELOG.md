@@ -37,6 +37,8 @@ This project follows semantic versioning. The current package version is `0.2.2`
 - Extracted timeline info-panel pointer and selection text into a feature view-model helper with focused tests.
 - Changed the timeline canvas to use a central date axis with lanes alternating above and below it, central-axis default line labels, zoom-responsive ticks, subtle alternating month bands, and a hover guide from the cursor to the axis.
 - Refined the central-axis canvas so dense day/month detail is hidden until readable, note leaders terminate at the central axis, and only the timeline viewport scrolls while the toolbar and info panel stay fixed.
+- Added vertical timeline controls: `Ctrl`/`Command` + mouse wheel resizes line spacing, and `Ctrl`/`Command` + `Alt` + mouse wheel, a compact header height control, or the timeline bottom drag handle resizes the timeline area height without changing timeline JSON.
+- Replaced always-visible zoom and height sliders with compact header controls that show the current value and reveal sliders only while adjusting.
 
 ### Fixed
 
@@ -47,6 +49,7 @@ This project follows semantic versioning. The current package version is `0.2.2`
 - Kept `Delete` and `Backspace` available for text editing inside timeline editor fields instead of deleting the selected item.
 - Committed inline note text edits when clicking outside the balloon editor.
 - Removed the browser focus outline from focusable SVG timeline items so right-clicking a note does not draw a large blue box around the note leader and balloon.
+- Fixed central-axis line reordering so swapping below-axis lines does not move or reassign the above-axis line at the same visual boundary.
 
 ## 0.2.2 - 2026-06-27
 - Improved note balloon layout and editing.

@@ -1,4 +1,5 @@
 import {
+  ColumnHeightOutlined,
   DesktopOutlined,
   FullscreenOutlined,
   MoonOutlined,
@@ -57,11 +58,50 @@ export function TimelineHeader() {
           {themeLabel}
         </Button>
         <span className="separator" aria-hidden="true"></span>
-        <Button htmlType="button" className="icon-button zoom-icon-button" id="zoomOutButton" aria-label="Zoom out" title="Zoom out" icon={<ZoomOutOutlined />} />
-        <label htmlFor="zoomRange">Zoom</label>
-        <input id="zoomRange" className="ant-range-bridge" type="range" min="6" max="360" step="0.5" defaultValue="18" />
-        <span id="zoomLabel">18 px/month</span>
-        <Button htmlType="button" className="icon-button zoom-icon-button" id="zoomInButton" aria-label="Zoom in" title="Zoom in" icon={<ZoomInOutlined />} />
+        <div className="range-control">
+          <Button
+            htmlType="button"
+            className="range-control-button"
+            id="zoomControlButton"
+            aria-expanded="false"
+            aria-controls="zoomControlPanel"
+            title="Adjust zoom"
+            icon={<ZoomInOutlined />}
+          >
+            <span>Zoom</span>
+            <span className="range-control-value" id="zoomLabel">18 px/month</span>
+          </Button>
+          <div className="range-popover-panel" id="zoomControlPanel" hidden>
+            <div className="range-popover-title">Zoom</div>
+            <div className="range-popover-row">
+              <Button htmlType="button" className="icon-button zoom-icon-button" id="zoomOutButton" aria-label="Zoom out" title="Zoom out" icon={<ZoomOutOutlined />} />
+              <label className="range-only-label" htmlFor="zoomRange">Timeline zoom</label>
+              <input id="zoomRange" className="ant-range-bridge" type="range" min="6" max="360" step="0.5" defaultValue="18" />
+              <Button htmlType="button" className="icon-button zoom-icon-button" id="zoomInButton" aria-label="Zoom in" title="Zoom in" icon={<ZoomInOutlined />} />
+            </div>
+          </div>
+        </div>
+        <div className="range-control">
+          <Button
+            htmlType="button"
+            className="range-control-button"
+            id="timelineHeightControlButton"
+            aria-expanded="false"
+            aria-controls="timelineHeightControlPanel"
+            title="Adjust timeline height"
+            icon={<ColumnHeightOutlined />}
+          >
+            <span>Height</span>
+            <span className="range-control-value" id="timelineHeightLabel">Auto</span>
+          </Button>
+          <div className="range-popover-panel" id="timelineHeightControlPanel" hidden>
+            <div className="range-popover-title">Timeline height</div>
+            <div className="range-popover-row">
+              <label className="range-only-label" htmlFor="timelineHeightRange">Timeline height</label>
+              <input id="timelineHeightRange" className="ant-range-bridge timeline-height-range" type="range" min="0" max="900" step="24" defaultValue="0" />
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );

@@ -52,6 +52,7 @@
   --timeline-font-2xs: 0.625rem;
   --timeline-font-xs: 0.75rem;
   --timeline-font-sm: 0.8125rem;
+  --timeline-stage-extra-height: 0px;
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: var(--line-normal);
@@ -143,12 +144,11 @@
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
 }
 
 #root {
-  height: 100%;
-  min-height: 0;
+  min-height: 100vh;
 }
 
 body {
@@ -161,7 +161,7 @@ body {
   line-height: var(--line-normal);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
+  overflow: auto;
 }
 
 button,
@@ -183,8 +183,7 @@ textarea:disabled {
 }
 
 .app-shell {
-  height: 100%;
-  min-height: 0;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -668,18 +667,88 @@ p {
   color: var(--accent);
 }
 
-.zoom-tools input[type="range"] {
-  width: min(22vw, 180px);
+.range-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.range-control-button.ant-btn {
+  gap: 7px;
+  min-width: 0;
+  background: var(--surface-subtle);
+  color: var(--text);
+}
+
+.range-control-button .ant-btn-icon {
+  color: var(--accent);
+}
+
+.range-control-value {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  line-height: var(--line-ui);
+  white-space: nowrap;
+}
+
+.range-popover-panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: min(286px, calc(100vw - 32px));
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.range-popover-panel[hidden] {
+  display: none;
+}
+
+.range-popover-title {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: var(--line-tight);
+  text-transform: uppercase;
+}
+
+.range-popover-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.range-popover-row input[type="range"] {
+  flex: 1 1 auto;
+  width: 180px;
+}
+
+.range-only-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 .workspace {
   --sidebar-width: 320px;
-  flex: 1 1 0;
+  flex: 1 0 auto;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   min-height: 0;
-  height: 100%;
-  overflow: hidden;
+  height: calc(100vh + var(--timeline-stage-extra-height));
+  overflow: visible;
   transition: grid-template-columns 180ms ease;
 }
 
@@ -688,6 +757,8 @@ p {
 }
 
 .inspector {
+  min-height: 0;
+  height: 100%;
   border-right: 1px solid var(--line);
   background: var(--surface-subtle);
   padding: 14px;
@@ -1315,6 +1386,14 @@ button:focus-visible,
   overflow: hidden;
 }
 
+.timeline-canvas-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 7px;
+  min-width: 0;
+  min-height: 0;
+}
+
 .tool-dock {
   display: grid;
   gap: 10px;
@@ -1394,6 +1473,54 @@ button:focus-visible,
   border: 1px solid transparent;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+}
+
+.timeline-height-grip {
+  display: grid;
+  height: 18px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, var(--surface-raised), var(--surface-subtle));
+  cursor: ns-resize;
+  box-shadow: var(--shadow-sm);
+  touch-action: none;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.timeline-height-grip span {
+  display: block;
+  width: 52px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--text-subtle);
+  box-shadow:
+    0 -5px 0 color-mix(in srgb, var(--text-subtle) 64%, transparent),
+    0 5px 0 color-mix(in srgb, var(--text-subtle) 64%, transparent);
+}
+
+.timeline-height-grip:hover,
+.timeline-height-grip:focus-visible,
+.timeline-height-grip.is-dragging {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.timeline-height-grip:active,
+.timeline-height-grip.is-dragging {
+  transform: translateY(1px);
+}
+
+body.is-timeline-height-dragging,
+body.is-timeline-height-dragging * {
+  cursor: ns-resize !important;
+  user-select: none;
 }
 
 .note-inline-editor {

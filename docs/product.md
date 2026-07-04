@@ -111,10 +111,12 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 - Timeline action icons should use distinct accent color treatment while preserving text contrast.
 - Create-item actions should be grouped separately from file and export actions.
 - Item locking should be an icon toggle near toolbar controls instead of a checkbox mixed into create-item actions.
-- Zoom controls should use recognizable icon buttons and should not allow the timeline to zoom out below the readable minimum.
+- Zoom controls should use a compact icon control with the current value visible, reveal the slider only when opened, and should not allow the timeline to zoom out below the readable minimum.
 - Collapse and expand controls should use panel-specific recognizable icon buttons rather than text characters or generic arrows.
 - Collapse and expand transitions should be animated.
 - The timeline viewport height should fit the rendered axis, lines, and note area instead of stretching to fill unused workspace height.
+- The user should be able to use `Ctrl`/`Command` + mouse wheel to make line tracks taller or shorter within readable limits.
+- The user should be able to drag a handle below the timeline, use `Ctrl`/`Command` + `Alt` + mouse wheel, or open a compact height control to make the timeline area taller or shorter so more vertical canvas is visible with less internal timeline scrolling.
 - Empty timelines should show a clear centered empty state instead of a visually unbalanced blank canvas.
 - Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
 - Layout preferences should be remembered in the browser.
@@ -420,6 +422,31 @@ When the user drags a line above or below another line from the timeline label
 Then the visible line order changes
 And the items assigned to that line move with it
 And the new line order is preserved after save/load.
+
+### Reorder Central-Axis Lines Visually
+
+Given the timeline uses a central date axis with lines above and below it
+When the user drags `Line -2` above `Line -1` while staying below the axis
+Then only the below-axis line order changes
+And lines above the axis keep their assigned items and visible order.
+
+### Resize Timeline Line Spacing
+
+Given the timeline has multiple lines
+When the user holds `Ctrl` or `Command` and scrolls the mouse wheel over the timeline
+Then the visible line tracks become taller or shorter within readable limits
+And the line spacing is preserved after save/load.
+
+### Resize Timeline Area Height
+
+Given the timeline content is vertically crowded
+When the user holds `Ctrl+Alt` or `Command+Alt` and scrolls the mouse wheel over the timeline
+Or opens the compact timeline height control and changes its slider
+Or drags the resize handle below the timeline viewport
+Then the timeline area becomes taller or shorter within reasonable limits
+And the page can grow vertically so more of the timeline canvas is visible
+And the toolbar and info panel remain outside the scrollable timeline canvas
+And timeline area height is remembered in the browser without changing timeline JSON.
 
 ### Remove A Line
 

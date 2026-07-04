@@ -58,6 +58,10 @@ The timeline viewport sizes to the rendered SVG content height for the axis, vis
 
 The timeline canvas now uses a central date axis. Existing numeric item lanes are still saved the same way, but the renderer maps them around the axis as alternating above/below tracks. Default and legacy labels display as `Line +1`, `Line -1`, `Line +2`, `Line -2`, etc.; custom line names remain custom. The central axis has zoom-responsive year, month, and day ticks, subtle alternating month bands, and a transient pointer guide that connects the hovered cursor position to the axis. Month bands, month grid lines, day grid lines, day ticks, and day labels are hidden until their time unit is wide enough to read clearly.
 
+Timeline line reordering on the central-axis canvas now uses visual top-to-bottom order. Moving a below-axis line above another below-axis line remaps only those below-axis lanes, so above-axis labels, colors, and assigned items are not accidentally moved.
+
+Timeline vertical controls combine shortcuts with compact controls. `Ctrl`/`Command` + mouse wheel over the timeline resizes `settings.rowHeight` within the existing `48` to `120` model clamp, making central-axis tracks taller or shorter. `Ctrl`/`Command` + `Alt` + mouse wheel, the compact header Height control, or the drag handle below the timeline viewport resizes the timeline stage height as a browser layout preference, allowing the page to grow vertically so the timeline viewport can show more vertical canvas with less internal scrolling. The Zoom control is also compact: its header button shows the current zoom value and opens the slider/buttons only while adjusting.
+
 Timeline month and day labels adapt to available horizontal space. Month labels stack Gregorian and Iranian names when there is room, fall back to compact Gregorian labels when space is tighter, and skip labels that would collide. Day labels are centered in their day cells and skipped when they would collide.
 
 Fit now respects a readable zoom floor. Short timelines still fit into the viewport, while long timelines reset to the beginning at the minimum readable zoom instead of compressing every item into an unreadable view.
@@ -186,6 +190,9 @@ Firebase should wait until the local Vite app is stable.
 - Suppressed day/month axis detail when it is too dense to read.
 - Moved note leaders and note anchors to terminate on the central axis.
 - Constrained the app shell so only the timeline viewport scrolls while the toolbar and info panel remain fixed.
+- Added tested visual lane-order remapping for central-axis line reordering.
+- Wired timeline-label dragging to use visual lane order so below-axis swaps do not affect above-axis lanes.
+- Replaced the rejected line-spacing handle with `Ctrl`/`Command` + mouse wheel line-spacing zoom and `Ctrl`/`Command` + `Alt` + mouse wheel/compact header control/bottom drag handle timeline area height resizing.
 - Standardized odd intermediate font weights to common values like 500, 600, 700, and 800.
 - Applied the shared font stack to the timeline SVG labels.
 - Removed the old Rows / Lines editor sidebar section.
@@ -252,6 +259,11 @@ Firebase should wait until the local Vite app is stable.
 - `package-lock.json`
 - `scripts/extract-release-notes.mjs`
 - `src/App.tsx`
+- `src/features/timeline-editor/canvas/TimelineCanvas.tsx`
+- `src/features/timeline-editor/layout/timelineLayout.test.js`
+- `src/features/timeline-editor/layout/timelineLayout.ts`
+- `src/features/timeline-editor/TimelineEditor.tsx`
+- `src/features/timeline-editor/legacyTimelineEditor.js`
 - `src/main.tsx`
 - `vite.config.ts`
 - `styles.css`
@@ -297,6 +309,10 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
+- Current vertical control validation: `npm test` passed with 83 tests, including wheel shortcut routing and `getModifierState` fallback coverage; `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The build still reports the expected Vite chunk-size warning.
+- Browser smoke through Vite at `http://127.0.0.1:8765/`: compact Zoom and Height panels started hidden, opened one at a time, and closed on outside click; changing Height to `+96px` increased the stage height without dirtying timeline JSON.
+- Browser smoke: the bottom height grip was visible on first load (`840` to `858` px in a `900` px viewport), dragging it down by `120` px resized the timeline area to `+120px`, and the dirty indicator stayed hidden.
+- Browser smoke: `Ctrl+wheel` increased line spacing while keeping horizontal zoom at `18 px/month`; `Ctrl+Alt+wheel` and `Command+Alt+wheel` each resized the timeline area to `+72px`; no browser console warnings or errors were reported.
 - RED/documented: versioning docs now require tag-based releases, matching changelog headings, GitHub Pages setup, and manual workflow support.
 - `node --check app.js`: passed.
 - `node --check scripts/extract-release-notes.mjs`: passed.

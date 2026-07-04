@@ -55,6 +55,15 @@ export type TimelineAxisDetail = {
   dayLabels: boolean;
 };
 
+export type TimelineWheelInput = {
+  altKey?: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  getModifierState?: (key: string) => boolean;
+};
+
+export type TimelineWheelAction = "timeline-area" | "row-height" | "none";
+
 export function timelinePixelsPerDay(zoom: number, avgDaysPerMonth: number): number {
   return zoom / avgDaysPerMonth;
 }
@@ -89,6 +98,20 @@ export function axisDetailForZoom(zoom: number, avgDaysPerMonth = 365.2425 / 12)
   };
 }
 
+export function timelineWheelAction(input: TimelineWheelInput): TimelineWheelAction {
+  const hasAlt = Boolean(input.altKey || input.getModifierState?.("Alt") || input.getModifierState?.("Option"));
+  const hasPrimaryModifier = Boolean(
+    input.ctrlKey
+    || input.metaKey
+    || input.getModifierState?.("Control")
+    || input.getModifierState?.("Meta")
+    || input.getModifierState?.("OS"),
+  );
+  if (hasAlt && hasPrimaryModifier) return "timeline-area";
+  if (hasPrimaryModifier) return "row-height";
+  return "none";
+}
+
 export function laneSide(laneIndex: number): LaneSide {
   return Math.max(0, Math.floor(laneIndex)) % 2 === 0 ? "above" : "below";
 }
@@ -110,6 +133,46 @@ export function laneDisplayLabel(laneIndex: number, storedLabel = ""): string {
     return normalizedLabel;
   }
   return centralDefault;
+}
+
+export function laneVisualOrder(laneCount: number): number[] {
+  const safeLaneCount = Math.max(1, Math.floor(laneCount));
+  const above: number[] = [];
+  const below: number[] = [];
+  for (let lane = 0; lane < safeLaneCount; lane += 1) {
+    if (laneSide(lane) === "above") {
+      above.unshift(lane);
+    } else {
+      below.push(lane);
+    }
+  }
+  return above.concat(below);
+}
+
+export function laneSourceMapForVisualMove(
+  laneCount: number,
+  fromIndex: number,
+  toIndex: number,
+): number[] {
+  const order = laneVisualOrder(laneCount);
+  const identity = Array.from({ length: order.length }, (_value, index) => index);
+  const fromLane = Math.floor(fromIndex);
+  const toLane = Math.floor(toIndex);
+  const fromVisualIndex = order.indexOf(fromLane);
+  const toVisualIndex = order.indexOf(toLane);
+  if (fromVisualIndex < 0 || toVisualIndex < 0 || fromVisualIndex === toVisualIndex) {
+    return identity;
+  }
+
+  const movedOrder = order.slice();
+  const [movedLane] = movedOrder.splice(fromVisualIndex, 1);
+  movedOrder.splice(toVisualIndex, 0, movedLane);
+
+  const sourceByDestination = identity.slice();
+  order.forEach((destinationLane, visualIndex) => {
+    sourceByDestination[destinationLane] = movedOrder[visualIndex];
+  });
+  return sourceByDestination;
 }
 
 export function centralTimelineGeometry({

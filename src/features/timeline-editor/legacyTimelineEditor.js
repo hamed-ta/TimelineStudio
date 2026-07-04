@@ -95,11 +95,13 @@ import {
   laneCenterY,
   laneDisplayLabel,
   laneRowTop,
+  laneSourceMapForVisualMove,
   nearestLaneIndexForY,
   minDurationDaysForSnap,
   snapTimelineDate,
   timelineDateToX,
   timelinePixelsPerDay,
+  timelineWheelAction,
   timelineXToDate,
 } from "./layout/timelineLayout";
 import {
@@ -127,6 +129,7 @@ import {
 
 (() => {
   const ZOOM_KEY = "timeline-studio-zoom-v2";
+  const TIMELINE_AREA_HEIGHT_KEY = "timeline-studio-timeline-area-extra-height-v1";
   const NS = "http://www.w3.org/2000/svg";
   const LEFT_GUTTER = 132;
   const RIGHT_GUTTER = 110;
@@ -134,6 +137,11 @@ import {
   const TIMELINE_TOP_PADDING = 24;
   const FOOTER_HEIGHT = 34;
   const DEFAULT_ROW_HEIGHT = 68;
+  const MIN_ROW_HEIGHT = 48;
+  const MAX_ROW_HEIGHT = 120;
+  const TIMELINE_AREA_HEIGHT_STEP = 72;
+  const MIN_TIMELINE_AREA_EXTRA_HEIGHT = 0;
+  const MAX_TIMELINE_AREA_EXTRA_HEIGHT = 900;
   const AXIS_LABEL_CHAR_WIDTH = 7.2;
   const AXIS_MONTH_LABEL_GAP = 14;
   const AXIS_DAY_LABEL_GAP = 8;
@@ -242,10 +250,17 @@ import {
     fileInput: document.getElementById("fileInput"),
     zoomRange: document.getElementById("zoomRange"),
     zoomLabel: document.getElementById("zoomLabel"),
+    zoomControlButton: document.getElementById("zoomControlButton"),
+    zoomControlPanel: document.getElementById("zoomControlPanel"),
+    timelineHeightRange: document.getElementById("timelineHeightRange"),
+    timelineHeightLabel: document.getElementById("timelineHeightLabel"),
+    timelineHeightControlButton: document.getElementById("timelineHeightControlButton"),
+    timelineHeightControlPanel: document.getElementById("timelineHeightControlPanel"),
     zoomInButton: document.getElementById("zoomInButton"),
     zoomOutButton: document.getElementById("zoomOutButton"),
     fitButton: document.getElementById("fitButton"),
     timelineViewport: document.getElementById("timelineViewport"),
+    timelineHeightGrip: document.getElementById("timelineHeightGrip"),
     timelineSvg: document.getElementById("timelineSvg"),
     noteInlineEditor: document.getElementById("noteInlineEditor"),
     timelineEmptyState: document.getElementById("timelineEmptyState"),
@@ -268,6 +283,11 @@ import {
   let timeline = createEmptyTimeline();
   let selectedId = null;
   let zoom = clamp(Number(localStorage.getItem(ZOOM_KEY)) || DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM);
+  let timelineAreaExtraHeight = clamp(
+    Number(localStorage.getItem(TIMELINE_AREA_HEIGHT_KEY)) || 0,
+    MIN_TIMELINE_AREA_EXTRA_HEIGHT,
+    MAX_TIMELINE_AREA_EXTRA_HEIGHT,
+  );
   let suppressControlEvents = false;
   let dragState = null;
   let sidebarLanePointerDrag = null;
@@ -291,12 +311,14 @@ import {
   let editingNoteId = null;
   let editingNoteOriginalNotes = "";
   let editingNoteOriginalDisplayText = "";
+  let timelineAreaHeightDrag = null;
 
   init();
 
   function init() {
     timeline = normalizeTimeline(timeline);
     bindEvents();
+    syncTimelineAreaHeight();
     setZoom(zoom, { render: false });
     renderAll({ save: false });
     setStatus("Ready");
@@ -374,9 +396,20 @@ import {
     dom.exportPdfButton.addEventListener("click", exportPdfFile);
 
     dom.zoomRange.addEventListener("input", () => setZoom(Number(dom.zoomRange.value)));
+    if (dom.timelineHeightRange) {
+      dom.timelineHeightRange.addEventListener("input", () => setTimelineAreaExtraHeight(Number(dom.timelineHeightRange.value)));
+    }
+    if (dom.zoomControlButton) dom.zoomControlButton.addEventListener("click", () => toggleRangeControlPanel("zoom"));
+    if (dom.timelineHeightControlButton) {
+      dom.timelineHeightControlButton.addEventListener("click", () => toggleRangeControlPanel("height"));
+    }
     dom.zoomInButton.addEventListener("click", () => zoomBy(20));
     dom.zoomOutButton.addEventListener("click", () => zoomBy(-20));
     dom.fitButton.addEventListener("click", fitTimelineToViewport);
+    if (dom.timelineHeightGrip) {
+      dom.timelineHeightGrip.addEventListener("pointerdown", beginTimelineAreaHeightDrag);
+      dom.timelineHeightGrip.addEventListener("keydown", handleTimelineHeightGripKeydown);
+    }
 
     dom.timelineViewport.addEventListener("wheel", handleViewportWheel, { passive: false });
     dom.timelineViewport.addEventListener("contextmenu", openTimelineContextMenu);
@@ -422,6 +455,8 @@ import {
     document.addEventListener("pointerdown", closeContextMenuFromPointer, true);
     document.addEventListener("pointerdown", closeLineEditorFromPointer, true);
     document.addEventListener("pointerdown", closeColorPickersFromPointer, true);
+    document.addEventListener("pointerdown", closeRangeControlPanelsFromPointer, true);
+    document.addEventListener("keydown", closeRangeControlPanelsFromEscape);
     window.addEventListener("resize", () => {
       closeContextMenu();
       closeLineEditor();
@@ -1338,7 +1373,133 @@ import {
     dom.snapInput.value = String(timeline.settings.snap);
     dom.zoomRange.value = String(zoom);
     dom.zoomLabel.textContent = `${formatZoomValue(zoom)} px/month`;
+    syncTimelineAreaControls();
     suppressControlEvents = false;
+  }
+
+  function setTimelineRowHeight(nextHeight) {
+    const clampedHeight = clamp(Math.round(Number(nextHeight) || DEFAULT_ROW_HEIGHT), MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
+    if (clampedHeight === timeline.settings.rowHeight) return false;
+    const previousSnapshot = timelineDataSnapshot();
+    timeline.settings.rowHeight = clampedHeight;
+    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    if (changed) setStatus("Line spacing resized");
+    return changed;
+  }
+
+  function setTimelineAreaExtraHeight(nextHeight) {
+    const clampedHeight = clamp(
+      Math.round(Number(nextHeight) || 0),
+      MIN_TIMELINE_AREA_EXTRA_HEIGHT,
+      MAX_TIMELINE_AREA_EXTRA_HEIGHT,
+    );
+    if (clampedHeight === timelineAreaExtraHeight) return false;
+    timelineAreaExtraHeight = clampedHeight;
+    localStorage.setItem(TIMELINE_AREA_HEIGHT_KEY, String(timelineAreaExtraHeight));
+    syncTimelineAreaHeight();
+    setStatus(timelineAreaExtraHeight > 0 ? "Timeline area resized" : "Timeline area reset");
+    return true;
+  }
+
+  function syncTimelineAreaHeight() {
+    document.documentElement.style.setProperty("--timeline-stage-extra-height", `${timelineAreaExtraHeight}px`);
+    syncTimelineAreaControls();
+  }
+
+  function syncTimelineAreaControls() {
+    if (dom.timelineHeightRange) dom.timelineHeightRange.value = String(timelineAreaExtraHeight);
+    if (dom.timelineHeightLabel) {
+      dom.timelineHeightLabel.textContent = timelineAreaExtraHeight > 0 ? `+${timelineAreaExtraHeight}px` : "Auto";
+    }
+  }
+
+  function toggleRangeControlPanel(kind) {
+    const open = !isRangeControlPanelOpen(kind);
+    closeRangeControlPanels();
+    setRangeControlPanelOpen(kind, open);
+  }
+
+  function isRangeControlPanelOpen(kind) {
+    const panel = kind === "zoom" ? dom.zoomControlPanel : dom.timelineHeightControlPanel;
+    return Boolean(panel && !panel.hidden);
+  }
+
+  function setRangeControlPanelOpen(kind, open) {
+    const button = kind === "zoom" ? dom.zoomControlButton : dom.timelineHeightControlButton;
+    const panel = kind === "zoom" ? dom.zoomControlPanel : dom.timelineHeightControlPanel;
+    if (!button || !panel) return;
+    panel.hidden = !open;
+    button.setAttribute("aria-expanded", String(open));
+    if (open) {
+      const range = kind === "zoom" ? dom.zoomRange : dom.timelineHeightRange;
+      window.requestAnimationFrame(() => range?.focus?.());
+    }
+  }
+
+  function closeRangeControlPanels() {
+    setRangeControlPanelOpen("zoom", false);
+    setRangeControlPanelOpen("height", false);
+  }
+
+  function closeRangeControlPanelsFromPointer(event) {
+    if (event.target.closest?.(".range-control")) return;
+    closeRangeControlPanels();
+  }
+
+  function closeRangeControlPanelsFromEscape(event) {
+    if (event.key !== "Escape") return;
+    closeRangeControlPanels();
+  }
+
+  function beginTimelineAreaHeightDrag(event) {
+    if (event.button !== 0) return;
+    closeRangeControlPanels();
+    timelineAreaHeightDrag = {
+      pointerId: event.pointerId,
+      startClientY: event.clientY,
+      startHeight: timelineAreaExtraHeight,
+    };
+    dom.timelineHeightGrip.classList.add("is-dragging");
+    document.body.classList.add("is-timeline-height-dragging");
+    document.addEventListener("pointermove", moveTimelineAreaHeightDrag);
+    document.addEventListener("pointerup", endTimelineAreaHeightDrag);
+    document.addEventListener("pointercancel", endTimelineAreaHeightDrag);
+    event.preventDefault();
+  }
+
+  function moveTimelineAreaHeightDrag(event) {
+    if (!timelineAreaHeightDrag || event.pointerId !== timelineAreaHeightDrag.pointerId) return;
+    const delta = event.clientY - timelineAreaHeightDrag.startClientY;
+    setTimelineAreaExtraHeight(timelineAreaHeightDrag.startHeight + delta);
+    event.preventDefault();
+  }
+
+  function endTimelineAreaHeightDrag(event) {
+    if (!timelineAreaHeightDrag || event.pointerId !== timelineAreaHeightDrag.pointerId) return;
+    timelineAreaHeightDrag = null;
+    dom.timelineHeightGrip.classList.remove("is-dragging");
+    document.body.classList.remove("is-timeline-height-dragging");
+    document.removeEventListener("pointermove", moveTimelineAreaHeightDrag);
+    document.removeEventListener("pointerup", endTimelineAreaHeightDrag);
+    document.removeEventListener("pointercancel", endTimelineAreaHeightDrag);
+    setStatus(timelineAreaExtraHeight > 0 ? "Timeline area resized" : "Timeline area reset");
+    event.preventDefault();
+  }
+
+  function handleTimelineHeightGripKeydown(event) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setTimelineAreaExtraHeight(timelineAreaExtraHeight + TIMELINE_AREA_HEIGHT_STEP);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setTimelineAreaExtraHeight(timelineAreaExtraHeight - TIMELINE_AREA_HEIGHT_STEP);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setTimelineAreaExtraHeight(MIN_TIMELINE_AREA_EXTRA_HEIGHT);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setTimelineAreaExtraHeight(MAX_TIMELINE_AREA_EXTRA_HEIGHT);
+    }
   }
 
   function syncItemForm() {
@@ -1921,9 +2082,38 @@ import {
       return false;
     }
 
+    if (options.visual === true) {
+      const sourceByDestination = laneSourceMapForVisualMove(labels.length, from, to);
+      if (sourceByDestination.every((sourceLane, destinationLane) => sourceLane === destinationLane)) {
+        return false;
+      }
+
+      const colors = ensureLaneColors();
+      const previousLabels = labels.slice();
+      const previousColors = colors.slice();
+      const destinationBySource = new Map();
+      sourceByDestination.forEach((sourceLane, destinationLane) => {
+        destinationBySource.set(sourceLane, destinationLane);
+      });
+
+      labels.splice(0, labels.length, ...sourceByDestination.map((sourceLane, destinationLane) => (
+        previousLabels[sourceLane] || laneDisplayLabel(destinationLane)
+      )));
+      colors.splice(0, colors.length, ...sourceByDestination.map((sourceLane) => previousColors[sourceLane] || ""));
+      timeline.items.forEach((item) => {
+        if (isGlobalTimelineItemType(item.type)) return;
+        const destinationLane = destinationBySource.get(Number(item.lane));
+        if (Number.isInteger(destinationLane)) item.lane = destinationLane;
+      });
+
+      renderAll({ save: false });
+      if (options.announce !== false) setStatus("Line moved");
+      return true;
+    }
+
+    const colors = ensureLaneColors();
     const [label] = labels.splice(from, 1);
     labels.splice(to, 0, label);
-    const colors = ensureLaneColors();
     const [color] = colors.splice(from, 1);
     colors.splice(to, 0, color || "");
     timeline.items.forEach((item) => {
@@ -2833,7 +3023,7 @@ import {
     if (dragState.mode === "lane") {
       const targetLane = laneIndexFromPointer(event);
       if (targetLane !== dragState.laneIndex) {
-        const moved = moveLane(dragState.laneIndex, targetLane, { announce: false });
+        const moved = moveLane(dragState.laneIndex, targetLane, { announce: false, visual: true });
         if (moved) {
           dragState.laneIndex = targetLane;
           dragState.moved = true;
@@ -3068,15 +3258,22 @@ import {
   }
 
   function handleViewportWheel(event) {
-    if (!event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-    const rect = dom.timelineViewport.getBoundingClientRect();
-    const pointerX = dom.timelineViewport.scrollLeft + event.clientX - rect.left;
-    const dateUnderPointer = xToDate(pointerX);
-    const nextZoom = zoom + (event.deltaY > 0 ? -4 : 4);
-    setZoom(nextZoom, { render: false });
-    renderAll({ save: false });
-    dom.timelineViewport.scrollLeft = dateToX(dateUnderPointer) - (event.clientX - rect.left);
+    const action = timelineWheelAction(event);
+    if (action === "timeline-area") {
+      event.preventDefault();
+      const delta = event.deltaY > 0 ? -TIMELINE_AREA_HEIGHT_STEP : TIMELINE_AREA_HEIGHT_STEP;
+      setTimelineAreaExtraHeight(timelineAreaExtraHeight + delta);
+      return;
+    }
+
+    if (action === "row-height") {
+      event.preventDefault();
+      const rowDelta = event.deltaY > 0 ? -4 : 4;
+      setTimelineRowHeight((timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT) + rowDelta);
+      return;
+    }
+
+    return;
   }
 
   function setZoom(value, options = {}) {

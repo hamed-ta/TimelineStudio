@@ -8,12 +8,15 @@ import {
   fitZoomForTimeline,
   laneCenterY,
   laneDisplayLabel,
+  laneSourceMapForVisualMove,
   laneSide,
   laneTrackNumber,
+  laneVisualOrder,
   minDurationDaysForSnap,
   snapTimelineDate,
   timelineDateToX,
   timelinePixelsPerDay,
+  timelineWheelAction,
   timelineXToDate,
 } from "./timelineLayout.ts";
 
@@ -101,6 +104,28 @@ test("central timeline lanes expose above and below labels", () => {
   assert.equal(laneDisplayLabel(2, "Education"), "Education");
   assert.equal(laneDisplayLabel(2, "Line 3"), "Line +2");
   assert.equal(laneDisplayLabel(1, "Line +1"), "Line -1");
+});
+
+test("central timeline visual order keeps below-axis swaps below the axis", () => {
+  assert.deepEqual(laneVisualOrder(5), [4, 2, 0, 1, 3]);
+  assert.deepEqual(laneSourceMapForVisualMove(5, 3, 1), [0, 3, 2, 1, 4]);
+  assert.deepEqual(laneSourceMapForVisualMove(5, 4, 2), [0, 1, 4, 3, 2]);
+  assert.deepEqual(laneSourceMapForVisualMove(5, 1, 0), [1, 0, 2, 3, 4]);
+});
+
+test("timeline wheel actions route vertical spacing and area shortcuts", () => {
+  assert.equal(timelineWheelAction({}), "none");
+  assert.equal(timelineWheelAction({ altKey: true }), "none");
+  assert.equal(timelineWheelAction({ ctrlKey: true }), "row-height");
+  assert.equal(timelineWheelAction({ metaKey: true }), "row-height");
+  assert.equal(timelineWheelAction({ altKey: true, ctrlKey: true }), "timeline-area");
+  assert.equal(timelineWheelAction({ altKey: true, metaKey: true }), "timeline-area");
+  assert.equal(timelineWheelAction({
+    getModifierState: (key) => key === "Control",
+  }), "row-height");
+  assert.equal(timelineWheelAction({
+    getModifierState: (key) => key === "Alt" || key === "Meta",
+  }), "timeline-area");
 });
 
 test("axis detail helper suppresses clutter when units are too narrow", () => {

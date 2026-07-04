@@ -45,6 +45,8 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Suppress month bands, month grid lines, day grid lines, day ticks, and day labels when their time unit is too narrow to read.
 - Keep note leaders and anchors terminating at the central timeline axis.
 - Keep the toolbar and timeline info panel fixed outside the scrollable timeline viewport.
+- Reorder central-axis line labels by visual top-to-bottom order so swapping below-axis lines does not affect above-axis lanes.
+- Let users resize central-axis track height with `Ctrl`/`Command` + mouse wheel and timeline area height with `Ctrl`/`Command` + `Alt` + mouse wheel, a compact header height control, or a drag handle below the timeline.
 - Preserve line reorder, remove, save/load, and item lane assignment behavior.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
@@ -150,6 +152,7 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Extracted timeline info-panel pointer and selection text into a tested feature view-model helper.
 - Added tested central-axis lane geometry helpers and wired the legacy SVG renderer to draw tracks above and below the axis.
 - Refined the central-axis renderer so only the timeline canvas scrolls, note leaders end at the axis, and dense day/month detail is hidden until readable.
+- Fixed central-axis line reordering to use visual lane order, added wheel shortcuts for line spacing and timeline area height, and compacted the zoom/height controls behind popovers.
 
 ## Risks
 

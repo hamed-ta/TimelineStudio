@@ -28,7 +28,7 @@ export function TimelineEditor() {
             onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)}
           />
 
-          <section className="timeline-stage" aria-label="Timeline canvas">
+          <section className="timeline-stage" id="timelineStage" aria-label="Timeline canvas">
             <TimelineToolbar
               collapsed={toolbarCollapsed}
               onToggleCollapsed={() => setToolbarCollapsed((collapsed) => !collapsed)}
