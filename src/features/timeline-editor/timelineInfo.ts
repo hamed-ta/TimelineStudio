@@ -4,9 +4,14 @@ import {
   formatDetailedDateSpan,
 } from "../../timeline/dateSpans.ts";
 import {
+  formatDateForCalendars,
   formatDisplayDate,
   formatIranianDate,
 } from "../../timeline/formatters.ts";
+import {
+  normalizeDisplayCalendars,
+  type TimelineDisplayCalendar,
+} from "../../timeline/calendars.ts";
 import {
   noteDisplayText,
   noteTitleFromText,
@@ -33,32 +38,45 @@ export type PointerInfoText = {
 
 export type SelectionInfoText = {
   itemLabel: string;
+  lineLine: string;
   dateLine: string;
   endLine: string;
   durationLine: string;
   ageLine: string;
 };
 
-export function pointerInfoText(hoverDate: string | null, birthDate?: string | null): PointerInfoText {
+export function pointerInfoText(
+  hoverDate: string | null,
+  birthDate?: string | null,
+  displayCalendars: readonly TimelineDisplayCalendar[] = ["gregorian", "iranian"],
+): PointerInfoText {
+  const calendars = normalizeDisplayCalendars(displayCalendars);
   if (!hoverDate) {
     return {
       dateLabel: "Hover over the timeline",
-      iranianLabel: "Gregorian and Iranian dates",
+      iranianLabel: calendarPlaceholder(calendars),
       ageLabel: birthDate ? "Age appears here" : "Add a birth item to calculate age",
     };
   }
 
+  const dateLines = pointerDateLines(hoverDate, calendars);
   return {
-    dateLabel: formatDisplayDate(hoverDate),
-    iranianLabel: formatIranianDate(hoverDate),
+    dateLabel: dateLines[0],
+    iranianLabel: dateLines[1] || "",
     ageLabel: birthDate ? formatDetailedAgeAtDate(birthDate, hoverDate) : "Age: add a birth item",
   };
 }
 
-export function selectionInfoText(item: InfoItem | null, birthDate?: string | null): SelectionInfoText {
+export function selectionInfoText(
+  item: InfoItem | null,
+  birthDate?: string | null,
+  displayCalendars: readonly TimelineDisplayCalendar[] = ["gregorian", "iranian"],
+): SelectionInfoText {
+  const calendars = normalizeDisplayCalendars(displayCalendars);
   if (!item) {
     return {
       itemLabel: "No item selected",
+      lineLine: "",
       dateLine: "Select an item to inspect dates",
       endLine: "",
       durationLine: "",
@@ -68,8 +86,9 @@ export function selectionInfoText(item: InfoItem | null, birthDate?: string | nu
 
   return {
     itemLabel: selectedItemTitle(item),
-    dateLine: selectedItemStartLine(item),
-    endLine: selectedItemEndLine(item),
+    lineLine: selectedItemLineLine(item),
+    dateLine: selectedItemStartLine(item, calendars),
+    endLine: selectedItemEndLine(item, calendars),
     durationLine: selectedItemDurationLine(item),
     ageLine: selectedItemAgeLine(item, birthDate),
   };
@@ -88,20 +107,24 @@ export function itemTypeLabel(type: unknown): string {
 }
 
 function selectedItemTitle(item: InfoItem): string {
-  const lineText = isGlobalTimelineItemType(item.type) || item.type === "note" ? "" : ` - ${laneDisplayLabel(item.lane)}`;
   const lockedText = item.locked ? "Locked - " : "";
   const title = item.type === "note" ? noteTitleFromText(noteDisplayText(item)) : item.title;
-  return `${lockedText}${itemTypeLabel(item.type)}: ${title}${lineText}`;
+  return `${lockedText}${itemTypeLabel(item.type)}: ${title}`;
 }
 
-function selectedItemStartLine(item: InfoItem): string {
-  const start = `${formatDisplayDate(item.startDate)} / ${formatIranianDate(item.startDate)}`;
+function selectedItemLineLine(item: InfoItem): string {
+  if (isGlobalTimelineItemType(item.type) || item.type === "note") return "";
+  return `Line: ${laneDisplayLabel(item.lane)}`;
+}
+
+function selectedItemStartLine(item: InfoItem, displayCalendars: readonly TimelineDisplayCalendar[]): string {
+  const start = formatDateForCalendars(item.startDate, displayCalendars);
   return hasEndDate(item.type) ? `Start: ${start}` : `Date: ${start}`;
 }
 
-function selectedItemEndLine(item: InfoItem): string {
+function selectedItemEndLine(item: InfoItem, displayCalendars: readonly TimelineDisplayCalendar[]): string {
   if (!hasEndDate(item.type)) return "";
-  const end = `${formatDisplayDate(item.endDate)} / ${formatIranianDate(item.endDate)}`;
+  const end = formatDateForCalendars(item.endDate, displayCalendars);
   return `End: ${end}`;
 }
 
@@ -125,4 +148,14 @@ function hasEndDate(type: unknown): boolean {
 
 function isGlobalTimelineItemType(type: unknown): boolean {
   return type === "birth" || type === "marker";
+}
+
+function pointerDateLines(hoverDate: string, displayCalendars: readonly TimelineDisplayCalendar[]): string[] {
+  return displayCalendars.map((calendar) => (calendar === "gregorian" ? formatDisplayDate(hoverDate) : formatIranianDate(hoverDate)));
+}
+
+function calendarPlaceholder(displayCalendars: readonly TimelineDisplayCalendar[]): string {
+  if (displayCalendars.length === 1 && displayCalendars[0] === "gregorian") return "Gregorian date";
+  if (displayCalendars.length === 1 && displayCalendars[0] === "iranian") return "Persian / Solar Hijri date";
+  return "Gregorian and Persian dates";
 }

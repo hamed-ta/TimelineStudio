@@ -59,7 +59,9 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 ## Date Behavior
 
 - Gregorian ISO dates are the internal source of truth.
-- Timeline labels may show Iranian dates in English letters and numbers.
+- Timeline labels may show Gregorian dates, Persian / Solar Hijri dates in English letters and numbers, or both.
+- Display-calendar settings affect only labels and summaries; saved item dates, timeline start/end dates, drag math, age math, and duration math remain based on Gregorian ISO dates.
+- Timeline start, end, and item date inputs currently accept Gregorian ISO `YYYY-MM-DD` values.
 - Saved data should preserve exact dates.
 - The timeline should support year, month, and day precision.
 - The app should not show `AD` after Gregorian date labels.
@@ -126,6 +128,8 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 - Editing fields should preserve their current values when focused and should allow normal text entry, including spaces in timeline and item names.
 - Empty timelines should show a clear centered empty state instead of a visually unbalanced blank canvas.
 - Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
+- Timeline settings should let users choose Gregorian, Persian / Solar Hijri, or both display calendars while keeping at least one display calendar enabled.
+- When only Persian / Solar Hijri is selected, central-axis year and month ticks should align to Persian / Solar Hijri calendar boundaries.
 - Layout preferences should be remembered in the browser.
 - Layout changes should not alter saved timeline data.
 - The app should show a compact footer with the app name and current package version.
@@ -180,12 +184,27 @@ And the birth item is still present after save/load.
 
 Given a timeline has a birth item on `2001-03-04`
 When the user hovers over a date on the timeline
-Then the app shows the hovered Gregorian date, Iranian date, and age calculated from the birth item in a stable info panel below the timeline
+Then the app shows the hovered date using the selected display calendars and age calculated from the birth item in a stable info panel below the timeline
 And updating the hover context does not move the timeline viewport
 When the user selects a timeline item
-Then the same panel shows the item type, title, Gregorian and Iranian date details, duration when the item has an end date, and age context when a birth item exists
+Then the same panel shows the item type, title, selected-calendar date details, duration when the item has an end date, and age context when a birth item exists
+And lane details appear as a separate selection detail line instead of being appended to the selection title
 And selection details are split across readable labeled lines instead of one dense sentence
+And the information panel grows to fit readable content instead of showing an internal scrollbar
 And the calculated age text is not saved into the timeline JSON.
+
+### Choose Display Calendars
+
+Given the timeline settings are visible
+When the user selects only Gregorian as the display calendar
+Then timeline axis labels, header date range, item date previews, pointer dates, and selection dates show Gregorian dates only
+When the user selects only Persian / Solar Hijri
+Then those same labels show Persian / Solar Hijri dates only
+And central-axis year/month boundaries align to Persian / Solar Hijri year/month starts
+When the user selects both calendars
+Then those same labels show both calendars where space allows
+And the selected display calendars are saved and restored in the timeline JSON
+And the stored date values and date input format remain Gregorian ISO dates.
 
 ### Fit Timeline Height To Lines
 
@@ -525,7 +544,7 @@ And the viewport resets to the beginning of the timeline when the full range can
 Given the user has created timeline data
 When the user saves the timeline as JSON
 And later loads the JSON file
-Then the title, date range, lines, events, periods, and text items are restored.
+Then the title, date range, display calendar settings, lines, events, periods, and text items are restored.
 
 ### Report Timeline Load Failures Clearly
 

@@ -39,13 +39,21 @@ import {
   serializeTimelineJson,
 } from "../../timeline/json";
 import {
-  formatDatePair,
+  formatDateForCalendars,
   formatDisplayDate,
   formatIranianDate,
   formatZoomValue,
+  hasGregorianDisplay,
+  hasIranianDisplay,
+  iranianDay,
+  iranianDateParts,
   iranianMonthName,
+  iranianYear,
   monthName,
 } from "../../timeline/formatters";
+import {
+  normalizeDisplayCalendars,
+} from "../../timeline/calendars";
 import {
   buildPdfFromJpeg,
 } from "../../timeline/export/pdf";
@@ -186,6 +194,8 @@ import {
     itemsLockedInput: document.getElementById("itemsLockedInput"),
     itemsLockedButton: document.getElementById("itemsLockedButton"),
     snapInput: document.getElementById("snapInput"),
+    displayGregorianInput: document.getElementById("displayGregorianInput"),
+    displayIranianInput: document.getElementById("displayIranianInput"),
     laneList: document.getElementById("laneList"),
     addLaneButton: document.getElementById("addLaneButton"),
     lineEditorPopover: document.getElementById("lineEditorPopover"),
@@ -272,6 +282,7 @@ import {
     hoverIranianLabel: document.getElementById("hoverIranianLabel"),
     hoverAgeLabel: document.getElementById("hoverAgeLabel"),
     selectedItemLabel: document.getElementById("selectedItemLabel"),
+    selectedItemLineLabel: document.getElementById("selectedItemLineLabel"),
     selectedItemDateLabel: document.getElementById("selectedItemDateLabel"),
     selectedItemEndLabel: document.getElementById("selectedItemEndLabel"),
     selectedItemDurationLabel: document.getElementById("selectedItemDurationLabel"),
@@ -343,6 +354,8 @@ import {
     dom.itemsLockedInput.addEventListener("change", updateTimelineFromControls);
     dom.itemsLockedButton.addEventListener("click", () => setItemsLocked(!timeline.settings.itemsLocked));
     dom.snapInput.addEventListener("change", updateTimelineFromControls);
+    if (dom.displayGregorianInput) dom.displayGregorianInput.addEventListener("change", updateTimelineFromControls);
+    if (dom.displayIranianInput) dom.displayIranianInput.addEventListener("change", updateTimelineFromControls);
     [dom.itemStartInput, dom.itemEndInput].forEach((control) => {
       control.addEventListener("input", updateItemCalendarPreviewFromInputs);
       control.addEventListener("change", updateItemCalendarPreviewFromInputs);
@@ -548,6 +561,30 @@ import {
     const axisDetail = axisDetailForZoom(zoom, AVG_DAYS_PER_MONTH);
     if (!axisDetail.monthBands) return;
     const contentEndDate = addDaysIso(settings.endDate, 1);
+    const displayCalendars = normalizeDisplayCalendars(settings.displayCalendars);
+    if (usesIranianAxis(displayCalendars)) {
+      const monthStarts = iranianMonthStartDates(addDaysIso(settings.startDate, -32), addDaysIso(contentEndDate, 32))
+        .filter((date) => compareIso(date, contentEndDate) < 0);
+      monthStarts.forEach((startDate, index) => {
+        const nextDate = monthStarts[index + 1] || contentEndDate;
+        if (compareIso(nextDate, settings.startDate) <= 0 || compareIso(startDate, contentEndDate) >= 0) return;
+        const bandStart = compareIso(startDate, settings.startDate) < 0 ? settings.startDate : startDate;
+        const bandEnd = compareIso(nextDate, contentEndDate) > 0 ? contentEndDate : nextDate;
+        const x = dateToX(bandStart);
+        const width = Math.min(contentWidth - x, Math.max(0, dateToX(bandEnd) - x));
+        if (index % 2 === 1 && width > 0) {
+          svg.append(svgEl("rect", {
+            class: "time-band-alternate",
+            x,
+            y: geometry.trackTop,
+            width,
+            height: geometry.trackBottom - geometry.trackTop,
+          }));
+        }
+      });
+      return;
+    }
+
     let bandIndex = 0;
     for (let year = isoYear(settings.startDate); year <= isoYear(settings.endDate); year += 1) {
       for (let month = 0; month < 12; month += 1) {
@@ -574,6 +611,7 @@ import {
 
   function drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth, geometry) {
     const axisDetail = axisDetailForZoom(zoom, AVG_DAYS_PER_MONTH);
+    const displayCalendars = normalizeDisplayCalendars(settings.displayCalendars);
     const startYear = isoYear(settings.startDate);
     const endYear = isoYear(settings.endDate);
     const yearLabelStep = zoom < 13 ? 5 : zoom < 21 ? 2 : 1;
@@ -592,29 +630,52 @@ import {
         }
         const day = isoDay(date);
         if (axisDetail.dayLabels && isDayLabelCandidate(day)) {
-          lastDayLabelEnd = drawDayAxisLabel(svg, date, x, contentEndDate, lastDayLabelEnd, geometry);
+          lastDayLabelEnd = drawDayAxisLabel(svg, date, x, contentEndDate, lastDayLabelEnd, geometry, displayCalendars);
         }
       }
     }
 
-    for (let year = startYear; year <= endYear; year += 1) {
-      for (let month = 0; month < 12; month += 1) {
-        const date = isoFromParts(year, month, 1);
-        if (compareIso(date, settings.startDate) < 0 || compareIso(date, contentEndDate) > 0) continue;
+    if (usesIranianAxis(displayCalendars)) {
+      const monthStarts = iranianMonthStartDates(settings.startDate, contentEndDate);
+      const firstIranianYearStart = monthStarts.find((date) => iranianDateParts(date).month === 1);
+      const firstIranianYear = firstIranianYearStart
+        ? iranianDateParts(firstIranianYearStart).year
+        : iranianDateParts(settings.startDate).year;
+      monthStarts.forEach((date, index) => {
+        const parts = iranianDateParts(date);
         const x = dateToX(date);
-        const isYearStart = month === 0;
+        const isYearStart = parts.month === 1;
         if (isYearStart || axisDetail.monthGrid) {
           svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: geometry.trackTop, y2: contentHeight }));
           svg.append(svgEl("line", { class: isYearStart ? "axis-tick axis-tick-year" : "axis-tick axis-tick-month", x1: x, x2: x, y1: geometry.axisY - 10, y2: geometry.axisY + 10 }));
         }
-
-        if (isYearStart && (year - startYear) % yearLabelStep === 0) {
-          svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: geometry.axisY + 38 }, axisYearLabel(date)));
-          if (zoom >= 42) {
-            svg.append(svgEl("text", { class: "axis-iranian", x: x + 8, y: geometry.axisY + 56 }, formatIranianDate(date)));
-          }
+        if (isYearStart && (parts.year - firstIranianYear) % yearLabelStep === 0) {
+          svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: geometry.axisY + 38 }, axisYearLabel(date, displayCalendars)));
         } else if (!isYearStart && axisDetail.monthGrid) {
-          lastMonthLabelEnd = drawMonthAxisLabel(svg, date, x, contentEndDate, lastMonthLabelEnd, axisDetail.dayLabels, geometry);
+          const nextDate = monthStarts[index + 1] || contentEndDate;
+          lastMonthLabelEnd = drawMonthAxisLabel(svg, date, x, contentEndDate, lastMonthLabelEnd, axisDetail.dayLabels, geometry, displayCalendars, nextDate);
+        }
+      });
+    } else {
+      for (let year = startYear; year <= endYear; year += 1) {
+        for (let month = 0; month < 12; month += 1) {
+          const date = isoFromParts(year, month, 1);
+          if (compareIso(date, settings.startDate) < 0 || compareIso(date, contentEndDate) > 0) continue;
+          const x = dateToX(date);
+          const isYearStart = month === 0;
+          if (isYearStart || axisDetail.monthGrid) {
+            svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: geometry.trackTop, y2: contentHeight }));
+            svg.append(svgEl("line", { class: isYearStart ? "axis-tick axis-tick-year" : "axis-tick axis-tick-month", x1: x, x2: x, y1: geometry.axisY - 10, y2: geometry.axisY + 10 }));
+          }
+
+          if (isYearStart && (year - startYear) % yearLabelStep === 0) {
+            svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: geometry.axisY + 38 }, axisYearLabel(date, displayCalendars)));
+            if (zoom >= 42 && hasGregorianDisplay(displayCalendars) && hasIranianDisplay(displayCalendars)) {
+              svg.append(svgEl("text", { class: "axis-iranian", x: x + 8, y: geometry.axisY + 56 }, formatIranianDate(date)));
+            }
+          } else if (!isYearStart && axisDetail.monthGrid) {
+            lastMonthLabelEnd = drawMonthAxisLabel(svg, date, x, contentEndDate, lastMonthLabelEnd, axisDetail.dayLabels, geometry, displayCalendars);
+          }
         }
       }
     }
@@ -628,8 +689,11 @@ import {
     }
   }
 
-  function axisYearLabel(date) {
-    return zoom < 42 ? String(isoYear(date)) : formatDisplayDate(date);
+  function axisYearLabel(date, displayCalendars) {
+    if (hasGregorianDisplay(displayCalendars)) {
+      return zoom < 42 ? String(isoYear(date)) : formatDisplayDate(date);
+    }
+    return zoom < 42 ? iranianYear(date) : formatIranianDate(date);
   }
 
   function drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth, geometry) {
@@ -652,12 +716,12 @@ import {
     return zoom >= 300 || day === 1 || day % 5 === 0;
   }
 
-  function drawDayAxisLabel(svg, date, x, contentEndDate, lastLabelEnd, geometry) {
+  function drawDayAxisLabel(svg, date, x, contentEndDate, lastLabelEnd, geometry, displayCalendars) {
     const nextDate = addDaysIso(date, 1);
     const cellEndDate = compareIso(nextDate, contentEndDate) < 0 ? nextDate : contentEndDate;
     const cellWidth = Math.max(0, dateToX(cellEndDate) - x);
     const centerX = x + cellWidth / 2;
-    const label = String(isoDay(date));
+    const label = hasGregorianDisplay(displayCalendars) ? String(isoDay(date)) : iranianDay(date);
     const width = estimateSvgTextWidth(label, AXIS_LABEL_CHAR_WIDTH);
     if (cellWidth >= 4 && canPlaceAxisLabel({ centerX, width, lastLabelEnd, gap: AXIS_DAY_LABEL_GAP })) {
       svg.append(svgEl("text", { class: "axis-day", x: centerX, y: geometry.axisY + 24, "text-anchor": "middle" }, label));
@@ -666,13 +730,15 @@ import {
     return lastLabelEnd;
   }
 
-  function drawMonthAxisLabel(svg, date, x, contentEndDate, lastLabelEnd, hasDayLabels, geometry) {
-    const nextDate = addMonthsIso(date, 1);
+  function drawMonthAxisLabel(svg, date, x, contentEndDate, lastLabelEnd, hasDayLabels, geometry, displayCalendars, nextMonthDate = null) {
+    const nextDate = nextMonthDate || addMonthsIso(date, 1);
     const cellEndDate = compareIso(nextDate, contentEndDate) < 0 ? nextDate : contentEndDate;
     const cellWidth = Math.max(0, dateToX(cellEndDate) - x);
     const centerX = x + cellWidth / 2;
     const gregorian = monthName(date);
     const iranian = iranianMonthName(date);
+    const showGregorian = hasGregorianDisplay(displayCalendars);
+    const showIranian = hasIranianDisplay(displayCalendars);
     const stackedWidth = Math.max(
       estimateSvgTextWidth(gregorian, AXIS_LABEL_CHAR_WIDTH),
       estimateSvgTextWidth(iranian, AXIS_LABEL_CHAR_WIDTH),
@@ -681,7 +747,7 @@ import {
     const iranianY = hasDayLabels ? geometry.axisY - 15 : geometry.axisY - 7;
     const compactY = hasDayLabels ? geometry.axisY - 18 : geometry.axisY - 11;
 
-    if (cellWidth >= stackedWidth + 18 && canPlaceAxisLabel({
+    if (showGregorian && showIranian && cellWidth >= stackedWidth + 18 && canPlaceAxisLabel({
       centerX,
       width: stackedWidth,
       lastLabelEnd,
@@ -692,18 +758,32 @@ import {
       return centerX + stackedWidth / 2;
     }
 
-    const compactWidth = estimateSvgTextWidth(gregorian, AXIS_LABEL_CHAR_WIDTH);
+    const compactLabel = showGregorian ? gregorian : iranian;
+    const compactWidth = estimateSvgTextWidth(compactLabel, AXIS_LABEL_CHAR_WIDTH);
     if (cellWidth >= compactWidth + 12 && canPlaceAxisLabel({
       centerX,
       width: compactWidth,
       lastLabelEnd,
       gap: AXIS_MONTH_LABEL_GAP,
     })) {
-      svg.append(svgEl("text", { class: "axis-month axis-month-compact", x: centerX, y: compactY, "text-anchor": "middle" }, gregorian));
+      svg.append(svgEl("text", { class: "axis-month axis-month-compact", x: centerX, y: compactY, "text-anchor": "middle" }, compactLabel));
       return centerX + compactWidth / 2;
     }
 
     return lastLabelEnd;
+  }
+
+  function usesIranianAxis(displayCalendars) {
+    return hasIranianDisplay(displayCalendars) && !hasGregorianDisplay(displayCalendars);
+  }
+
+  function iranianMonthStartDates(startDate, endDate) {
+    const starts = [];
+    for (let date = startDate; compareIso(date, endDate) < 0; date = addDaysIso(date, 1)) {
+      const parts = iranianDateParts(date);
+      if (parts.day === 1) starts.push(date);
+    }
+    return starts;
   }
 
   function drawLaneLabels(svg, settings, laneCount, rowHeight, geometry) {
@@ -1275,7 +1355,8 @@ import {
   function updateMeta() {
     const settings = timeline.settings;
     dom.stageTitle.textContent = settings.title;
-    dom.stageMeta.textContent = `${formatDisplayDate(settings.startDate)} / ${formatIranianDate(settings.startDate)} to ${formatDisplayDate(settings.endDate)} / ${formatIranianDate(settings.endDate)}`;
+    const displayCalendars = currentDisplayCalendars();
+    dom.stageMeta.textContent = `${formatDateForCalendars(settings.startDate, displayCalendars)} to ${formatDateForCalendars(settings.endDate, displayCalendars)}`;
   }
 
   function updateTimelineInfoPanel() {
@@ -1286,15 +1367,16 @@ import {
   function updatePointerInfo() {
     if (!dom.hoverDateLabel || !dom.hoverIranianLabel || !dom.hoverAgeLabel) return;
     const birthItem = getPrimaryBirthItem();
-    const info = pointerInfoText(hoverDate, birthItem?.startDate);
+    const info = pointerInfoText(hoverDate, birthItem?.startDate, currentDisplayCalendars());
     dom.hoverDateLabel.textContent = info.dateLabel;
-    dom.hoverIranianLabel.textContent = info.iranianLabel;
+    setOptionalInfoLine(dom.hoverIranianLabel, info.iranianLabel);
     dom.hoverAgeLabel.textContent = info.ageLabel;
   }
 
   function updateSelectionInfo() {
     if (
       !dom.selectedItemLabel ||
+      !dom.selectedItemLineLabel ||
       !dom.selectedItemDateLabel ||
       !dom.selectedItemEndLabel ||
       !dom.selectedItemDurationLabel ||
@@ -1304,8 +1386,9 @@ import {
     }
     const item = getItem(selectedId);
     const birthItem = getPrimaryBirthItem();
-    const info = selectionInfoText(item, birthItem?.startDate);
+    const info = selectionInfoText(item, birthItem?.startDate, currentDisplayCalendars());
     dom.selectedItemLabel.textContent = info.itemLabel;
+    setOptionalInfoLine(dom.selectedItemLineLabel, info.lineLine);
     dom.selectedItemDateLabel.textContent = info.dateLine;
     setOptionalInfoLine(dom.selectedItemEndLabel, info.endLine);
     setOptionalInfoLine(dom.selectedItemDurationLabel, info.durationLine);
@@ -1374,10 +1457,28 @@ import {
     syncItemsLockedButton();
     dom.timelineViewport.classList.toggle("items-locked", timeline.settings.itemsLocked);
     dom.snapInput.value = String(timeline.settings.snap);
+    syncDisplayCalendarControls();
     dom.zoomRange.value = String(zoom);
     dom.zoomLabel.textContent = `${formatZoomValue(zoom)} px/month`;
     syncTimelineAreaControls();
     suppressControlEvents = false;
+  }
+
+  function syncDisplayCalendarControls() {
+    const displayCalendars = currentDisplayCalendars();
+    if (dom.displayGregorianInput) dom.displayGregorianInput.checked = displayCalendars.includes("gregorian");
+    if (dom.displayIranianInput) dom.displayIranianInput.checked = displayCalendars.includes("iranian");
+  }
+
+  function selectedDisplayCalendarsFromControls() {
+    const selected = [];
+    if (dom.displayGregorianInput?.checked) selected.push("gregorian");
+    if (dom.displayIranianInput?.checked) selected.push("iranian");
+    return selected.length > 0 ? selected : currentDisplayCalendars();
+  }
+
+  function currentDisplayCalendars() {
+    return normalizeDisplayCalendars(timeline.settings.displayCalendars);
   }
 
   function setTimelineRowHeight(nextHeight) {
@@ -2209,15 +2310,17 @@ import {
     const endDate = hasEndYear(dom.itemTypeInput.value)
       ? normalizeDateInput(dom.itemEndInput.value, startDate)
       : startDate;
+    const displayCalendars = currentDisplayCalendars();
     dom.itemCalendarPreview.textContent = hasEndYear(dom.itemTypeInput.value)
-      ? `${formatDatePair(startDate)} to ${formatDatePair(endDate)}`
-      : formatDatePair(startDate);
+      ? `${formatDateForCalendars(startDate, displayCalendars)} to ${formatDateForCalendars(endDate, displayCalendars)}`
+      : formatDateForCalendars(startDate, displayCalendars);
   }
 
   function updateItemCalendarPreview(item) {
+    const displayCalendars = currentDisplayCalendars();
     dom.itemCalendarPreview.textContent = hasEndYear(item.type)
-      ? `${formatDatePair(item.startDate)} to ${formatDatePair(item.endDate)}`
-      : formatDatePair(item.startDate);
+      ? `${formatDateForCalendars(item.startDate, displayCalendars)} to ${formatDateForCalendars(item.endDate, displayCalendars)}`
+      : formatDateForCalendars(item.startDate, displayCalendars);
   }
 
   function updateTimelineFromControls(event) {
@@ -2236,6 +2339,7 @@ import {
     if (compareIso(settings.endDate, settings.startDate) < 0) settings.endDate = settings.startDate;
     settings.itemsLocked = dom.itemsLockedInput.checked;
     settings.snap = normalizeSnap(dom.snapInput.value);
+    settings.displayCalendars = selectedDisplayCalendarsFromControls();
     const changed = renderAllAfterMaybeChange(previousSnapshot);
     if (changed) setStatus("Timeline updated");
   }

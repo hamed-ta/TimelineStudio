@@ -418,6 +418,23 @@ p {
   margin: 0;
 }
 
+.calendar-display-field {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 11px;
+  border: 0;
+}
+
+.calendar-display-field legend {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: var(--line-ui);
+  margin-bottom: 2px;
+  padding: 0;
+}
+
 .separator {
   width: 1px;
   height: 24px;
@@ -1829,11 +1846,10 @@ body.is-timeline-height-dragging * {
 
 .timeline-info-panel {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   gap: 8px;
-  min-height: 42px;
-  max-height: 132px;
-  overflow: hidden;
+  min-height: 48px;
+  overflow: visible;
   border: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent);
   border-radius: 7px;
   background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
@@ -1848,7 +1864,8 @@ body.is-timeline-height-dragging * {
 }
 
 .timeline-info-panel[data-collapsed="true"] {
-  max-height: 42px;
+  max-height: 48px;
+  overflow: hidden;
 }
 
 .timeline-info-header,
@@ -1880,6 +1897,7 @@ body.is-timeline-height-dragging * {
 .timeline-info-toggle.ant-btn {
   width: 28px;
   min-height: 28px;
+  flex: 0 0 auto;
 }
 
 .timeline-info-content {
@@ -1887,7 +1905,7 @@ body.is-timeline-height-dragging * {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
   transition:
     opacity 140ms ease,
     transform 160ms ease;
@@ -2373,16 +2391,12 @@ body.is-timeline-height-dragging * {
     justify-content: space-between;
   }
 
-  .timeline-info-panel {
-    max-height: 190px;
-  }
-
   .timeline-info-content {
     grid-template-columns: 1fr;
   }
 
   .timeline-info-panel[data-collapsed="true"] {
-    max-height: 42px;
+    max-height: 48px;
   }
 }
 

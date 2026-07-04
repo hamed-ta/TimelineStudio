@@ -68,6 +68,18 @@ export function EditorSidebar({
               <option value="day">1 day</option>
             </select>
           </FieldLabel>
+
+          <fieldset className="calendar-display-field">
+            <legend>Display calendars</legend>
+            <label className="check-row">
+              <input id="displayGregorianInput" className="legacy-checkbox" type="checkbox" defaultChecked />
+              <span>Gregorian</span>
+            </label>
+            <label className="check-row">
+              <input id="displayIranianInput" className="legacy-checkbox" type="checkbox" defaultChecked />
+              <span>Persian / Solar Hijri</span>
+            </label>
+          </fieldset>
         </Card>
 
         <Card

@@ -11,11 +11,15 @@ import {
   yearEndIso,
   yearStartIso,
   type TimelineSnap,
-} from "./dates";
+} from "./dates.ts";
 import {
   normalizeColor,
   normalizeOptionalColor,
-} from "./colors";
+} from "./colors.ts";
+import {
+  normalizeDisplayCalendars,
+  type TimelineDisplayCalendar,
+} from "./calendars.ts";
 
 const DEFAULT_ROW_HEIGHT = 68;
 
@@ -51,6 +55,7 @@ export const TYPE_COLORS: Record<TimelineItemType, string> = {
 };
 
 export type TimelineItemType = "birth" | "event" | "marker" | "note" | "period" | "line" | "text";
+export type { TimelineDisplayCalendar };
 export type { TimelineSnap };
 
 export interface TimelineSettings {
@@ -61,6 +66,7 @@ export interface TimelineSettings {
   itemsLocked: boolean;
   snap: TimelineSnap;
   rowHeight: number;
+  displayCalendars: TimelineDisplayCalendar[];
   laneLabels: string[];
   laneColors: string[];
 }
@@ -135,6 +141,7 @@ export function createEmptyTimeline(): TimelineDocument {
       itemsLocked: false,
       snap: "month",
       rowHeight: DEFAULT_ROW_HEIGHT,
+      displayCalendars: ["gregorian", "iranian"],
       laneLabels: ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5"],
       laneColors: ["", "", "", "", ""],
     },
@@ -176,6 +183,7 @@ export function normalizeTimeline(input: unknown): TimelineDocument {
   delete rawSettings.shOffset;
   settings.snap = normalizeSnap(settings.snap);
   settings.rowHeight = clamp(toNumber(settings.rowHeight, DEFAULT_ROW_HEIGHT), 48, 120);
+  settings.displayCalendars = normalizeDisplayCalendars(settings.displayCalendars);
   settings.laneLabels = Array.isArray(settings.laneLabels)
     ? settings.laneLabels.map((label) => String(label))
     : fallback.settings.laneLabels;

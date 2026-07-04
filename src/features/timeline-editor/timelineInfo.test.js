@@ -20,7 +20,7 @@ const period = {
 test("pointer info shows placeholders until a date is hovered", () => {
   assert.deepEqual(pointerInfoText(null, null), {
     dateLabel: "Hover over the timeline",
-    iranianLabel: "Gregorian and Iranian dates",
+    iranianLabel: "Gregorian and Persian dates",
     ageLabel: "Add a birth item to calculate age",
   });
   assert.equal(pointerInfoText(null, "1987-07-13").ageLabel, "Age appears here");
@@ -34,14 +34,34 @@ test("pointer info formats hovered dates and age labels", () => {
   });
 });
 
+test("pointer info follows selected display calendars", () => {
+  assert.deepEqual(pointerInfoText("1990-08-20", null, ["gregorian"]), {
+    dateLabel: "Aug 20, 1990",
+    iranianLabel: "",
+    ageLabel: "Age: add a birth item",
+  });
+  assert.deepEqual(pointerInfoText("1990-08-20", null, ["iranian"]), {
+    dateLabel: "29 Mordad 1369",
+    iranianLabel: "",
+    ageLabel: "Age: add a birth item",
+  });
+});
+
 test("selection info formats period dates duration line and age range", () => {
   assert.deepEqual(selectionInfoText(period, "1987-07-13"), {
-    itemLabel: "Period: School - Line -1",
+    itemLabel: "Period: School",
+    lineLine: "Line: Line -1",
     dateLine: "Start: Jul 13, 1987 / 22 Tir 1366",
     endLine: "End: Aug 20, 1990 / 29 Mordad 1369",
     durationLine: "Duration: 3 years, 1 month, 7 days",
     ageLine: "Age: 0 days to 3 years, 1 month, 7 days",
   });
+});
+
+test("selection info follows selected display calendars", () => {
+  assert.equal(selectionInfoText(period, null, ["gregorian"]).dateLine, "Start: Jul 13, 1987");
+  assert.equal(selectionInfoText(period, null, ["iranian"]).dateLine, "Start: 22 Tir 1366");
+  assert.equal(selectionInfoText(period, null, ["iranian"]).lineLine, "Line: Line -1");
 });
 
 test("selection info formats notes without line metadata", () => {
@@ -59,6 +79,7 @@ test("selection info formats notes without line metadata", () => {
 test("selection info provides empty-state text and known item labels", () => {
   assert.deepEqual(selectionInfoText(null), {
     itemLabel: "No item selected",
+    lineLine: "",
     dateLine: "Select an item to inspect dates",
     endLine: "",
     durationLine: "",

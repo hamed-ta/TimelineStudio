@@ -36,6 +36,7 @@ export function TimelineInfoPanel({
         <div className="timeline-info-block">
           <span className="timeline-info-kicker">Selection</span>
           <strong id="selectedItemLabel">No item selected</strong>
+          <span id="selectedItemLineLabel" hidden></span>
           <span id="selectedItemDateLabel">Select an item to inspect dates</span>
           <span id="selectedItemEndLabel" hidden></span>
           <span id="selectedItemDurationLabel" hidden></span>

@@ -44,6 +44,9 @@ This project follows semantic versioning. The current package version is `0.2.2`
 - Added a collapsible timeline information panel and tightened header/action-toolbar spacing to give more vertical room to the canvas.
 - Fixed legacy-bound text/date fields losing their displayed values on focus under Ant Design input wrappers, and preserved normal spaces while editing the timeline title.
 - Moved read-only, Fit, zoom, height, and right-aligned theme controls into the action toolbar, removed the toolbar title/collapse row, and compressed the app header into a centered metadata line.
+- Added saved display-calendar settings for Gregorian, Persian / Solar Hijri, or both, while keeping all stored timeline dates as Gregorian ISO values.
+- Aligned central-axis year and month ticks to Persian / Solar Hijri boundaries when Persian / Solar Hijri is the only selected display calendar.
+- Improved the timeline information panel so selection lane appears as its own detail line, expanded content avoids internal scrollbars, and the collapsed toggle no longer clips into the panel border.
 
 ### Fixed
 

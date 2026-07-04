@@ -50,6 +50,7 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Let users collapse the bottom timeline information panel and keep header/action controls compact.
 - Fix legacy-bound sidebar fields so focusing them does not clear values and timeline titles can include spaces while editing.
 - Move Fit, zoom, height, read-only, and right-aligned theme controls into the action toolbar, remove the toolbar heading/collapse row, and center the compact app header metadata line.
+- Let users save display-calendar preferences for Gregorian, Persian / Solar Hijri, or both, align Persian-only axis ticks to Persian / Solar Hijri boundaries, and preserve Gregorian ISO date storage and input fields.
 - Preserve line reorder, remove, save/load, and item lane assignment behavior.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
@@ -155,7 +156,7 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Extracted timeline info-panel pointer and selection text into a tested feature view-model helper.
 - Added tested central-axis lane geometry helpers and wired the legacy SVG renderer to draw tracks above and below the axis.
 - Refined the central-axis renderer so only the timeline canvas scrolls, note leaders end at the axis, and dense day/month detail is hidden until readable.
-- Fixed central-axis line reordering to use visual lane order, restored `Ctrl`/`Command` + mouse wheel horizontal zoom, reduced zoom increments, added wheel shortcuts for line spacing and timeline area height, compacted the zoom/height controls behind overlay popovers, added a collapsible info panel, fixed Ant input focus value resets in legacy-bound fields, and consolidated view controls into the action toolbar.
+- Fixed central-axis line reordering to use visual lane order, restored `Ctrl`/`Command` + mouse wheel horizontal zoom, reduced zoom increments, added wheel shortcuts for line spacing and timeline area height, compacted the zoom/height controls behind overlay popovers, added a collapsible no-scroll info panel, fixed Ant input focus value resets in legacy-bound fields, consolidated view controls into the action toolbar, and added saved display-calendar preferences with Persian-only axis boundaries.
 
 ## Risks
 
