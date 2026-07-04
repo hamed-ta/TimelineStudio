@@ -88,8 +88,14 @@ import {
   canPlaceAxisLabel,
 } from "./layout/axisLayout";
 import {
+  axisDetailForZoom,
+  centralTimelineGeometry,
   defaultEndDateForSnap,
   fitZoomForTimeline,
+  laneCenterY,
+  laneDisplayLabel,
+  laneRowTop,
+  nearestLaneIndexForY,
   minDurationDaysForSnap,
   snapTimelineDate,
   timelineDateToX,
@@ -124,7 +130,8 @@ import {
   const NS = "http://www.w3.org/2000/svg";
   const LEFT_GUTTER = 132;
   const RIGHT_GUTTER = 110;
-  const AXIS_HEIGHT = 112;
+  const AXIS_HEIGHT = 88;
+  const TIMELINE_TOP_PADDING = 24;
   const FOOTER_HEIGHT = 34;
   const DEFAULT_ROW_HEIGHT = 68;
   const AXIS_LABEL_CHAR_WIDTH = 7.2;
@@ -268,6 +275,7 @@ import {
   let currentFileName = "";
   let hasUnsavedChanges = false;
   let hoverDate = null;
+  let hoverPoint = null;
   let lastPaletteColorIndex = -1;
   let copiedItem = null;
   let contextMenuTarget = null;
@@ -275,6 +283,7 @@ import {
   let itemColorPicker = null;
   let itemTextColorPicker = null;
   let lineColorPicker = null;
+  let lastTimelineGeometry = null;
   let lastNoteLayouts = new Map();
   let lastNotePointerDown = null;
   let noteMeasureContext = null;
@@ -453,11 +462,18 @@ import {
     const timelineWidth = LEFT_GUTTER + daysBetween(settings.startDate, contentEndDate) * pixelsPerDay() + RIGHT_GUTTER;
     const viewportWidth = Math.ceil(dom.timelineViewport.clientWidth || 0);
     const contentWidth = Math.max(timelineWidth, viewportWidth);
-    const laneAreaBottom = AXIS_HEIGHT + laneCount * rowHeight;
-    const noteLayouts = computeNoteLayouts(laneCount, rowHeight, contentWidth);
+    const geometry = centralTimelineGeometry({
+      laneCount,
+      rowHeight,
+      axisHeight: AXIS_HEIGHT,
+      topPadding: TIMELINE_TOP_PADDING,
+      footerHeight: FOOTER_HEIGHT,
+    });
+    lastTimelineGeometry = geometry;
+    const noteLayouts = computeNoteLayouts(laneCount, rowHeight, contentWidth, geometry);
     lastNoteLayouts = noteLayouts;
-    const noteAreaHeight = getNoteAreaHeight(noteLayouts, laneAreaBottom);
-    const contentHeight = laneAreaBottom + FOOTER_HEIGHT + noteAreaHeight;
+    const noteAreaHeight = getNoteAreaHeight(noteLayouts, geometry);
+    const contentHeight = geometry.contentHeightWithoutNotes + noteAreaHeight;
 
     svg.setAttribute("width", String(Math.ceil(contentWidth)));
     svg.setAttribute("height", String(Math.ceil(contentHeight)));
@@ -466,12 +482,12 @@ import {
     const defs = svgEl("defs");
     svg.append(defs);
     svg.append(svgEl("rect", { class: "canvas-bg", x: 0, y: 0, width: contentWidth, height: contentHeight }));
-    svg.append(svgEl("rect", { class: "axis-band", x: 0, y: 0, width: contentWidth, height: AXIS_HEIGHT }));
-    svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: contentWidth, y1: AXIS_HEIGHT, y2: AXIS_HEIGHT }));
+    drawTimeBands(svg, settings, geometry, contentWidth);
+    svg.append(svgEl("rect", { class: "axis-band", x: 0, y: geometry.axisBandTop, width: contentWidth, height: AXIS_HEIGHT }));
 
-    drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth);
-    drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth);
-    drawLaneLabels(svg, settings, laneCount, rowHeight);
+    drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth, geometry);
+    drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth, geometry);
+    drawLaneLabels(svg, settings, laneCount, rowHeight, geometry);
 
     const isEmpty = timeline.items.length === 0;
     dom.timelineViewport.classList.toggle("is-empty", isEmpty);
@@ -480,31 +496,65 @@ import {
     const sortedItems = timeline.items
       .slice()
       .sort((a, b) => a.lane - b.lane || compareIso(a.startDate, b.startDate));
-    drawNoteLeaderLayer(svg, defs, sortedItems, laneCount, rowHeight, noteLayouts);
+    drawNoteLeaderLayer(svg, defs, sortedItems, laneCount, rowHeight, noteLayouts, geometry);
     sortedItems
       .filter((item) => isGlobalTimelineItemType(item.type))
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts));
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts, geometry));
     sortedItems
       .filter((item) => !isGlobalTimelineItemType(item.type))
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts));
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts, geometry));
+    drawCursorGuide(svg, geometry);
   }
 
-  function drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth) {
+  function drawTimeBands(svg, settings, geometry, contentWidth) {
+    const axisDetail = axisDetailForZoom(zoom, AVG_DAYS_PER_MONTH);
+    if (!axisDetail.monthBands) return;
+    const contentEndDate = addDaysIso(settings.endDate, 1);
+    let bandIndex = 0;
+    for (let year = isoYear(settings.startDate); year <= isoYear(settings.endDate); year += 1) {
+      for (let month = 0; month < 12; month += 1) {
+        const startDate = isoFromParts(year, month, 1);
+        const nextDate = addMonthsIso(startDate, 1);
+        if (compareIso(nextDate, settings.startDate) <= 0 || compareIso(startDate, contentEndDate) >= 0) continue;
+        const bandStart = compareIso(startDate, settings.startDate) < 0 ? settings.startDate : startDate;
+        const bandEnd = compareIso(nextDate, contentEndDate) > 0 ? contentEndDate : nextDate;
+        const x = dateToX(bandStart);
+        const width = Math.min(contentWidth - x, Math.max(0, dateToX(bandEnd) - x));
+        if (bandIndex % 2 === 1 && width > 0) {
+          svg.append(svgEl("rect", {
+            class: "time-band-alternate",
+            x,
+            y: geometry.trackTop,
+            width,
+            height: geometry.trackBottom - geometry.trackTop,
+          }));
+        }
+        bandIndex += 1;
+      }
+    }
+  }
+
+  function drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth, geometry) {
+    const axisDetail = axisDetailForZoom(zoom, AVG_DAYS_PER_MONTH);
     const startYear = isoYear(settings.startDate);
     const endYear = isoYear(settings.endDate);
     const yearLabelStep = zoom < 13 ? 5 : zoom < 21 ? 2 : 1;
     const contentEndDate = addDaysIso(settings.endDate, 1);
     let lastMonthLabelEnd = -Infinity;
     let lastDayLabelEnd = -Infinity;
-    const showDayLabels = zoom >= 180;
 
-    if (zoom >= 92) {
+    if (axisDetail.dayGrid || axisDetail.dayTicks || axisDetail.dayLabels) {
       for (let date = settings.startDate; compareIso(date, contentEndDate) <= 0; date = addDaysIso(date, 1)) {
         const x = dateToX(date);
-        svg.append(svgEl("line", { class: "grid-day", x1: x, x2: x, y1: AXIS_HEIGHT, y2: contentHeight }));
+        if (axisDetail.dayGrid) {
+          svg.append(svgEl("line", { class: "grid-day", x1: x, x2: x, y1: geometry.trackTop, y2: contentHeight }));
+        }
+        if (axisDetail.dayTicks) {
+          svg.append(svgEl("line", { class: "axis-tick axis-tick-day", x1: x, x2: x, y1: geometry.axisY - 5, y2: geometry.axisY + 5 }));
+        }
         const day = isoDay(date);
-        if (showDayLabels && isDayLabelCandidate(day)) {
-          lastDayLabelEnd = drawDayAxisLabel(svg, date, x, contentEndDate, lastDayLabelEnd);
+        if (axisDetail.dayLabels && isDayLabelCandidate(day)) {
+          lastDayLabelEnd = drawDayAxisLabel(svg, date, x, contentEndDate, lastDayLabelEnd, geometry);
         }
       }
     }
@@ -515,24 +565,36 @@ import {
         if (compareIso(date, settings.startDate) < 0 || compareIso(date, contentEndDate) > 0) continue;
         const x = dateToX(date);
         const isYearStart = month === 0;
-        svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: isYearStart ? 0 : AXIS_HEIGHT, y2: contentHeight }));
+        if (isYearStart || axisDetail.monthGrid) {
+          svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: geometry.trackTop, y2: contentHeight }));
+          svg.append(svgEl("line", { class: isYearStart ? "axis-tick axis-tick-year" : "axis-tick axis-tick-month", x1: x, x2: x, y1: geometry.axisY - 10, y2: geometry.axisY + 10 }));
+        }
 
         if (isYearStart && (year - startYear) % yearLabelStep === 0) {
-          svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: 24 }, formatDisplayDate(date)));
-          svg.append(svgEl("text", { class: "axis-iranian", x: x + 8, y: 47 }, formatIranianDate(date)));
-        } else if (!isYearStart && zoom >= 42) {
-          lastMonthLabelEnd = drawMonthAxisLabel(svg, date, x, contentEndDate, lastMonthLabelEnd, showDayLabels);
+          svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: geometry.axisY + 38 }, axisYearLabel(date)));
+          if (zoom >= 42) {
+            svg.append(svgEl("text", { class: "axis-iranian", x: x + 8, y: geometry.axisY + 56 }, formatIranianDate(date)));
+          }
+        } else if (!isYearStart && axisDetail.monthGrid) {
+          lastMonthLabelEnd = drawMonthAxisLabel(svg, date, x, contentEndDate, lastMonthLabelEnd, axisDetail.dayLabels, geometry);
         }
       }
     }
 
-    for (let lane = 0; lane <= laneCount; lane += 1) {
-      const y = AXIS_HEIGHT + lane * rowHeight;
-      svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: contentWidth, y1: y, y2: y }));
+    svg.append(svgEl("line", { class: "center-axis-line", x1: 0, x2: contentWidth, y1: geometry.axisY, y2: geometry.axisY }));
+
+    for (let lane = 0; lane < laneCount; lane += 1) {
+      const rowTop = laneRowTop(lane, geometry, rowHeight);
+      svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: contentWidth, y1: rowTop, y2: rowTop }));
+      svg.append(svgEl("line", { class: "lane-rule", x1: 0, x2: contentWidth, y1: rowTop + rowHeight, y2: rowTop + rowHeight }));
     }
   }
 
-  function drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth) {
+  function axisYearLabel(date) {
+    return zoom < 42 ? String(isoYear(date)) : formatDisplayDate(date);
+  }
+
+  function drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth, geometry) {
     const colors = ensureLaneColors();
     for (let lane = 0; lane < laneCount; lane += 1) {
       const color = colors[lane];
@@ -540,7 +602,7 @@ import {
       svg.append(svgEl("rect", {
         class: "lane-background",
         x: 0,
-        y: AXIS_HEIGHT + lane * rowHeight,
+        y: laneRowTop(lane, geometry, rowHeight),
         width: contentWidth,
         height: rowHeight,
         fill: color,
@@ -552,7 +614,7 @@ import {
     return zoom >= 300 || day === 1 || day % 5 === 0;
   }
 
-  function drawDayAxisLabel(svg, date, x, contentEndDate, lastLabelEnd) {
+  function drawDayAxisLabel(svg, date, x, contentEndDate, lastLabelEnd, geometry) {
     const nextDate = addDaysIso(date, 1);
     const cellEndDate = compareIso(nextDate, contentEndDate) < 0 ? nextDate : contentEndDate;
     const cellWidth = Math.max(0, dateToX(cellEndDate) - x);
@@ -560,13 +622,13 @@ import {
     const label = String(isoDay(date));
     const width = estimateSvgTextWidth(label, AXIS_LABEL_CHAR_WIDTH);
     if (cellWidth >= 4 && canPlaceAxisLabel({ centerX, width, lastLabelEnd, gap: AXIS_DAY_LABEL_GAP })) {
-      svg.append(svgEl("text", { class: "axis-day", x: centerX, y: 105, "text-anchor": "middle" }, label));
+      svg.append(svgEl("text", { class: "axis-day", x: centerX, y: geometry.axisY + 24, "text-anchor": "middle" }, label));
       return centerX + width / 2;
     }
     return lastLabelEnd;
   }
 
-  function drawMonthAxisLabel(svg, date, x, contentEndDate, lastLabelEnd, hasDayLabels) {
+  function drawMonthAxisLabel(svg, date, x, contentEndDate, lastLabelEnd, hasDayLabels, geometry) {
     const nextDate = addMonthsIso(date, 1);
     const cellEndDate = compareIso(nextDate, contentEndDate) < 0 ? nextDate : contentEndDate;
     const cellWidth = Math.max(0, dateToX(cellEndDate) - x);
@@ -577,9 +639,9 @@ import {
       estimateSvgTextWidth(gregorian, AXIS_LABEL_CHAR_WIDTH),
       estimateSvgTextWidth(iranian, AXIS_LABEL_CHAR_WIDTH),
     );
-    const gregorianY = hasDayLabels ? 58 : 78;
-    const iranianY = hasDayLabels ? 74 : 96;
-    const compactY = hasDayLabels ? 72 : 88;
+    const gregorianY = hasDayLabels ? geometry.axisY - 31 : geometry.axisY - 23;
+    const iranianY = hasDayLabels ? geometry.axisY - 15 : geometry.axisY - 7;
+    const compactY = hasDayLabels ? geometry.axisY - 18 : geometry.axisY - 11;
 
     if (cellWidth >= stackedWidth + 18 && canPlaceAxisLabel({
       centerX,
@@ -606,10 +668,10 @@ import {
     return lastLabelEnd;
   }
 
-  function drawLaneLabels(svg, settings, laneCount, rowHeight) {
+  function drawLaneLabels(svg, settings, laneCount, rowHeight, geometry) {
     for (let lane = 0; lane < laneCount; lane += 1) {
-      const label = settings.laneLabels[lane] || `Line ${lane + 1}`;
-      const rowTop = AXIS_HEIGHT + lane * rowHeight;
+      const label = laneDisplayLabel(lane, settings.laneLabels[lane]);
+      const rowTop = laneRowTop(lane, geometry, rowHeight);
       const centerY = rowTop + rowHeight / 2;
       const group = svgEl("g", {
         class: "lane-label-control",
@@ -633,7 +695,7 @@ import {
       group.append(svgEl("text", { class: "lane-label", x: 28, y: centerY + 4 }, fitSvgText(label, LEFT_GUTTER - 66, AXIS_LABEL_CHAR_WIDTH)));
       svg.append(group);
     }
-    const addY = AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT / 2;
+    const addY = geometry.trackBottom + FOOTER_HEIGHT / 2;
     const addGroup = svgEl("g", {
       class: "lane-add-control",
       "data-timeline-lane-add": "true",
@@ -654,19 +716,19 @@ import {
     svg.append(addGroup);
   }
 
-  function drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts) {
+  function drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts, geometry) {
     const group = svgEl("g", {
       class: `item item-${item.type}${item.locked ? " locked" : ""}${item.id === selectedId ? " selected" : ""}`,
       "data-item-id": item.id,
       tabindex: "0",
     });
 
-    const y = AXIS_HEIGHT + item.lane * rowHeight + rowHeight / 2;
+    const y = laneCenterY(item.lane, geometry, rowHeight);
     const x1 = dateToX(item.startDate);
     const x2 = dateToX(hasEndYear(item.type) ? item.endDate : item.startDate);
 
     if (item.type === "birth") {
-      drawBirth(group, item, x1, AXIS_HEIGHT + laneCount * rowHeight);
+      drawBirth(group, item, x1, geometry);
     } else if (item.type === "period") {
       drawPeriod(group, defs, item, x1, x2, y);
     } else if (item.type === "line") {
@@ -674,14 +736,14 @@ import {
     } else if (item.type === "event") {
       drawEvent(group, defs, item, x1, y);
     } else if (item.type === "marker") {
-      drawMarker(group, item, x1, AXIS_HEIGHT + laneCount * rowHeight);
+      drawMarker(group, item, x1, geometry);
     } else if (item.type === "note") {
-      drawNote(group, defs, item, x1, y, noteLayouts);
+      drawNote(group, defs, item, x1, geometry.axisY, noteLayouts);
     } else {
       drawTextItem(group, item, x1, y);
     }
 
-    if (item.id === selectedId) drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight, noteLayouts);
+    if (item.id === selectedId) drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight, noteLayouts, geometry);
     svg.append(group);
   }
 
@@ -788,15 +850,46 @@ import {
     if (dragState) {
       return;
     }
-    const rect = dom.timelineViewport.getBoundingClientRect();
-    const pointerX = dom.timelineViewport.scrollLeft + event.clientX - rect.left;
+    const point = svgPoint(event);
+    const pointerX = point.x;
+    hoverPoint = point;
     hoverDate = clampIso(xToDate(pointerX), timeline.settings.startDate, timeline.settings.endDate);
+    updateCursorGuide();
     updateTimelineInfoPanel();
   }
 
   function hideHoverReadout() {
     hoverDate = null;
+    hoverPoint = null;
+    updateCursorGuide();
     updateTimelineInfoPanel();
+  }
+
+  function drawCursorGuide(svg, geometry) {
+    const line = svgEl("line", {
+      id: "cursorAxisGuide",
+      class: "cursor-axis-guide",
+      x1: 0,
+      x2: 0,
+      y1: geometry.axisY,
+      y2: geometry.axisY,
+      hidden: "true",
+    });
+    svg.append(line);
+    updateCursorGuide(line, geometry);
+  }
+
+  function updateCursorGuide(line = document.getElementById("cursorAxisGuide"), geometry = lastTimelineGeometry) {
+    if (!line) return;
+    if (!hoverPoint || !geometry) {
+      line.setAttribute("hidden", "true");
+      return;
+    }
+    line.removeAttribute("hidden");
+    line.setAttribute("x1", String(hoverPoint.x));
+    line.setAttribute("x2", String(hoverPoint.x));
+    line.setAttribute("y1", String(hoverPoint.y));
+    line.setAttribute("y2", String(geometry.axisY));
   }
 
   function drawLine(group, defs, item, x1, x2, y) {
@@ -855,26 +948,26 @@ import {
     group.append(svgEl("text", { class: "note-label", x: x + 16, y: y + 5 }, item.title));
   }
 
-  function drawMarker(group, item, x, laneAreaBottom) {
-    const y1 = AXIS_HEIGHT;
-    const y2 = laneAreaBottom;
+  function drawMarker(group, item, x, geometry) {
+    const y1 = geometry.trackTop;
+    const y2 = geometry.trackBottom;
     group.append(svgEl("line", { class: "marker-hit", x1: x, y1, x2: x, y2, stroke: "transparent" }));
     group.append(svgEl("line", { class: "marker-line", x1: x, y1, x2: x, y2, stroke: item.color }));
-    group.append(svgEl("circle", { class: "marker-pin", cx: x, cy: y1, r: 5, fill: item.color }));
-    group.append(svgEl("text", { class: "marker-label", x: x + 10, y: y1 + 18, fill: item.color }, item.title));
+    group.append(svgEl("circle", { class: "marker-pin", cx: x, cy: geometry.axisY, r: 5, fill: item.color }));
+    group.append(svgEl("text", { class: "marker-label", x: x + 10, y: geometry.axisY - 12, fill: item.color }, item.title));
   }
 
-  function drawBirth(group, item, x, laneAreaBottom) {
-    const y1 = AXIS_HEIGHT - 8;
-    const y2 = laneAreaBottom;
+  function drawBirth(group, item, x, geometry) {
+    const y1 = geometry.trackTop;
+    const y2 = geometry.trackBottom;
     const label = fitSvgText(item.title || titleForType("birth"), 116, AXIS_LABEL_CHAR_WIDTH);
     const labelWidth = Math.max(70, label.length * 7.2 + 22);
     const labelX = Math.max(8, x - labelWidth - 10);
-    const labelY = AXIS_HEIGHT + 10;
+    const labelY = geometry.axisY + 12;
     group.append(svgEl("line", { class: "birth-hit", x1: x, y1, x2: x, y2, stroke: "transparent" }));
     group.append(svgEl("line", { class: "birth-line-shadow", x1: x + 1.5, y1, x2: x + 1.5, y2, stroke: item.color }));
     group.append(svgEl("line", { class: "birth-line", x1: x, y1, x2: x, y2, stroke: item.color }));
-    group.append(svgEl("circle", { class: "birth-pin", cx: x, cy: AXIS_HEIGHT, r: 7, fill: item.color }));
+    group.append(svgEl("circle", { class: "birth-pin", cx: x, cy: geometry.axisY, r: 7, fill: item.color }));
     group.append(svgEl("rect", { class: "birth-label-bg", x: labelX, y: labelY, width: labelWidth, height: 22, rx: 6, fill: item.color }));
     group.append(svgEl("text", {
       class: "birth-label-text",
@@ -884,7 +977,7 @@ import {
     }, label));
   }
 
-  function drawNoteLeaderLayer(svg, defs, items, laneCount, rowHeight, noteLayouts) {
+  function drawNoteLeaderLayer(svg, defs, items, laneCount, rowHeight, noteLayouts, geometry) {
     const layer = svgEl("g", { class: "note-leader-layer", "aria-hidden": "true" });
     items
       .filter((item) => item.type === "note")
@@ -892,14 +985,13 @@ import {
         const layout = noteLayouts.get(item.id);
         if (!layout) return;
         const x = dateToX(item.startDate);
-        const y = AXIS_HEIGHT + item.lane * rowHeight + rowHeight / 2;
         const markerId = ensureNoteArrowMarker(defs, item);
         layer.append(svgEl("line", {
           class: `note-leader${item.id === selectedId ? " selected" : ""}`,
           x1: layout.tipX,
           y1: layout.tipY,
           x2: x,
-          y2: y,
+          y2: geometry.axisY,
           stroke: item.color,
           "marker-end": `url(#${markerId})`,
         }));
@@ -965,7 +1057,7 @@ import {
     group.append(svgEl("text", { class: "note-label", x: x + 10, y: y + 5, fill: item.color }, item.title));
   }
 
-  function drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight, noteLayouts) {
+  function drawSelection(group, item, x1, x2, y, laneCount, rowHeight, contentWidth, contentHeight, noteLayouts, geometry) {
     if (item.type === "period") {
       const width = Math.max(12, x2 - x1);
       group.append(svgEl("rect", { class: "selection-outline", x: x1 - 4, y: y - 21, width: width + 8, height: 42, rx: 8 }));
@@ -979,9 +1071,9 @@ import {
       group.append(svgEl("rect", {
         class: "selection-outline",
         x: x1 - 7,
-        y: AXIS_HEIGHT + 4,
+        y: geometry.trackTop + 4,
         width: 14,
-        height: laneCount * rowHeight - 8,
+        height: geometry.trackBottom - geometry.trackTop - 8,
         rx: 7,
       }));
     } else if (item.type === "note") {
@@ -1016,10 +1108,10 @@ import {
     }
   }
 
-  function computeNoteLayouts(laneCount, rowHeight, contentWidth) {
+  function computeNoteLayouts(laneCount, rowHeight, contentWidth, geometry) {
     const layouts = new Map();
     const placedLayouts = [];
-    const baseY = noteBaseY(laneCount, rowHeight);
+    const baseY = noteBaseY(geometry);
     const textLayoutOptions = noteTextLayoutOptions();
     timeline.items
       .filter((item) => item.type === "note")
@@ -1056,17 +1148,17 @@ import {
     return layouts;
   }
 
-  function getNoteAreaHeight(noteLayouts, laneAreaBottom) {
+  function getNoteAreaHeight(noteLayouts, geometry) {
     if (!noteLayouts.size) return 0;
-    let bottom = laneAreaBottom + FOOTER_HEIGHT;
+    let bottom = geometry.contentHeightWithoutNotes;
     noteLayouts.forEach((layout) => {
       bottom = Math.max(bottom, layout.y + layout.height);
     });
-    return Math.max(0, bottom - (laneAreaBottom + FOOTER_HEIGHT) + NOTE_AREA_BOTTOM_GAP);
+    return Math.max(0, bottom - geometry.contentHeightWithoutNotes + NOTE_AREA_BOTTOM_GAP);
   }
 
-  function noteBaseY(laneCount, rowHeight) {
-    return AXIS_HEIGHT + laneCount * rowHeight + FOOTER_HEIGHT + NOTE_AREA_TOP_GAP;
+  function noteBaseY(geometry) {
+    return geometry.contentHeightWithoutNotes + NOTE_AREA_TOP_GAP;
   }
 
   function noteBubblePathOptions(pad = 0) {
@@ -1648,6 +1740,7 @@ import {
     const labels = ensureLaneLabels();
     dom.laneList.replaceChildren();
     labels.forEach((label, index) => {
+      const displayLabel = laneDisplayLabel(index, label);
       const row = document.createElement("div");
       row.className = "lane-editor-row";
       row.dataset.laneIndex = String(index);
@@ -1656,7 +1749,7 @@ import {
       dragHandle.type = "button";
       dragHandle.className = "lane-drag-handle";
       dragHandle.dataset.laneIndex = String(index);
-      dragHandle.ariaLabel = `Drag ${label || `Line ${index + 1}`} to reorder`;
+      dragHandle.ariaLabel = `Drag ${displayLabel} to reorder`;
       dragHandle.title = "Drag to reorder";
       dragHandle.addEventListener("pointerdown", beginSidebarLanePointerDrag);
       for (let dot = 0; dot < 6; dot += 1) {
@@ -1667,11 +1760,11 @@ import {
       field.className = "lane-editor-label";
 
       const caption = document.createElement("span");
-      caption.textContent = `Line ${index + 1}`;
+      caption.textContent = displayLabel;
 
       const input = document.createElement("input");
       input.type = "text";
-      input.value = label;
+      input.value = displayLabel;
       input.dataset.laneIndex = String(index);
       input.autocomplete = "off";
       input.addEventListener("input", updateLaneLabelDraft);
@@ -1701,7 +1794,7 @@ import {
       ...timeline.items.map((item) => Math.max(0, Number(item.lane) + 1)),
     );
     while (labels.length < laneCount) {
-      labels.push(`Line ${labels.length + 1}`);
+      labels.push(laneDisplayLabel(labels.length));
     }
     ensureLaneColors();
     return labels;
@@ -1725,7 +1818,7 @@ import {
     const index = Number(event.currentTarget.dataset.laneIndex);
     if (!Number.isInteger(index)) return;
     const previousSnapshot = timelineDataSnapshot();
-    timeline.settings.laneLabels[index] = event.currentTarget.value.trim() || `Line ${index + 1}`;
+    timeline.settings.laneLabels[index] = event.currentTarget.value.trim() || laneDisplayLabel(index);
     const changed = renderAllAfterMaybeChange(previousSnapshot);
     if (changed) setStatus("Line renamed");
   }
@@ -1746,7 +1839,7 @@ import {
     const colors = ensureLaneColors();
     const insertAt = clamp(Number(index) + 1, 0, labels.length);
     const previousSnapshot = timelineDataSnapshot();
-    labels.splice(insertAt, 0, `Line ${labels.length + 1}`);
+    labels.splice(insertAt, 0, laneDisplayLabel(insertAt));
     colors.splice(insertAt, 0, "");
     timeline.items.forEach((item) => {
       if (!isGlobalTimelineItemType(item.type) && item.lane >= insertAt) item.lane += 1;
@@ -1861,7 +1954,7 @@ import {
       return;
     }
 
-    const label = labels[index] || `Line ${index + 1}`;
+    const label = laneDisplayLabel(index, labels[index]);
     const itemsOnLine = timeline.items.filter((item) => item.lane === index);
     const itemText = itemsOnLine.length === 1 ? "1 item" : `${itemsOnLine.length} items`;
     const ok = window.confirm(
@@ -2211,8 +2304,8 @@ import {
     closeContextMenu();
     lineEditorLaneIndex = index;
     dom.lineEditorPopover.hidden = false;
-    dom.lineEditorTitle.textContent = `Line ${index + 1}`;
-    dom.lineNameInput.value = labels[index] || `Line ${index + 1}`;
+    dom.lineEditorTitle.textContent = laneDisplayLabel(index, labels[index]);
+    dom.lineNameInput.value = laneDisplayLabel(index, labels[index]);
     const color = normalizeOptionalColor(colors[index]);
     dom.lineEditorPopover.dataset.color = color;
     setColorPickerValue(lineColorPicker, color, { emit: false });
@@ -2250,7 +2343,7 @@ import {
     if (lineEditorLaneIndex === null) return;
     const labels = ensureLaneLabels();
     const previousSnapshot = timelineDataSnapshot();
-    labels[lineEditorLaneIndex] = dom.lineNameInput.value.trim() || `Line ${lineEditorLaneIndex + 1}`;
+    labels[lineEditorLaneIndex] = dom.lineNameInput.value.trim() || laneDisplayLabel(lineEditorLaneIndex);
     dom.lineNameInput.value = labels[lineEditorLaneIndex];
     const changed = renderAllAfterMaybeChange(previousSnapshot);
     if (changed) setStatus("Line renamed");
@@ -2754,7 +2847,6 @@ import {
     if (!item) return;
     const point = svgPoint(event);
     const dxDays = Math.round((point.x - dragState.startPoint.x) / pixelsPerDay());
-    const dyLanes = Math.round((point.y - dragState.startPoint.y) / timeline.settings.rowHeight);
     const original = dragState.original;
     const minDate = timeline.settings.startDate;
     const maxDate = addDaysIso(timeline.settings.endDate, 1);
@@ -2779,7 +2871,7 @@ import {
         nextStart = timeline.settings.endDate;
       }
       item.startDate = nextStart;
-      item.lane = isGlobalTimelineItemType(item.type) ? 0 : clamp(original.lane + dyLanes, 0, 20);
+      item.lane = isGlobalTimelineItemType(item.type) ? 0 : laneIndexFromPointer(event);
       if (hasEndYear(item.type)) {
         item.endDate = addDaysIso(item.startDate, duration);
       } else {
@@ -2804,7 +2896,8 @@ import {
     const dy = point.y - dragState.startPoint.y;
     const contentWidth = currentContentWidth();
     const rowHeight = timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT;
-    const baseY = noteBaseY(currentLaneCount(), rowHeight);
+    const geometry = currentTimelineGeometry();
+    const baseY = noteBaseY(geometry);
     const nextX = clamp(layout.x + dx, 12, Math.max(12, contentWidth - layout.width - 12));
     const nextY = Math.max(baseY, layout.y + dy);
     const anchorX = dateToX(original.startDate);
@@ -2823,7 +2916,8 @@ import {
     const dy = point.y - dragState.startPoint.y;
     const contentWidth = currentContentWidth();
     const rowHeight = timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT;
-    const baseY = noteBaseY(currentLaneCount(), rowHeight);
+    const geometry = currentTimelineGeometry();
+    const baseY = noteBaseY(geometry);
     const nextWidth = clamp(layout.width + dx, NOTE_MIN_WIDTH, Math.min(NOTE_MAX_WIDTH, Math.max(NOTE_MIN_WIDTH, contentWidth - layout.x - 12)));
     const nextHeight = clamp(layout.height + dy, NOTE_MIN_HEIGHT, NOTE_MAX_HEIGHT);
     const anchorX = dateToX(original.startDate);
@@ -3045,7 +3139,7 @@ import {
     const point = svgPoint(event);
     const labels = ensureLaneLabels();
     const rowHeight = timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT;
-    return clamp(Math.floor((point.y - AXIS_HEIGHT) / rowHeight), 0, labels.length - 1);
+    return nearestLaneIndexForY(point.y, currentTimelineGeometry(labels.length, rowHeight), rowHeight, labels.length);
   }
 
   function currentLaneCount() {
@@ -3054,6 +3148,16 @@ import {
       timeline.settings.laneLabels.length,
       ...timeline.items.map((item) => Math.max(0, Number(item.lane) + 1)),
     );
+  }
+
+  function currentTimelineGeometry(laneCount = currentLaneCount(), rowHeight = timeline.settings.rowHeight || DEFAULT_ROW_HEIGHT) {
+    return centralTimelineGeometry({
+      laneCount,
+      rowHeight,
+      axisHeight: AXIS_HEIGHT,
+      topPadding: TIMELINE_TOP_PADDING,
+      footerHeight: FOOTER_HEIGHT,
+    });
   }
 
   function currentContentWidth() {

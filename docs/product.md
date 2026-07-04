@@ -185,6 +185,30 @@ When the timeline renders
 Then the viewport height fits the axis, visible lines, footer spacing, and note area when notes exist
 And the viewport does not stretch vertically just because the workspace has extra height.
 
+### Show Central Timeline Axis
+
+Given the timeline has multiple named lines
+When the timeline renders
+Then the date axis appears through the center of the canvas instead of above every line
+And lines alternate around the axis as `Line +1`, `Line -1`, `Line +2`, and `Line -2` when no custom label is set
+And users can add and drag items on lines above or below the central axis without changing the saved JSON lane format.
+
+### Show Zoom-Responsive Central Axis Detail
+
+Given the user zooms the timeline out
+When the central date axis renders
+Then only readable year labels are shown when there is not enough room for month or day detail
+And as the user zooms in, month ticks and day ticks become visible without overlapping labels
+And month background bands, month grid lines, day grid lines, day ticks, and day labels are hidden when their time unit is too narrow to read clearly
+And the hovered cursor guide connects the pointer to the central date axis.
+
+### Keep Timeline Chrome Fixed
+
+Given the timeline content is taller or wider than the visible stage
+When the user scrolls the timeline
+Then only the timeline canvas, lanes, and timeline items scroll
+And the action toolbar and timeline info panel stay fixed outside the scrollable timeline viewport.
+
 ### Avoid Axis Label Collisions
 
 Given the timeline spans many months
@@ -201,6 +225,7 @@ When the user creates a note on `2001-03-04`
 Then a leader arrow points to the correct date position
 And the leader line is dotted and renders behind note balloons
 And the leader line is highlighted when the note is selected
+And the leader line terminates at the central timeline axis
 And a shaped balloon with a movable tip below all timeline lines displays the note text
 And the balloon tip leans toward the leader line when the balloon is offset from the note date
 And selected notes show selection around the balloon only, not around the leader line or anchor

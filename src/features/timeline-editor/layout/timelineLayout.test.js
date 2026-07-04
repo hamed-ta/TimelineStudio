@@ -2,8 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  axisDetailForZoom,
+  centralTimelineGeometry,
   defaultEndDateForSnap,
   fitZoomForTimeline,
+  laneCenterY,
+  laneDisplayLabel,
+  laneSide,
+  laneTrackNumber,
   minDurationDaysForSnap,
   snapTimelineDate,
   timelineDateToX,
@@ -61,4 +67,69 @@ test("timeline duration helpers derive minimum and default end dates from snap",
   assert.equal(defaultEndDateForSnap("2026-01-01", "week"), "2026-01-08");
   assert.equal(defaultEndDateForSnap("2026-01-01", "day"), "2026-01-02");
   assert.equal(defaultEndDateForSnap("2026-01-01", "month"), "2026-02-01");
+});
+
+test("central timeline geometry places lanes around the axis", () => {
+  const geometry = centralTimelineGeometry({
+    laneCount: 5,
+    rowHeight: 68,
+    axisHeight: 88,
+    topPadding: 24,
+    footerHeight: 34,
+  });
+
+  assert.equal(geometry.axisY, 272);
+  assert.equal(geometry.axisBandTop, 228);
+  assert.equal(geometry.trackTop, 24);
+  assert.equal(geometry.trackBottom, 452);
+  assert.equal(geometry.contentHeightWithoutNotes, 486);
+  assert.equal(laneCenterY(0, geometry, 68), 194);
+  assert.equal(laneCenterY(1, geometry, 68), 350);
+  assert.equal(laneCenterY(4, geometry, 68), 58);
+});
+
+test("central timeline lanes expose above and below labels", () => {
+  assert.equal(laneSide(0), "above");
+  assert.equal(laneSide(1), "below");
+  assert.equal(laneSide(2), "above");
+  assert.equal(laneTrackNumber(0), 1);
+  assert.equal(laneTrackNumber(1), 1);
+  assert.equal(laneTrackNumber(4), 3);
+  assert.equal(laneDisplayLabel(0), "Line +1");
+  assert.equal(laneDisplayLabel(1), "Line -1");
+  assert.equal(laneDisplayLabel(4), "Line +3");
+  assert.equal(laneDisplayLabel(2, "Education"), "Education");
+  assert.equal(laneDisplayLabel(2, "Line 3"), "Line +2");
+  assert.equal(laneDisplayLabel(1, "Line +1"), "Line -1");
+});
+
+test("axis detail helper suppresses clutter when units are too narrow", () => {
+  assert.deepEqual(axisDetailForZoom(18), {
+    monthBands: false,
+    monthGrid: false,
+    dayGrid: false,
+    dayTicks: false,
+    dayLabels: false,
+  });
+  assert.deepEqual(axisDetailForZoom(60), {
+    monthBands: false,
+    monthGrid: true,
+    dayGrid: false,
+    dayTicks: false,
+    dayLabels: false,
+  });
+  assert.deepEqual(axisDetailForZoom(92), {
+    monthBands: true,
+    monthGrid: true,
+    dayGrid: false,
+    dayTicks: false,
+    dayLabels: false,
+  });
+  assert.deepEqual(axisDetailForZoom(320), {
+    monthBands: true,
+    monthGrid: true,
+    dayGrid: true,
+    dayTicks: true,
+    dayLabels: true,
+  });
 });

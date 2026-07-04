@@ -11,6 +11,9 @@ import {
   noteDisplayText,
   noteTitleFromText,
 } from "./items/noteItem.ts";
+import {
+  laneDisplayLabel,
+} from "./layout/timelineLayout.ts";
 
 type InfoItem = {
   type: string;
@@ -85,7 +88,7 @@ export function itemTypeLabel(type: unknown): string {
 }
 
 function selectedItemTitle(item: InfoItem): string {
-  const lineText = isGlobalTimelineItemType(item.type) || item.type === "note" ? "" : ` - Line ${item.lane + 1}`;
+  const lineText = isGlobalTimelineItemType(item.type) || item.type === "note" ? "" : ` - ${laneDisplayLabel(item.lane)}`;
   const lockedText = item.locked ? "Locked - " : "";
   const title = item.type === "note" ? noteTitleFromText(noteDisplayText(item)) : item.title;
   return `${lockedText}${itemTypeLabel(item.type)}: ${title}${lineText}`;

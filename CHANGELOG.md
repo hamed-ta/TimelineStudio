@@ -2,7 +2,7 @@
 
 All notable project changes should be recorded here.
 
-This project follows semantic versioning. The current package version is `0.2.1`.
+This project follows semantic versioning. The current package version is `0.2.2`.
 
 ## Unreleased
 
@@ -35,6 +35,8 @@ This project follows semantic versioning. The current package version is `0.2.1`
 - Extracted SVG text fitting, width estimation, and safe ID helpers into `features/timeline-editor/canvas` with focused tests.
 - Extracted drag-range clamping and same-line overlap prevention into `features/timeline-editor/interactions` with focused tests.
 - Extracted timeline info-panel pointer and selection text into a feature view-model helper with focused tests.
+- Changed the timeline canvas to use a central date axis with lanes alternating above and below it, central-axis default line labels, zoom-responsive ticks, subtle alternating month bands, and a hover guide from the cursor to the axis.
+- Refined the central-axis canvas so dense day/month detail is hidden until readable, note leaders terminate at the central axis, and only the timeline viewport scrolls while the toolbar and info panel stay fixed.
 
 ### Fixed
 

@@ -56,6 +56,8 @@ Selecting a timeline item updates the same info panel with the item type, title,
 
 The timeline viewport sizes to the rendered SVG content height for the axis, visible lines, footer spacing, and note area. It no longer stretches vertically just because the workspace has extra unused height.
 
+The timeline canvas now uses a central date axis. Existing numeric item lanes are still saved the same way, but the renderer maps them around the axis as alternating above/below tracks. Default and legacy labels display as `Line +1`, `Line -1`, `Line +2`, `Line -2`, etc.; custom line names remain custom. The central axis has zoom-responsive year, month, and day ticks, subtle alternating month bands, and a transient pointer guide that connects the hovered cursor position to the axis. Month bands, month grid lines, day grid lines, day ticks, and day labels are hidden until their time unit is wide enough to read clearly.
+
 Timeline month and day labels adapt to available horizontal space. Month labels stack Gregorian and Iranian names when there is room, fall back to compact Gregorian labels when space is tighter, and skip labels that would collide. Day labels are centered in their day cells and skipped when they would collide.
 
 Fit now respects a readable zoom floor. Short timelines still fit into the viewport, while long timelines reset to the beginning at the minimum readable zoom instead of compressing every item into an unreadable view.
@@ -76,7 +78,7 @@ Zoom controls now use Ant Design icons. Manual zoom-out, wheel zoom-out, Fit, an
 
 Empty timelines show a centered non-interactive empty state overlay, and the timeline SVG/grid expands to at least the visible viewport width so the empty canvas does not look pushed to one side.
 
-Timeline items now include a note type for point annotations. Notes render with an anchor point, dotted straight arrow leader behind the note balloon layer, and shaped bubble balloon below all timeline lines, use a single date, and stay lane-bound. The bubble has a compact top tip where the dotted leader starts; moving the balloon moves that tip along the bubble top, and the tip leans toward the leader when the balloon is offset from the note date. Note balloons display multi-line note text, automatically choose LTR or RTL alignment from the typed language, automatically stack vertically when close notes would overlap at normal or lower zoom levels, and selected note balloons can be dragged from the balloon body or resized from a small diagonal corner grip. Selection now outlines the exact bubble path and highlights the dotted leader without drawing a large rectangle around the leader and anchor; right-clicking a note keeps that selected note state visible for context menu actions without adding the browser focus box. Double-clicking a note balloon body or text opens an inline timeline textarea for direct editing, while the sidebar hides the generic title field and uses a native multi-line balloon text editor with separate balloon and text color pickers. The app derives the internal note title from the first non-empty balloon text line for labels and confirmations. Manual note layout is saved with optional `noteOffsetX`, `noteOffsetY`, `noteWidth`, `noteHeight`, and `textColor` fields; old note JSON without those fields still loads with automatic layout and readable text color.
+Timeline items now include a note type for point annotations. Notes render with an anchor point on the central axis, dotted straight arrow leader behind the note balloon layer, and shaped bubble balloon below all timeline lines, use a single date, and stay lane-bound for ordering and editing. The bubble has a compact top tip where the dotted leader starts; moving the balloon moves that tip along the bubble top, and the tip leans toward the leader when the balloon is offset from the note date. Note balloons display multi-line note text, automatically choose LTR or RTL alignment from the typed language, automatically stack vertically when close notes would overlap at normal or lower zoom levels, and selected note balloons can be dragged from the balloon body or resized from a small diagonal corner grip. Selection now outlines the exact bubble path and highlights the dotted leader without drawing a large rectangle around the leader and anchor; right-clicking a note keeps that selected note state visible for context menu actions without adding the browser focus box. Double-clicking a note balloon body or text opens an inline timeline textarea for direct editing, while the sidebar hides the generic title field and uses a native multi-line balloon text editor with separate balloon and text color pickers. The app derives the internal note title from the first non-empty balloon text line for labels and confirmations. Manual note layout is saved with optional `noteOffsetX`, `noteOffsetY`, `noteWidth`, `noteHeight`, and `textColor` fields; old note JSON without those fields still loads with automatic layout and readable text color.
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
 
@@ -138,7 +140,7 @@ The app now tracks a current JSON file when the browser grants a File System Acc
 
 The main header shows the current file/copy state and an unsaved changes indicator. Timeline data mutations mark the document dirty; saving or loading clears the indicator.
 
-Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version is `0.2.1`.
+Versioning/changelog guidance is documented in `docs/versioning.md` and `CHANGELOG.md`. The package version is `0.2.2`.
 
 The app starts with empty data. Personal timeline JSON files are local user data and are stored under ignored `user-data/`.
 
@@ -146,7 +148,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`refactor: extract timeline info helpers` on the current `feature/fo` tip
+`da511bc Refactor timeline editor into feature modules` on `main`
 
 ## Work Completed This Session
 
@@ -178,6 +180,12 @@ Firebase should wait until the local Vite app is stable.
 - Added a Persian-capable modern sans-serif font stack without adding a font dependency.
 - Added a small rem-based UI type scale and timeline SVG text scale.
 - Normalized scattered UI and timeline font sizes onto those tokens.
+- Added central timeline geometry helpers with tests.
+- Changed the timeline renderer from a top axis to a central axis with lanes alternating above and below it.
+- Added central-axis default line labels, alternating month bands, center-axis ticks, and a hover guide line.
+- Suppressed day/month axis detail when it is too dense to read.
+- Moved note leaders and note anchors to terminate on the central axis.
+- Constrained the app shell so only the timeline viewport scrolls while the toolbar and info panel remain fixed.
 - Standardized odd intermediate font weights to common values like 500, 600, 700, and 800.
 - Applied the shared font stack to the timeline SVG labels.
 - Removed the old Rows / Lines editor sidebar section.
@@ -481,6 +489,8 @@ Firebase should wait until the local Vite app is stable.
 - Twenty-second ADR 0009 canvas slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving SVG text/id helpers into `features/timeline-editor/canvas`. The test suite now has 68 passing tests.
 - Twenty-third ADR 0009 interaction slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm run typecheck`, `git diff --check`, and `npm run build` passed after moving drag-range clamping and overlap prevention into `features/timeline-editor/interactions`. The test suite now has 73 passing tests.
 - Twenty-fourth ADR 0009 view-model slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed after moving info-panel pointer and selection text into `features/timeline-editor/timelineInfo.ts`. The test suite now has 78 passing tests.
+- Central-axis canvas slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm run typecheck`, and `npm run build` passed. Browser smoke at `http://127.0.0.1:8765/` verified one center axis at `y=272`, above/below labels (`Line +1`, `Line -1`, `Line +2`, etc.), hover guide from cursor to axis, toolbar-created events above the axis, context-menu-created events below the axis, and no browser console errors. The test suite now has 80 passing tests.
+- Central-axis refinement slice: `npm test`, `node --check src/features/timeline-editor/legacyTimelineEditor.js`, and `npm run typecheck` passed. Browser smoke at `http://127.0.0.1:8765/` verified default zoom has no day grid/ticks or month bands, `178 px/month` still hides day grid/ticks while showing month detail, note leader and anchor end at axis `y=272`, document scroll stays at `0`, toolbar/info panel positions remain fixed, `#timelineViewport` scrolls to `220`, and no browser console errors. The test suite now has 81 passing tests.
 
 ## Open Issues
 
@@ -489,11 +499,12 @@ Firebase should wait until the local Vite app is stable.
 - Firebase is not installed or configured yet.
 - Live rendering and most DOM interaction behavior still lives in `src/features/timeline-editor/legacyTimelineEditor.js`.
 - `npm audit` reports one low-severity transitive `esbuild` advisory for Windows dev-server use.
+- Central-axis dense date labels need more real-data testing at high day-level zoom.
 
 ## Suggested Commit Message
 
-`fix: restore timeline renderer after refactor`
+`feat: center timeline axis with above-below tracks`
 
 ## Next Safe Step
 
-Continue ADR 0009 by moving live state ownership into the reducer/context boundary or converting SVG rendering item by item, starting with a tested `NoteItem` React/canvas component.
+Tune the central-axis renderer with real loaded timeline data, especially dense date labels, vertical panning, and adding or dragging items above and below the axis.

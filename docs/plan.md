@@ -6,7 +6,7 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Continue the modular React timeline editor architecture migration.
+Refine the timeline canvas toward a central-axis layout while preserving local JSON compatibility.
 
 ## Now
 
@@ -39,6 +39,12 @@ Continue the modular React timeline editor architecture migration.
 - Keep read-only mode as a top toolbar icon and remove it from the context menu.
 - Add per-item locking in the context menu.
 - Let note balloons show multi-line text, avoid overlap automatically, use dotted highlighted leader lines behind shaped balloons, auto-align text direction, support separate balloon/text colors, and support lower zoom, manual drag positioning, resizing, and inline text editing.
+- Render the date axis through the center of the timeline canvas with lanes alternating above and below it.
+- Use `Line +1`, `Line -1`, `Line +2`, and `Line -2` style default labels for central-axis tracks.
+- Show a transient pointer guide from the cursor position to the central date axis.
+- Suppress month bands, month grid lines, day grid lines, day ticks, and day labels when their time unit is too narrow to read.
+- Keep note leaders and anchors terminating at the central timeline axis.
+- Keep the toolbar and timeline info panel fixed outside the scrollable timeline viewport.
 - Preserve line reorder, remove, save/load, and item lane assignment behavior.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
@@ -142,6 +148,8 @@ Continue the modular React timeline editor architecture migration.
 - Extracted SVG text fitting, width estimation, and ID sanitizing helpers into `features/timeline-editor/canvas`.
 - Extracted drag-range clamping and overlap-prevention helpers into `features/timeline-editor/interactions`.
 - Extracted timeline info-panel pointer and selection text into a tested feature view-model helper.
+- Added tested central-axis lane geometry helpers and wired the legacy SVG renderer to draw tracks above and below the axis.
+- Refined the central-axis renderer so only the timeline canvas scrolls, note leaders end at the axis, and dense day/month detail is hidden until readable.
 
 ## Risks
 
@@ -159,6 +167,7 @@ Continue the modular React timeline editor architecture migration.
 - GitHub Pages project deployments need the Vite base path to match the repository path unless a custom domain is configured.
 - Modularization can make the app harder to follow if files are split by generic type instead of timeline-editor feature boundaries.
 - Moving rendering into React must preserve existing local JSON behavior, item interactions, exports, and manual browser smoke checks.
+- The central-axis layout is still rendered by the legacy SVG controller; follow-up slices should refine dense axis labeling, vertical panning ergonomics, and item placement before moving this renderer into React.
 
 ## Verification Checklist
 

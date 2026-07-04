@@ -36,7 +36,7 @@ test("pointer info formats hovered dates and age labels", () => {
 
 test("selection info formats period dates duration line and age range", () => {
   assert.deepEqual(selectionInfoText(period, "1987-07-13"), {
-    itemLabel: "Period: School - Line 2",
+    itemLabel: "Period: School - Line -1",
     dateLine: "Start: Jul 13, 1987 / 22 Tir 1366",
     endLine: "End: Aug 20, 1990 / 29 Mordad 1369",
     durationLine: "Duration: 3 years, 1 month, 7 days",

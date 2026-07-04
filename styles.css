@@ -26,6 +26,9 @@
   --timeline-grid-minor: #e8e8e8;
   --timeline-grid-day: #f0f0f0;
   --timeline-rule: #e5e5e5;
+  --timeline-time-band: rgba(22, 119, 255, 0.035);
+  --timeline-axis-line: rgba(0, 0, 0, 0.68);
+  --timeline-cursor-guide: #fa8c16;
   --timeline-label: rgba(0, 0, 0, 0.65);
   --timeline-label-strong: rgba(0, 0, 0, 0.88);
   --selection: rgba(0, 0, 0, 0.88);
@@ -82,6 +85,9 @@
   --timeline-grid-minor: #303030;
   --timeline-grid-day: #262626;
   --timeline-rule: #303030;
+  --timeline-time-band: rgba(64, 150, 255, 0.06);
+  --timeline-axis-line: rgba(255, 255, 255, 0.74);
+  --timeline-cursor-guide: #ff7a45;
   --timeline-label: rgba(255, 255, 255, 0.65);
   --timeline-label-strong: rgba(255, 255, 255, 0.88);
   --selection: #f8fafc;
@@ -119,6 +125,9 @@
     --timeline-grid-minor: #303030;
     --timeline-grid-day: #262626;
     --timeline-rule: #303030;
+    --timeline-time-band: rgba(64, 150, 255, 0.06);
+    --timeline-axis-line: rgba(255, 255, 255, 0.74);
+    --timeline-cursor-guide: #ff7a45;
     --timeline-label: rgba(255, 255, 255, 0.65);
     --timeline-label-strong: rgba(255, 255, 255, 0.88);
     --selection: #f8fafc;
@@ -137,6 +146,11 @@ body {
   height: 100%;
 }
 
+#root {
+  height: 100%;
+  min-height: 0;
+}
+
 body {
   margin: 0;
   background:
@@ -147,6 +161,7 @@ body {
   line-height: var(--line-normal);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
 }
 
 button,
@@ -168,7 +183,8 @@ textarea:disabled {
 }
 
 .app-shell {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -658,10 +674,12 @@ p {
 
 .workspace {
   --sidebar-width: 320px;
-  flex: 1;
+  flex: 1 1 0;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
   transition: grid-template-columns 180ms ease;
 }
 
@@ -1288,11 +1306,13 @@ button:focus-visible,
 .timeline-stage {
   min-width: 0;
   min-height: 0;
+  height: 100%;
   padding: 16px;
   display: grid;
-  align-content: start;
-  grid-template-rows: auto auto auto;
+  align-content: stretch;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 12px;
+  overflow: hidden;
 }
 
 .tool-dock {
@@ -1365,6 +1385,7 @@ button:focus-visible,
 .timeline-viewport {
   position: relative;
   min-height: 0;
+  height: 100%;
   overflow: auto;
   cursor: grab;
   background:
@@ -1756,6 +1777,11 @@ button:focus-visible,
   fill: var(--timeline-bg);
 }
 
+.time-band-alternate {
+  fill: var(--timeline-time-band);
+  pointer-events: none;
+}
+
 .grid-major {
   stroke: var(--timeline-grid-major);
   stroke-width: 1;
@@ -1774,6 +1800,31 @@ button:focus-visible,
 .lane-rule {
   stroke: var(--timeline-rule);
   stroke-width: 1;
+}
+
+.center-axis-line {
+  stroke: var(--timeline-axis-line);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.axis-tick {
+  stroke: var(--timeline-axis-line);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.axis-tick-day {
+  stroke-width: 2;
+  opacity: 0.78;
+}
+
+.cursor-axis-guide {
+  stroke: var(--timeline-cursor-guide);
+  stroke-width: 2.5;
+  stroke-dasharray: 7 7;
+  stroke-linecap: round;
+  pointer-events: none;
 }
 
 .lane-background {
