@@ -6,6 +6,10 @@ This project follows semantic versioning. The current package version is `0.3.0`
 
 ## Unreleased
 
+### Changed
+
+- Added page description, Open Graph, Twitter card, app name, and theme-color metadata so shared app links render better in chats, search, and social media.
+
 ## 0.3.0 - 2026-07-04
 
 ### Changed

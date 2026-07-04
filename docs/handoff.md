@@ -36,7 +36,7 @@ The release workflow now skips uploading the static zip when the same release as
 
 Manual release workflow dispatch now checks out the selected workflow commit and uses the input tag as the release target. This allows an intentional same-version release refresh from `main` when the package version still matches the release tag.
 
-The app shell now includes a compact footer with the app name and package version from Vite build metadata.
+The app shell now includes a compact footer with the app name and package version from Vite build metadata. `index.html` also includes page description, Open Graph, Twitter card, app name, and theme-color metadata so shared app links render with a useful title and description. Social preview image metadata is intentionally left out until a final logo or preview image exists.
 
 The tracked `.DS_Store` file has been removed; `.gitignore` already ignores future macOS `.DS_Store` files.
 
@@ -325,6 +325,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
+- App share metadata slice: `npm run build`, `git diff --check`, and `rg -n "description|og:title|og:description|og:url|twitter:card|twitter:title|twitter:description|theme-color|application-name" dist/index.html index.html` passed. The build still reports the expected Vite chunk-size warning.
 - Release 0.3.0 prep: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `node scripts/extract-release-notes.mjs 0.3.0 /private/tmp/timeline-release-notes-0.3.0.md`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The build still reports the expected Vite chunk-size warning.
 - Current zoom performance and empty-start slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The test suite now has 93 passing tests. The build still reports the expected Vite chunk-size warning.
 - Browser smoke through Vite at `http://127.0.0.1:8766/`: the empty timeline loaded from `2025-07-04` to `2026-07-04`, fitted at `50 px/month`, had SVG width `919` matching the viewport width, and started with `scrollLeft` `0`.

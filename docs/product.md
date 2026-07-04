@@ -134,6 +134,7 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 - Layout changes should not alter saved timeline data.
 - The app should show a compact footer with the app name and current package version.
 - The displayed app version should come from build metadata and should not be saved into timeline JSON.
+- Shared links should expose a useful page title and social preview description for search engines, chats, and social media.
 
 ## Acceptance Scenarios
 
@@ -152,6 +153,13 @@ When the timeline renders
 Then the empty canvas shows a clear centered empty state
 And the one-year empty range is fitted into view
 And the timeline grid is not visually stretched or pushed to one side.
+
+### Share App Link
+
+Given someone shares the app URL in a chat, search result, or social media preview
+When the page metadata is read
+Then the preview title is `Timeline Studio`
+And the preview description explains that the app creates, edits, and exports personal timelines.
 
 ### Create An Event
 
