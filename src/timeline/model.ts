@@ -1,5 +1,6 @@
 import {
   addDaysIso,
+  addYearsIso,
   clamp,
   compareIso,
   isoFromYearValue,
@@ -129,13 +130,12 @@ interface LegacyItemInput {
 }
 
 export function createEmptyTimeline(): TimelineDocument {
-  const year = new Date().getFullYear();
   const today = todayIso();
   return {
     version: 2,
     settings: {
       title: "New Timeline",
-      startDate: yearStartIso(year),
+      startDate: addYearsIso(today, -1),
       endDate: today,
       autoEndDate: true,
       itemsLocked: false,

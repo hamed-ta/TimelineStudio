@@ -51,6 +51,8 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Fix legacy-bound sidebar fields so focusing them does not clear values and timeline titles can include spaces while editing.
 - Move Fit, zoom, height, read-only, and right-aligned theme controls into the action toolbar, remove the toolbar heading/collapse row, and center the compact app header metadata line.
 - Let users save display-calendar preferences for Gregorian, Persian / Solar Hijri, or both, align Persian-only axis ticks to Persian / Solar Hijri boundaries, and preserve Gregorian ISO date storage and input fields.
+- Keep Persian-only and close-zoom axis rendering responsive by caching Persian calendar parts and batching dense day grid/tick SVG output.
+- Start new empty timelines with a fitted one-year range from the same day last year through today.
 - Preserve line reorder, remove, save/load, and item lane assignment behavior.
 - Preserve birth line rendering, save/load behavior, and age calculations.
 - Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.

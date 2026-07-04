@@ -64,6 +64,10 @@ Timeline view controls combine shortcuts with compact controls. `Ctrl`/`Command`
 
 Timeline settings now include a saved display-calendar preference. Users can show Gregorian dates, Persian / Solar Hijri dates, or both in the header range, axis labels, item date preview, pointer details, and selection details. This is display-only: timeline start/end inputs, item date inputs, saved item dates, drag math, age math, and duration math still use Gregorian ISO dates. Old JSON without `settings.displayCalendars` loads with both calendars enabled. When Persian / Solar Hijri is the only selected display calendar, central-axis year and month ticks align to Persian / Solar Hijri calendar starts instead of Gregorian year/month starts.
 
+Persian-only and close-zoom axis rendering has been optimized. The legacy SVG renderer caches Persian / Solar Hijri date parts and month-start scans, reduces day label density on longer ranges, and batches dense daily grid/tick output into SVG paths instead of appending one SVG line per day. This keeps the display-calendar setting as presentation-only and preserves Gregorian ISO storage.
+
+New empty timelines now default to a one-year range from the same day last year through today. On first render with no items, the editor fits that one-year empty range into the timeline viewport and starts at the beginning of the range.
+
 The bottom pointer/selection information panel is collapsible. It keeps the legacy-updated pointer and selection nodes mounted for runtime updates, but hides their content in a compact row when collapsed so the timeline canvas has more vertical room. Selection lane metadata now appears as a separate detail line instead of being appended to the selection title. Expanded info content wraps without an internal scrollbar, and the collapsed toggle has enough room to avoid clipping behind the panel border. The main header, timeline context card, timeline stage padding, and action toolbar spacing are also tighter.
 
 Legacy-bound text and date fields use native inputs with Ant styling instead of Ant `Input` wrappers. This avoids Ant's internal uncontrolled state overwriting values that the legacy runtime writes directly to the DOM. Timeline title editing now preserves typed spaces while the user is editing instead of trimming on every keystroke.
@@ -321,6 +325,9 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
+- Current zoom performance and empty-start slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The test suite now has 93 passing tests. The build still reports the expected Vite chunk-size warning.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: the empty timeline loaded from `2025-07-04` to `2026-07-04`, fitted at `50 px/month`, had SVG width `919` matching the viewport width, and started with `scrollLeft` `0`.
+- Browser smoke: in Persian-only mode at `320 px/month`, the axis still labeled the Persian year start as `1 Farvardin 1405`, dense daily grid and daily ticks rendered as one SVG path each, and no `line.grid-day` or `line.axis-tick-day` nodes were created. The page was reloaded back to both display calendars at the fitted empty range.
 - Current display-calendar validation: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The test suite now has 91 passing tests, including display-calendar normalization, date formatting, Persian / Solar Hijri date parts, and pointer/selection info coverage. The build still reports the expected Vite chunk-size warning.
 - Browser smoke through Vite at `http://127.0.0.1:8766/`: default display calendars showed `Jan 1, 2026 / 11 Dey 1404 to Jul 4, 2026 / 13 Tir 1405`; Gregorian-only showed `Jan 1, 2026 to Jul 4, 2026`; Persian-only showed `11 Dey 1404 to 13 Tir 1405` while keeping `#startDateInput` as `2026-01-01`.
 - Browser smoke: Persian-only central-axis labels showed `1405` at the Persian / Solar Hijri year start and did not show a Gregorian `2026` year label.

@@ -142,13 +142,15 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 Given the user opens the app for the first time
 When no timeline file has been loaded
 Then the timeline starts empty
-And no personal sample data is displayed.
+And no personal sample data is displayed
+And the timeline range starts on the same day last year and ends today.
 
 ### Show Empty Timeline State
 
 Given the timeline has no items
 When the timeline renders
 Then the empty canvas shows a clear centered empty state
+And the one-year empty range is fitted into view
 And the timeline grid is not visually stretched or pushed to one side.
 
 ### Create An Event

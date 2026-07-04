@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   axisDetailForZoom,
+  axisDayLabelInterval,
   centralTimelineGeometry,
   defaultEndDateForSnap,
   fitZoomForTimeline,
@@ -162,4 +163,12 @@ test("axis detail helper suppresses clutter when units are too narrow", () => {
     dayTicks: true,
     dayLabels: true,
   });
+});
+
+test("axis day label interval avoids dense labels on long timelines", () => {
+  assert.equal(axisDayLabelInterval(365, 320), 1);
+  assert.equal(axisDayLabelInterval(1200, 320), 5);
+  assert.equal(axisDayLabelInterval(2400, 320), 10);
+  assert.equal(axisDayLabelInterval(5000, 320), 0);
+  assert.equal(axisDayLabelInterval(365, 120), 5);
 });

@@ -99,6 +99,15 @@ export function axisDetailForZoom(zoom: number, avgDaysPerMonth = 365.2425 / 12)
   };
 }
 
+export function axisDayLabelInterval(totalDays: number, zoom: number): number {
+  const safeDays = Math.max(0, Math.floor(Number(totalDays) || 0));
+  const safeZoom = Math.max(0, Number(zoom) || 0);
+  if (safeZoom >= 300 && safeDays <= 370) return 1;
+  if (safeDays <= 1800) return 5;
+  if (safeDays <= 3650) return 10;
+  return 0;
+}
+
 export function timelineWheelAction(input: TimelineWheelInput): TimelineWheelAction {
   const hasAlt = Boolean(input.altKey || input.getModifierState?.("Alt") || input.getModifierState?.("Option"));
   const hasShift = Boolean(input.shiftKey || input.getModifierState?.("Shift"));

@@ -47,6 +47,8 @@ This project follows semantic versioning. The current package version is `0.2.2`
 - Added saved display-calendar settings for Gregorian, Persian / Solar Hijri, or both, while keeping all stored timeline dates as Gregorian ISO values.
 - Aligned central-axis year and month ticks to Persian / Solar Hijri boundaries when Persian / Solar Hijri is the only selected display calendar.
 - Improved the timeline information panel so selection lane appears as its own detail line, expanded content avoids internal scrollbars, and the collapsed toggle no longer clips into the panel border.
+- Optimized Persian-only and close-zoom axis rendering by caching Persian / Solar Hijri date parts, reducing long-range day-label density, and batching dense daily grid/tick SVG output into paths.
+- Changed new empty timelines to open on a fitted one-year range from the same day last year through today.
 
 ### Fixed
 
