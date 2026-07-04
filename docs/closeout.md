@@ -1,6 +1,6 @@
-# Closeup Workflow
+# Closeout Workflow
 
-Use this workflow before ending a meaningful work session or when the user says `/closeup`.
+Use this workflow before ending a meaningful work session or when the user says `/closeout`.
 
 1. Run relevant verification.
    - Always run `node --check src/features/timeline-editor/legacyTimelineEditor.js` after legacy editor JavaScript changes.

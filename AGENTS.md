@@ -22,7 +22,7 @@ Dependencies are allowed when they are the reasonable way to deliver a feature s
 - `docs/plan.md`: current short-term plan and priorities
 - `docs/handoff.md`: current state for session handoff
 - `docs/startup.md`: `/startup` workflow
-- `docs/closeup.md`: `/closeup` workflow
+- `docs/closeout.md`: `/closeout` workflow
 - `docs/versioning.md`: version and changelog policy
 - `docs/workflows/red-green-refactor.md`: required feature workflow
 - `docs/workflows/browser-smoke.md`: manual browser verification checklist
@@ -60,7 +60,7 @@ http://127.0.0.1:8765/
 
 When the user says `/startup`, follow `docs/startup.md`.
 
-When the user says `/closeup`, follow `docs/closeup.md`.
+When the user says `/closeout`, follow `docs/closeout.md`.
 
 ## Required Development Loop
 

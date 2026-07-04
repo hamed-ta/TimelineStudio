@@ -14,7 +14,7 @@ Use:
 - `docs/product.md` for product behavior and BDD scenarios
 - `docs/plan.md` for short-term planning
 - `docs/handoff.md` for session state
-- `docs/startup.md` and `docs/closeup.md` for session boundaries
+- `docs/startup.md` and `docs/closeout.md` for session boundaries
 - `docs/workflows/red-green-refactor.md` for the required implementation loop
 - `docs/workflows/browser-smoke.md` for manual UI verification until automated browser tests exist
 

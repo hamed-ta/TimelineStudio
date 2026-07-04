@@ -165,7 +165,7 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Browser file picker support varies.
 - Export behavior may differ across browsers.
 - Manual testing is still doing work that automated browser tests should eventually cover.
-- Workflow docs can drift if `/closeup` is not used consistently.
+- Workflow docs can drift if `/closeout` is not used consistently.
 - Personal JSON files should stay in ignored `user-data/`.
 - The framework migration can accidentally change timeline behavior if it is done as a rewrite instead of small preservation steps.
 - UI changes must preserve the DOM IDs and data attributes that the legacy timeline editor controller still binds to until the controller is migrated.
