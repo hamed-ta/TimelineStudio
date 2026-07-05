@@ -9,6 +9,11 @@ This project follows semantic versioning. The current package version is `0.3.0`
 ### Changed
 
 - Added page description, Open Graph, Twitter card, app name, and theme-color metadata so shared app links render better in chats, search, and social media.
+- Allowed note balloons to be positioned above or below the central timeline with matching top or bottom tips.
+- Changed marker titles into draggable callouts with leader arrows that can be moved above or below the central timeline.
+- Let above-axis note balloons and marker callouts expand the scrollable timeline canvas upward instead of clamping to the top line.
+- Changed marker callouts into resizable tipped balloons with dashed leaders that connect to the top or bottom end of the solid vertical marker line.
+- Kept the note resize grip aligned to the balloon body when the note is positioned above the timeline.
 
 ## 0.3.0 - 2026-07-04
 

@@ -39,6 +39,11 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Keep read-only mode as a top toolbar icon and remove it from the context menu.
 - Add per-item locking in the context menu.
 - Let note balloons show multi-line text, avoid overlap automatically, use dotted highlighted leader lines behind shaped balloons, auto-align text direction, support separate balloon/text colors, and support lower zoom, manual drag positioning, resizing, and inline text editing.
+- Let note balloons be positioned above or below the central timeline.
+- Render marker titles as draggable callouts with leader arrows that can sit above or below the central timeline.
+- Let above-axis note and marker callouts expand the scrollable canvas upward instead of clamping at the top line.
+- Render marker callouts as resizable tipped balloons with dashed leaders to the top or bottom end of the solid marker line.
+- Keep the note resize grip aligned to the balloon body when the balloon uses a bottom tip above the axis.
 - Render the date axis through the center of the timeline canvas with lanes alternating above and below it.
 - Use `Line +1`, `Line -1`, `Line +2`, and `Line -2` style default labels for central-axis tracks.
 - Show a transient pointer guide from the cursor position to the central date axis.

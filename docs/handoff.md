@@ -46,7 +46,7 @@ Timeline lines can now be reordered from the editor sidebar or from the timeline
 
 Line rename, background color, add, and remove controls now live in the timeline label area. Right-clicking or pressing Enter on a line label opens the line editor popover. The old Rows / Lines sidebar section has been removed. The timeline has one add-line control below the last line instead of a plus control on every line.
 
-Timeline items now include a marker type for global reference dates. Markers render as vertical lines across all visible timeline lines, use a single date, ignore lane assignment, and are available from the toolbar and item type selector.
+Timeline items now include a marker type for global reference dates. Markers render as solid vertical lines across all visible timeline lines, use a single date, ignore lane assignment, and are available from the toolbar and item type selector. Marker titles render as draggable, resizable tipped callout balloons with dashed leader arrows to the nearest top or bottom endpoint of the vertical marker line. The callout appears below the marker by default and can be dragged above or below the central timeline; moving it above the top line expands the scrollable canvas upward. Manual marker label layout is saved with optional `labelOffsetX`, `labelOffsetY`, `labelWidth`, and `labelHeight` fields; old marker JSON without those fields still loads with the default callout layout.
 
 Timeline items now include a birth type for a person's birthdate. Birth items render as prominent vertical all-line markers, place their label on the left side of the birthdate line when possible, ignore lane assignment, and can be created from the toolbar or item type selector.
 
@@ -94,7 +94,7 @@ Zoom controls now use Ant Design icons. Manual zoom-out, wheel zoom-out, Fit, an
 
 Empty timelines show a centered non-interactive empty state overlay, and the timeline SVG/grid expands to at least the visible viewport width so the empty canvas does not look pushed to one side.
 
-Timeline items now include a note type for point annotations. Notes render with an anchor point on the central axis, dotted straight arrow leader behind the note balloon layer, and shaped bubble balloon below all timeline lines, use a single date, and stay lane-bound for ordering and editing. The bubble has a compact top tip where the dotted leader starts; moving the balloon moves that tip along the bubble top, and the tip leans toward the leader when the balloon is offset from the note date. Note balloons display multi-line note text, automatically choose LTR or RTL alignment from the typed language, automatically stack vertically when close notes would overlap at normal or lower zoom levels, and selected note balloons can be dragged from the balloon body or resized from a small diagonal corner grip. Selection now outlines the exact bubble path and highlights the dotted leader without drawing a large rectangle around the leader and anchor; right-clicking a note keeps that selected note state visible for context menu actions without adding the browser focus box. Double-clicking a note balloon body or text opens an inline timeline textarea for direct editing, while the sidebar hides the generic title field and uses a native multi-line balloon text editor with separate balloon and text color pickers. The app derives the internal note title from the first non-empty balloon text line for labels and confirmations. Manual note layout is saved with optional `noteOffsetX`, `noteOffsetY`, `noteWidth`, `noteHeight`, and `textColor` fields; old note JSON without those fields still loads with automatic layout and readable text color.
+Timeline items now include a note type for point annotations. Notes render with an anchor point on the central axis, dotted straight arrow leader behind the note balloon layer, and a shaped bubble balloon that can sit above or below the central timeline, use a single date, and stay lane-bound for ordering and editing. The bubble has a compact tip where the dotted leader starts; the tip appears on the top edge for below-axis notes and on the bottom edge for above-axis notes. Moving the balloon moves that tip along the bubble edge, and the tip leans toward the leader when the balloon is offset from the note date. Note balloons display multi-line note text, automatically choose LTR or RTL alignment from the typed language, automatically stack vertically when close notes would overlap at normal or lower zoom levels, and selected note balloons can be dragged from the balloon body or resized from a small diagonal corner grip. The resize grip stays on the balloon body corner when the note uses a bottom tip above the axis. Above-axis note balloons expand the scrollable canvas upward when dragged past the top line instead of being clamped to that line. Selection now outlines the exact bubble path and highlights the dotted leader without drawing a large rectangle around the leader and anchor; right-clicking a note keeps that selected note state visible for context menu actions without adding the browser focus box. Double-clicking a note balloon body or text opens an inline timeline textarea for direct editing, while the sidebar hides the generic title field and uses a native multi-line balloon text editor with separate balloon and text color pickers. The app derives the internal note title from the first non-empty balloon text line for labels and confirmations. Manual note layout is saved with optional `noteOffsetX`, `noteOffsetY`, `noteWidth`, `noteHeight`, and `textColor` fields; old note JSON without those fields still loads with automatic layout and readable text color.
 
 Event markers now use a richer visual treatment with a gradient fill, shadow, beveled edge, and small highlight so they read as distinct point events rather than flat dots.
 
@@ -222,6 +222,11 @@ Firebase should wait until the local Vite app is stable.
 - Added per-item lock and unlock commands.
 - Added an optional `locked` item field with backwards-compatible normalization.
 - Renamed the top toolbar all-items lock control to read-only mode and removed it from the context menu.
+- Allowed note balloons to be placed and dragged above or below the central timeline, with the bubble tip switching to the correct edge.
+- Changed marker titles into draggable callouts with leader arrows that can be moved above or below the central timeline.
+- Let above-axis note balloons and marker callouts expand the scrollable SVG canvas upward instead of stopping at the top line.
+- Changed marker callouts into resizable tipped balloons with dashed leaders to solid marker-line endpoints.
+- Kept above-axis note resize grips aligned to the balloon body instead of the bottom tip.
 - Updated product notes, changelog, plan, and handoff docs.
 - Added ADR 0007 for the Ant Design UI system decision.
 - Installed `antd` and `@ant-design/icons`, and removed `lucide-react`.
@@ -280,6 +285,10 @@ Firebase should wait until the local Vite app is stable.
 - `src/features/timeline-editor/layout/timelineLayout.ts`
 - `src/features/timeline-editor/TimelineEditor.tsx`
 - `src/features/timeline-editor/legacyTimelineEditor.js`
+- `src/features/timeline-editor/layout/noteLayout.ts`
+- `src/features/timeline-editor/layout/noteLayout.test.js`
+- `src/timeline/model.ts`
+- `src/timeline/model.test.js`
 - `src/main.tsx`
 - `vite.config.ts`
 - `styles.css`
@@ -325,6 +334,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
+- Current note and marker callout slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The test suite now has 100 passing tests. The build still reports the expected Vite chunk-size warning.
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: adding a note and marker created below-axis callouts; dragging the note balloon above the top line expanded the SVG to `viewBox="0 -29 919 541"` with grid lines starting at `y=-29`; the note leader ran from `y1=35` to the axis at `y2=272`; the above-axis note resize grip stayed on the balloon body corner instead of the bottom-tip apex. The marker line rendered solid (`strokeDasharray: none`), the marker callout leader stayed dashed (`strokeDasharray: 4px, 6px`), the marker label rendered as a tipped path, resizing increased it from `90x44` to `132x68`, the leader connected to the bottom endpoint when below the axis (`y2=452`) and the top endpoint when above the axis (`y2=24`), and no browser warnings or errors were reported.
 - App share metadata slice: `npm run build`, `git diff --check`, and `rg -n "description|og:title|og:description|og:url|twitter:card|twitter:title|twitter:description|theme-color|application-name" dist/index.html index.html` passed. The build still reports the expected Vite chunk-size warning.
 - Release 0.3.0 prep: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `node scripts/extract-release-notes.mjs 0.3.0 /private/tmp/timeline-release-notes-0.3.0.md`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The build still reports the expected Vite chunk-size warning.
 - Current zoom performance and empty-start slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The test suite now has 93 passing tests. The build still reports the expected Vite chunk-size warning.

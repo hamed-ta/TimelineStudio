@@ -89,6 +89,10 @@ export interface TimelineItem {
   noteOffsetY?: number;
   noteWidth?: number;
   noteHeight?: number;
+  labelOffsetX?: number;
+  labelOffsetY?: number;
+  labelWidth?: number;
+  labelHeight?: number;
 }
 
 export interface TimelineDocument {
@@ -127,6 +131,10 @@ interface LegacyItemInput {
   noteOffsetY?: unknown;
   noteWidth?: unknown;
   noteHeight?: unknown;
+  labelOffsetX?: unknown;
+  labelOffsetY?: unknown;
+  labelWidth?: unknown;
+  labelHeight?: unknown;
 }
 
 export function createEmptyTimeline(): TimelineDocument {
@@ -256,9 +264,15 @@ export function normalizeItem(item: unknown, defaultStartDate = todayIso()): Tim
     const textColor = normalizeOptionalColor(source.textColor);
     if (textColor) normalized.textColor = textColor;
     assignOptionalNumber(normalized, "noteOffsetX", source.noteOffsetX, -2000, 2000);
-    assignOptionalNumber(normalized, "noteOffsetY", source.noteOffsetY, 0, 2000);
+    assignOptionalNumber(normalized, "noteOffsetY", source.noteOffsetY, -2000, 2000);
     assignOptionalNumber(normalized, "noteWidth", source.noteWidth, 84, 420);
     assignOptionalNumber(normalized, "noteHeight", source.noteHeight, 44, 280);
+  }
+  if (type === "marker") {
+    assignOptionalNumber(normalized, "labelOffsetX", source.labelOffsetX, -2000, 2000);
+    assignOptionalNumber(normalized, "labelOffsetY", source.labelOffsetY, -2000, 2000);
+    assignOptionalNumber(normalized, "labelWidth", source.labelWidth, 84, 420);
+    assignOptionalNumber(normalized, "labelHeight", source.labelHeight, 44, 280);
   }
   return normalized;
 }

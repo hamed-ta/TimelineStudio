@@ -5,6 +5,8 @@ import {
   fitNoteText,
   findAvailableNoteY,
   noteBubblePath,
+  noteCanvasTop,
+  noteResizeHandlePosition,
   noteTextFirstBaseline,
   noteRectsOverlap,
   textDirectionFor,
@@ -45,6 +47,23 @@ test("find available note y walks multiple blockers", () => {
   ];
 
   assert.equal(findAvailableNoteY(rect, placed, 100, 10), 200);
+});
+
+test("note canvas top expands above zero for above-axis notes", () => {
+  const layouts = [
+    { x: 0, y: 30, width: 100, height: 40 },
+    { x: 0, y: -120, width: 100, height: 40 },
+  ];
+
+  assert.equal(noteCanvasTop(layouts, 12), -132);
+});
+
+test("note canvas top stays zero when notes fit below the top edge", () => {
+  const layouts = [
+    { x: 0, y: 30, width: 100, height: 40 },
+  ];
+
+  assert.equal(noteCanvasTop(layouts, 12), 0);
 });
 
 const bubbleOptions = {
@@ -106,6 +125,34 @@ test("note bubble path clamps the tip into the rounded body", () => {
   assert.match(path, /L 33 20/);
 });
 
+test("note bubble path can place the tip on the bottom edge", () => {
+  const path = noteBubblePath({
+    x: 10,
+    y: 20,
+    width: 100,
+    height: 50,
+    tipX: 60,
+    anchorX: 60,
+    tipSide: "bottom",
+  }, bubbleOptions);
+
+  assert.equal(path, [
+    "M 24 20",
+    "H 96",
+    "Q 110 20 110 34",
+    "V 49",
+    "Q 110 63 96 63",
+    "H 69",
+    "L 60 70",
+    "L 51 63",
+    "H 24",
+    "Q 10 63 10 49",
+    "V 34",
+    "Q 10 20 24 20",
+    "Z",
+  ].join(" "));
+});
+
 const measureText = (text) => String(text || "").length * 10;
 const textOptions = {
   tipHeight: 7,
@@ -151,4 +198,45 @@ test("note text first baseline centers the visible text block in the balloon bod
   }, textOptions);
 
   assert.equal(baseline, 53);
+});
+
+test("note text first baseline supports bottom-tip balloons", () => {
+  const baseline = noteTextFirstBaseline({
+    y: 20,
+    height: 50,
+    lines: ["hello"],
+    tipSide: "bottom",
+  }, textOptions);
+
+  assert.equal(baseline, 46);
+});
+
+test("note resize handle stays on the body corner for bottom-tip balloons", () => {
+  assert.deepEqual(noteResizeHandlePosition({
+    x: 10,
+    y: 20,
+    width: 100,
+    height: 50,
+    tipX: 60,
+    anchorX: 60,
+    tipSide: "bottom",
+  }, 12, 7), {
+    x: 97,
+    y: 50,
+  });
+});
+
+test("note resize handle uses the lower body corner for top-tip balloons", () => {
+  assert.deepEqual(noteResizeHandlePosition({
+    x: 10,
+    y: 20,
+    width: 100,
+    height: 50,
+    tipX: 60,
+    anchorX: 60,
+    tipSide: "top",
+  }, 12, 7), {
+    x: 97,
+    y: 57,
+  });
 });

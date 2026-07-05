@@ -2214,7 +2214,6 @@ body.is-timeline-height-dragging * {
 
 .marker-line {
   stroke-width: 2;
-  stroke-dasharray: 7 7;
   stroke-linecap: round;
 }
 
@@ -2223,14 +2222,33 @@ body.is-timeline-height-dragging * {
   stroke-width: 2;
 }
 
+.marker-label-leader {
+  fill: none;
+  stroke-width: 2;
+  stroke-dasharray: 4 6;
+  stroke-linecap: round;
+  opacity: 0.88;
+  pointer-events: none;
+}
+
+.marker-label-bg {
+  stroke: color-mix(in srgb, var(--timeline-bg) 70%, transparent);
+  stroke-width: 1;
+  cursor: move;
+  filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--text) 14%, transparent));
+}
+
 .marker-label {
   font-size: var(--timeline-font-xs);
   font-weight: 700;
-  paint-order: stroke;
-  pointer-events: none;
-  stroke: var(--timeline-bg);
-  stroke-linejoin: round;
-  stroke-width: 4px;
+  dominant-baseline: auto;
+  cursor: move;
+  pointer-events: auto;
+}
+
+.item-marker.selected .marker-label-bg {
+  stroke: var(--selection);
+  stroke-width: 2;
 }
 
 .birth-hit {

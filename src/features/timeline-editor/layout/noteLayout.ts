@@ -8,6 +8,7 @@ export type NoteRect = {
 export type NoteBubbleLayout = NoteRect & {
   tipX: number;
   anchorX: number;
+  tipSide?: "top" | "bottom";
 };
 
 export type NoteBubblePathOptions = {
@@ -29,6 +30,12 @@ export type NoteTextBaselineLayout = {
   y: number;
   height: number;
   lines: string[];
+  tipSide?: "top" | "bottom";
+};
+
+export type NoteResizeHandleLayout = {
+  x: number;
+  y: number;
 };
 
 export function findAvailableNoteY(
@@ -46,6 +53,15 @@ export function findAvailableNoteY(
   return candidate.y;
 }
 
+export function noteCanvasTop(layouts: Iterable<NoteRect>, padding: number): number {
+  const safePadding = Math.max(0, Number(padding) || 0);
+  let top = 0;
+  for (const layout of layouts) {
+    top = Math.min(top, Number(layout.y) - safePadding);
+  }
+  return top;
+}
+
 export function noteRectsOverlap(a: NoteRect, b: NoteRect, gap: number): boolean {
   return a.x < b.x + b.width + gap
     && a.x + a.width + gap > b.x
@@ -54,6 +70,11 @@ export function noteRectsOverlap(a: NoteRect, b: NoteRect, gap: number): boolean
 }
 
 export function noteBubblePath(layout: NoteBubbleLayout, options: NoteBubblePathOptions): string {
+  if (layout.tipSide === "bottom") return bottomTipNoteBubblePath(layout, options);
+  return topTipNoteBubblePath(layout, options);
+}
+
+function topTipNoteBubblePath(layout: NoteBubbleLayout, options: NoteBubblePathOptions): string {
   const pad = options.pad ?? 0;
   const x = layout.x - pad;
   const y = layout.y - pad;
@@ -92,11 +113,58 @@ export function noteTextFirstBaseline(
   layout: NoteTextBaselineLayout,
   options: NoteTextLayoutOptions,
 ): number {
-  const bodyY = layout.y + options.tipHeight;
+  const bodyY = layout.tipSide === "bottom" ? layout.y : layout.y + options.tipHeight;
   const bodyHeight = Math.max(0, layout.height - options.tipHeight);
   const blockHeight = Math.max(options.lineHeight, layout.lines.length * options.lineHeight);
   const blockTop = bodyY + Math.max(options.verticalPadding, (bodyHeight - blockHeight) / 2);
   return blockTop + options.baselineOffset;
+}
+
+export function noteResizeHandlePosition(
+  layout: NoteBubbleLayout,
+  handleSize: number,
+  tipHeight: number,
+): NoteResizeHandleLayout {
+  const bodyBottom = layout.tipSide === "bottom" ? layout.y + layout.height - tipHeight : layout.y + layout.height;
+  return {
+    x: layout.x + layout.width - handleSize - 1,
+    y: bodyBottom - handleSize - 1,
+  };
+}
+
+function bottomTipNoteBubblePath(layout: NoteBubbleLayout, options: NoteBubblePathOptions): string {
+  const pad = options.pad ?? 0;
+  const x = layout.x - pad;
+  const y = layout.y - pad;
+  const width = layout.width + pad * 2;
+  const height = layout.height + pad * 2;
+  const right = x + width;
+  const bottom = y + height;
+  const tipHeight = options.tipHeight + pad;
+  const tipHalf = options.tipHalfWidth + pad / 2;
+  const bodyBottom = bottom - tipHeight;
+  const radius = Math.min(14 + pad / 2, width / 4, Math.max(4, (height - tipHeight) / 3));
+  const tipApexX = clampNumber(layout.tipX, x + radius + tipHalf, right - radius - tipHalf);
+  const tipLean = clampNumber((layout.anchorX - tipApexX) * 0.18, -options.tipMaxLean, options.tipMaxLean);
+  const tipBaseX = clampNumber(tipApexX - tipLean, x + radius + tipHalf, right - radius - tipHalf);
+  const tipLeft = tipBaseX - tipHalf;
+  const tipRight = tipBaseX + tipHalf;
+
+  return [
+    `M ${x + radius} ${y}`,
+    `H ${right - radius}`,
+    `Q ${right} ${y} ${right} ${y + radius}`,
+    `V ${bodyBottom - radius}`,
+    `Q ${right} ${bodyBottom} ${right - radius} ${bodyBottom}`,
+    `H ${tipRight}`,
+    `L ${tipApexX} ${bottom}`,
+    `L ${tipLeft} ${bodyBottom}`,
+    `H ${x + radius}`,
+    `Q ${x} ${bodyBottom} ${x} ${bodyBottom - radius}`,
+    `V ${y + radius}`,
+    `Q ${x} ${y} ${x + radius} ${y}`,
+    "Z",
+  ].join(" ");
 }
 
 export function wrapNoteText(

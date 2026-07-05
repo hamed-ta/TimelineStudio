@@ -22,7 +22,7 @@ A point-in-time item with a title, date, optional description, and assigned line
 
 ### Marker
 
-A point-in-time item that draws a vertical line through every timeline line, such as a birthdate or other global reference date.
+A point-in-time item that draws a vertical line through every timeline line, such as a birthdate or other global reference date. Marker text should appear in a movable callout with a leader arrow pointing back to the marker date.
 
 ### Birth
 
@@ -31,7 +31,7 @@ Its label should prefer the left side of the vertical line to avoid overlapping 
 
 ### Note
 
-A point-in-time annotation with a straight leader arrow pointing to a date and a balloon below all timeline lines. A note does not require a date range.
+A point-in-time annotation with a straight leader arrow pointing to a date and a balloon that can sit above or below the central timeline. A note does not require a date range.
 
 ### Period
 
@@ -180,6 +180,12 @@ And the marker remains readable against the timeline canvas.
 Given a timeline has multiple lines
 When the user creates a marker on `2001-03-04`
 Then a vertical line appears at the correct date position across all visible lines
+And the marker title appears in a movable callout below the marker by default
+And the vertical marker line is solid
+And the callout balloon has a tip and a dashed leader pointing to the nearest top or bottom end of the vertical marker line, not the center of the line
+And the user can drag the marker callout above or below the central timeline
+And dragging the marker callout above the top line expands the scrollable canvas upward instead of clamping the callout to the top line
+And the user can resize the selected marker callout balloon with a compact corner grip
 And the marker is still present after save/load.
 
 ### Create A Birthdate
@@ -264,15 +270,16 @@ Then a leader arrow points to the correct date position
 And the leader line is dotted and renders behind note balloons
 And the leader line is highlighted when the note is selected
 And the leader line terminates at the central timeline axis
-And a shaped balloon with a movable tip below all timeline lines displays the note text
+And a shaped balloon with a movable tip above or below the central timeline displays the note text
 And the balloon tip leans toward the leader line when the balloon is offset from the note date
 And selected notes show selection around the balloon only, not around the leader line or anchor
 And multi-line note text wraps inside the balloon
 And the balloon text direction and alignment follow the typed language
 And notes created near each other automatically stack vertically to avoid overlapping
 And notes continue stacking vertically when the user zooms farther out
-And the user can drag the balloon to reposition it outside the timeline lines
-And the user can resize the selected note balloon with a compact corner grip
+And the user can drag the balloon to reposition it above or below the timeline lines
+And dragging the balloon farther above the axis expands the scrollable canvas above the top line instead of clamping the balloon to the top line
+And the user can resize the selected note balloon with a compact corner grip that stays aligned to the balloon body when the note is above or below the axis
 And the user can double-click the balloon text or body to edit balloon text directly on the timeline
 And clicking outside the inline balloon text editor commits the edit
 And the sidebar provides a larger multi-line editor for the balloon text

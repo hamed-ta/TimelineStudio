@@ -114,7 +114,9 @@ import {
 } from "./layout/timelineLayout";
 import {
   findAvailableNoteY,
+  noteCanvasTop,
   noteBubblePath,
+  noteResizeHandlePosition,
   noteTextFirstBaseline,
   textDirectionFor,
   wrapNoteText,
@@ -171,6 +173,8 @@ import {
   const NOTE_STACK_GAP = 10;
   const NOTE_DOUBLE_CLICK_MS = 520;
   const NOTE_DOUBLE_CLICK_DISTANCE = 12;
+  const MARKER_LABEL_NATURAL_MAX_WIDTH = 160;
+  const MARKER_LABEL_DEFAULT_HEIGHT = 44;
   const MIN_ZOOM = 6;
   const MAX_ZOOM = 360;
   const DEFAULT_ZOOM = 18;
@@ -540,20 +544,22 @@ import {
     const noteLayouts = computeNoteLayouts(laneCount, rowHeight, contentWidth, geometry);
     lastNoteLayouts = noteLayouts;
     const noteAreaHeight = getNoteAreaHeight(noteLayouts, geometry);
-    const contentHeight = geometry.contentHeightWithoutNotes + noteAreaHeight;
+    const contentTop = getCalloutCanvasTop(noteLayouts, geometry, contentWidth);
+    const contentBottom = getCalloutCanvasBottom(noteLayouts, geometry, contentWidth, geometry.contentHeightWithoutNotes + noteAreaHeight);
+    const contentHeight = contentBottom - contentTop;
 
     svg.setAttribute("width", String(Math.ceil(contentWidth)));
     svg.setAttribute("height", String(Math.ceil(contentHeight)));
-    svg.setAttribute("viewBox", `0 0 ${Math.ceil(contentWidth)} ${Math.ceil(contentHeight)}`);
+    svg.setAttribute("viewBox", `0 ${Math.floor(contentTop)} ${Math.ceil(contentWidth)} ${Math.ceil(contentHeight)}`);
 
     const defs = svgEl("defs");
     svg.append(defs);
-    svg.append(svgEl("rect", { class: "canvas-bg", x: 0, y: 0, width: contentWidth, height: contentHeight }));
+    svg.append(svgEl("rect", { class: "canvas-bg", x: 0, y: contentTop, width: contentWidth, height: contentHeight }));
     drawTimeBands(svg, settings, geometry, contentWidth);
     svg.append(svgEl("rect", { class: "axis-band", x: 0, y: geometry.axisBandTop, width: contentWidth, height: AXIS_HEIGHT }));
 
     drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth, geometry);
-    drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth, geometry);
+    drawGrid(svg, settings, laneCount, rowHeight, contentTop, contentBottom, contentWidth, geometry);
     drawLaneLabels(svg, settings, laneCount, rowHeight, geometry);
 
     const isEmpty = timeline.items.length === 0;
@@ -566,10 +572,10 @@ import {
     drawNoteLeaderLayer(svg, defs, sortedItems, laneCount, rowHeight, noteLayouts, geometry);
     sortedItems
       .filter((item) => isGlobalTimelineItemType(item.type))
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts, geometry));
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentBottom, noteLayouts, geometry));
     sortedItems
       .filter((item) => !isGlobalTimelineItemType(item.type))
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentHeight, noteLayouts, geometry));
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentBottom, noteLayouts, geometry));
     drawCursorGuide(svg, geometry);
   }
 
@@ -625,7 +631,7 @@ import {
     }
   }
 
-  function drawGrid(svg, settings, laneCount, rowHeight, contentHeight, contentWidth, geometry) {
+  function drawGrid(svg, settings, laneCount, rowHeight, contentTop, contentBottom, contentWidth, geometry) {
     const axisDetail = axisDetailForZoom(zoom, AVG_DAYS_PER_MONTH);
     const displayCalendars = normalizeDisplayCalendars(settings.displayCalendars);
     const startYear = isoYear(settings.startDate);
@@ -635,6 +641,7 @@ import {
     const totalDays = daysBetween(settings.startDate, contentEndDate);
     const useIranianAxis = usesIranianAxis(displayCalendars);
     const dayLabelInterval = axisDayLabelInterval(totalDays, zoom);
+    const gridTop = Math.min(geometry.trackTop, contentTop);
     let lastMonthLabelEnd = -Infinity;
     let lastDayLabelEnd = -Infinity;
 
@@ -644,7 +651,7 @@ import {
       for (let date = settings.startDate; compareIso(date, contentEndDate) <= 0; date = addDaysIso(date, 1)) {
         const x = dateToX(date);
         if (axisDetail.dayGrid) {
-          dayGridPath += `M ${x} ${geometry.trackTop} V ${contentHeight} `;
+          dayGridPath += `M ${x} ${gridTop} V ${contentBottom} `;
         }
         if (axisDetail.dayTicks) {
           dayTickPath += `M ${x} ${geometry.axisY - 5} V ${geometry.axisY + 5} `;
@@ -673,7 +680,7 @@ import {
         const x = dateToX(date);
         const isYearStart = parts.month === 1;
         if (isYearStart || axisDetail.monthGrid) {
-          svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: geometry.trackTop, y2: contentHeight }));
+          svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: gridTop, y2: contentBottom }));
           svg.append(svgEl("line", { class: isYearStart ? "axis-tick axis-tick-year" : "axis-tick axis-tick-month", x1: x, x2: x, y1: geometry.axisY - 10, y2: geometry.axisY + 10 }));
         }
         if (isYearStart && (parts.year - firstIranianYear) % yearLabelStep === 0) {
@@ -691,7 +698,7 @@ import {
           const x = dateToX(date);
           const isYearStart = month === 0;
           if (isYearStart || axisDetail.monthGrid) {
-            svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: geometry.trackTop, y2: contentHeight }));
+            svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: gridTop, y2: contentBottom }));
             svg.append(svgEl("line", { class: isYearStart ? "axis-tick axis-tick-year" : "axis-tick axis-tick-month", x1: x, x2: x, y1: geometry.axisY - 10, y2: geometry.axisY + 10 }));
           }
 
@@ -894,7 +901,7 @@ import {
     } else if (item.type === "event") {
       drawEvent(group, defs, item, x1, y);
     } else if (item.type === "marker") {
-      drawMarker(group, item, x1, geometry);
+      drawMarker(group, defs, item, x1, geometry, contentWidth);
     } else if (item.type === "note") {
       drawNote(group, defs, item, x1, geometry.axisY, noteLayouts);
     } else {
@@ -1106,13 +1113,89 @@ import {
     group.append(svgEl("text", { class: "note-label", x: x + 16, y: y + 5 }, item.title));
   }
 
-  function drawMarker(group, item, x, geometry) {
+  function drawMarker(group, defs, item, x, geometry, contentWidth) {
     const y1 = geometry.trackTop;
     const y2 = geometry.trackBottom;
+    const label = markerLabelLayout(item, x, geometry, contentWidth);
+    const markerId = ensureMarkerLabelArrowMarker(defs, item);
     group.append(svgEl("line", { class: "marker-hit", x1: x, y1, x2: x, y2, stroke: "transparent" }));
     group.append(svgEl("line", { class: "marker-line", x1: x, y1, x2: x, y2, stroke: item.color }));
     group.append(svgEl("circle", { class: "marker-pin", cx: x, cy: geometry.axisY, r: 5, fill: item.color }));
-    group.append(svgEl("text", { class: "marker-label", x: x + 10, y: geometry.axisY - 12, fill: item.color }, item.title));
+    group.append(svgEl("line", {
+      class: "marker-label-leader",
+      x1: label.leaderX,
+      y1: label.leaderY,
+      x2: x,
+      y2: label.lineEndY,
+      stroke: item.color,
+      "marker-end": `url(#${markerId})`,
+    }));
+    group.append(svgEl("path", {
+      class: "marker-label-bg",
+      "data-marker-label-drag": "true",
+      d: noteBubblePath(label, noteBubblePathOptions()),
+      fill: item.color,
+    }));
+    const bodyY = label.tipSide === "bottom" ? label.y : label.y + NOTE_TIP_HEIGHT;
+    const bodyHeight = Math.max(0, label.height - NOTE_TIP_HEIGHT);
+    group.append(svgEl("text", {
+      class: "marker-label",
+      "data-marker-label-drag": "true",
+      x: label.x + label.width / 2,
+      y: bodyY + bodyHeight / 2 + 5,
+      fill: readableTextColor(item.color),
+      "text-anchor": "middle",
+    }, label.text));
+  }
+
+  function ensureMarkerLabelArrowMarker(defs, item) {
+    const markerId = `marker-label-arrow-${safeSvgId(item.id)}`;
+    if (!document.getElementById(markerId)) {
+      const marker = svgEl("marker", {
+        id: markerId,
+        markerWidth: 8,
+        markerHeight: 8,
+        refX: 7,
+        refY: 4,
+        orient: "auto",
+        markerUnits: "strokeWidth",
+      });
+      marker.append(svgEl("path", { d: "M 0 0 L 8 4 L 0 8 z", fill: item.color }));
+      defs.append(marker);
+    }
+    return markerId;
+  }
+
+  function markerLabelLayout(item, x, geometry, contentWidth = currentContentWidth()) {
+    const rawText = item.title || titleForType("marker");
+    const naturalText = fitSvgText(rawText, MARKER_LABEL_NATURAL_MAX_WIDTH, AXIS_LABEL_CHAR_WIDTH);
+    const naturalWidth = Math.max(NOTE_MIN_WIDTH, Math.min(MARKER_LABEL_NATURAL_MAX_WIDTH, estimateSvgTextWidth(naturalText, AXIS_LABEL_CHAR_WIDTH) + NOTE_PADDING_X * 2));
+    const width = hasFiniteNumber(item.labelWidth) ? clamp(Number(item.labelWidth), NOTE_MIN_WIDTH, NOTE_MAX_WIDTH) : naturalWidth;
+    const height = hasFiniteNumber(item.labelHeight) ? clamp(Number(item.labelHeight), NOTE_MIN_HEIGHT, NOTE_MAX_HEIGHT) : MARKER_LABEL_DEFAULT_HEIGHT;
+    const text = fitSvgText(rawText, Math.max(20, width - NOTE_PADDING_X * 2), AXIS_LABEL_CHAR_WIDTH);
+    const defaultX = x - width / 2;
+    const defaultY = geometry.axisY + 26;
+    const rawX = hasFiniteNumber(item.labelOffsetX) ? x + Number(item.labelOffsetX) : defaultX;
+    const rawY = hasFiniteNumber(item.labelOffsetY) ? geometry.axisY + Number(item.labelOffsetY) : defaultY;
+    const labelX = clamp(rawX, 8, Math.max(8, contentWidth - width - 8));
+    const labelY = clamp(rawY, geometry.axisY - 2000, geometry.axisY + 2000);
+    const isAbove = labelY + height / 2 < geometry.axisY;
+    const lineEndY = isAbove ? geometry.trackTop : geometry.trackBottom;
+    const tipSide = isAbove ? "bottom" : "top";
+    const tipX = clamp(x, labelX + NOTE_TIP_HALF_WIDTH + 10, labelX + width - NOTE_TIP_HALF_WIDTH - 10);
+    return {
+      x: labelX,
+      y: labelY,
+      width,
+      height,
+      text,
+      tipX,
+      anchorX: x,
+      tipSide,
+      leaderX: tipX,
+      leaderY: tipSide === "bottom" ? labelY + height : labelY,
+      lineEndY,
+    };
   }
 
   function drawBirth(group, item, x, geometry) {
@@ -1225,6 +1308,31 @@ import {
       group.append(svgEl("rect", { class: "selection-outline", x: Math.min(x1, x2) - 7, y: y - 19, width: Math.abs(x2 - x1) + 14, height: 38, rx: 8 }));
       group.append(svgEl("circle", { class: "resize-handle", "data-item-id": item.id, "data-handle": "start", cx: x1, cy: y, r: 6 }));
       group.append(svgEl("circle", { class: "resize-handle", "data-item-id": item.id, "data-handle": "end", cx: x2, cy: y, r: 6 }));
+    } else if (item.type === "marker") {
+      const layout = markerLabelLayout(item, x1, geometry, contentWidth);
+      const handleSize = 12;
+      const { x: handleX, y: handleY } = noteResizeHandlePosition(layout, handleSize, NOTE_TIP_HEIGHT);
+      group.append(svgEl("path", {
+        class: "selection-outline marker-label-selection-outline",
+        d: noteBubblePath(layout, noteBubblePathOptions()),
+      }));
+      group.append(svgEl("rect", {
+        class: "resize-handle note-resize-handle marker-label-resize-hit",
+        "data-item-id": item.id,
+        "data-handle": "marker-label-resize",
+        x: handleX - 2,
+        y: handleY - 2,
+        width: handleSize + 4,
+        height: handleSize + 4,
+        rx: 2,
+      }));
+      group.append(svgEl("path", {
+        class: "resize-handle note-resize-handle note-resize-icon marker-label-resize-icon",
+        d: [
+          `M ${handleX + 7} ${handleY + 12} L ${handleX + 12} ${handleY + 7}`,
+          `M ${handleX + 3} ${handleY + 12} L ${handleX + 12} ${handleY + 3}`,
+        ].join(" "),
+      }));
     } else if (isGlobalTimelineItemType(item.type)) {
       group.append(svgEl("rect", {
         class: "selection-outline",
@@ -1238,8 +1346,7 @@ import {
       const layout = noteLayouts.get(item.id);
       if (!layout) return;
       const handleSize = 12;
-      const handleX = layout.x + layout.width - handleSize - 1;
-      const handleY = layout.y + layout.height - handleSize - 1;
+      const { x: handleX, y: handleY } = noteResizeHandlePosition(layout, handleSize, NOTE_TIP_HEIGHT);
       group.append(svgEl("path", {
         class: "selection-outline note-selection-outline",
         d: noteBubblePath(layout, noteBubblePathOptions()),
@@ -1286,6 +1393,7 @@ import {
           ? baseY + Number(item.noteOffsetY)
           : findAvailableNoteY({ x, y: baseY, width: size.width, height: size.height }, placedLayouts, baseY, NOTE_STACK_GAP);
         const text = noteDisplayText(item);
+        const tipSide = y + size.height / 2 < geometry.axisY ? "bottom" : "top";
         const layout = {
           itemId: item.id,
           anchorX,
@@ -1298,7 +1406,8 @@ import {
           direction: textDirectionFor(text),
           lines: wrapNoteText(text, size.width - NOTE_PADDING_X * 2, size.height, textLayoutOptions),
           tipX: clamp(anchorX, x + NOTE_TIP_HALF_WIDTH + 10, x + size.width - NOTE_TIP_HALF_WIDTH - 10),
-          tipY: y,
+          tipY: tipSide === "bottom" ? y + size.height : y,
+          tipSide,
         };
         layouts.set(item.id, layout);
         placedLayouts.push(layout);
@@ -1313,6 +1422,31 @@ import {
       bottom = Math.max(bottom, layout.y + layout.height);
     });
     return Math.max(0, bottom - geometry.contentHeightWithoutNotes + NOTE_AREA_BOTTOM_GAP);
+  }
+
+  function getCalloutCanvasTop(noteLayouts, geometry, contentWidth) {
+    let top = noteCanvasTop(noteLayouts.values(), NOTE_AREA_TOP_GAP);
+    timeline.items
+      .filter((item) => item.type === "marker")
+      .forEach((item) => {
+        const layout = markerLabelLayout(item, dateToX(item.startDate), geometry, contentWidth);
+        top = Math.min(top, layout.y - NOTE_AREA_TOP_GAP);
+      });
+    return Math.min(0, top);
+  }
+
+  function getCalloutCanvasBottom(noteLayouts, geometry, contentWidth, defaultBottom) {
+    let bottom = defaultBottom;
+    noteLayouts.forEach((layout) => {
+      bottom = Math.max(bottom, layout.y + layout.height + NOTE_AREA_BOTTOM_GAP);
+    });
+    timeline.items
+      .filter((item) => item.type === "marker")
+      .forEach((item) => {
+        const layout = markerLabelLayout(item, dateToX(item.startDate), geometry, contentWidth);
+        bottom = Math.max(bottom, layout.y + layout.height + NOTE_AREA_BOTTOM_GAP);
+      });
+    return bottom;
   }
 
   function noteBaseY(geometry) {
@@ -2541,7 +2675,7 @@ import {
     const laneByType = { birth: 0, period: 0, line: 3, event: 2, marker: 0, note: 2, text: 4 };
     const lane = Number.isInteger(target.lane) ? target.lane : laneByType[type] || 0;
     const endDate = hasEndYear(type) ? defaultEndDate(startDate) : startDate;
-    return normalizeItem({
+    const item = normalizeItem({
       id: createId(type),
       type,
       lane: isGlobalTimelineItemType(type) ? 0 : clamp(lane, 0, 20),
@@ -2554,6 +2688,15 @@ import {
       showAgeLabels: true,
       showDurationLabel: true,
     });
+    if (item && type === "note" && hasFiniteNumber(target.pointY)) {
+      const geometry = currentTimelineGeometry();
+      const baseY = noteBaseY(geometry);
+      const desiredY = Number(target.pointY) < geometry.axisY
+        ? Number(target.pointY) - NOTE_DEFAULT_HEIGHT - 18
+        : Number(target.pointY) + 18;
+      item.noteOffsetY = Math.round(clamp(desiredY, baseY - 2000, baseY + 2000) - baseY);
+    }
+    return item;
   }
 
   function deleteSelectedItem(itemId = selectedId) {
@@ -2796,6 +2939,8 @@ import {
       date,
       lane,
       itemId: item ? item.id : null,
+      pointX: point.x,
+      pointY: point.y,
     };
 
     if (item && selectedId !== item.id) {
@@ -3027,7 +3172,8 @@ import {
       return;
     }
     dom.noteInlineEditor.style.left = `${layout.x}px`;
-    dom.noteInlineEditor.style.top = `${layout.y + NOTE_TIP_HEIGHT}px`;
+    const bodyTop = layout.tipSide === "bottom" ? layout.y : layout.y + NOTE_TIP_HEIGHT;
+    dom.noteInlineEditor.style.top = `${bodyTop}px`;
     dom.noteInlineEditor.style.width = `${layout.width}px`;
     dom.noteInlineEditor.style.height = `${Math.max(NOTE_MIN_HEIGHT - NOTE_TIP_HEIGHT, layout.height - NOTE_TIP_HEIGHT)}px`;
     dom.noteInlineEditor.style.color = noteTextColorForItem(item);
@@ -3127,6 +3273,7 @@ import {
 
     const handle = event.target.closest(".resize-handle");
     const noteDragNode = event.target.closest("[data-note-drag]");
+    const markerLabelDragNode = event.target.closest("[data-marker-label-drag]");
     const itemNode = event.target.closest("[data-item-id]");
     if (!itemNode) {
       if (selectedId) {
@@ -3172,15 +3319,22 @@ import {
       return;
     }
     const point = svgPoint(event);
-    const mode = handle ? handle.dataset.handle : (noteDragNode ? "note-position" : "move");
+    const mode = handle
+      ? handle.dataset.handle
+      : markerLabelDragNode && item.type === "marker"
+        ? "marker-label-position"
+        : noteDragNode
+          ? "note-position"
+          : "move";
     const noteLayout = item.type === "note" ? lastNoteLayouts.get(item.id) : null;
+    const markerLayout = item.type === "marker" ? markerLabelLayout(item, dateToX(item.startDate), currentTimelineGeometry(), currentContentWidth()) : null;
     dragState = {
       pointerId: event.pointerId,
       mode,
       itemId: item.id,
       startPoint: point,
       original: { ...item },
-      startLayout: noteLayout ? { ...noteLayout, lines: noteLayout.lines.slice() } : null,
+      startLayout: noteLayout ? { ...noteLayout, lines: noteLayout.lines.slice() } : markerLayout,
     };
     dom.timelineViewport.setPointerCapture(event.pointerId);
     renderAll({ save: false });
@@ -3224,6 +3378,10 @@ import {
       moveNoteBalloon(item, point, original, dragState.startLayout);
     } else if (item.type === "note" && dragState.mode === "note-resize") {
       resizeNoteBalloon(item, point, original, dragState.startLayout);
+    } else if (item.type === "marker" && dragState.mode === "marker-label-position") {
+      moveMarkerLabel(item, point, original, dragState.startLayout);
+    } else if (item.type === "marker" && dragState.mode === "marker-label-resize") {
+      resizeMarkerLabel(item, point, original, dragState.startLayout);
     } else if (dragState.mode === "start") {
       const maxStart = addDaysIso(item.endDate, -minDurationDays());
       item.startDate = clampIso(snapDate(clampIso(addDaysIso(original.startDate, dxDays), minDate, maxStart)), minDate, maxStart);
@@ -3251,7 +3409,7 @@ import {
     if (hasEndYear(item.type) && compareIso(item.endDate, item.startDate) <= 0) {
       item.endDate = addDaysIso(item.startDate, minDurationDays());
     }
-    if (dragState.mode !== "note-position" && dragState.mode !== "note-resize") {
+    if (dragState.mode !== "note-position" && dragState.mode !== "note-resize" && dragState.mode !== "marker-label-position") {
       applyLaneEdgeSnap(item, dragState.mode, original);
     }
     renderAll({ save: false });
@@ -3268,7 +3426,7 @@ import {
     const geometry = currentTimelineGeometry();
     const baseY = noteBaseY(geometry);
     const nextX = clamp(layout.x + dx, 12, Math.max(12, contentWidth - layout.width - 12));
-    const nextY = Math.max(baseY, layout.y + dy);
+    const nextY = clamp(layout.y + dy, baseY - 2000, baseY + 2000);
     const anchorX = dateToX(original.startDate);
 
     item.startDate = original.startDate;
@@ -3276,6 +3434,44 @@ import {
     item.lane = original.lane;
     item.noteOffsetX = Math.round(nextX - anchorX);
     item.noteOffsetY = Math.round(nextY - baseY);
+  }
+
+  function moveMarkerLabel(item, point, original, startLayout) {
+    const geometry = currentTimelineGeometry();
+    const markerX = dateToX(original.startDate);
+    const layout = startLayout || markerLabelLayout(item, markerX, geometry, currentContentWidth());
+    if (!layout) return;
+    const dx = point.x - dragState.startPoint.x;
+    const dy = point.y - dragState.startPoint.y;
+    const contentWidth = currentContentWidth();
+    const nextX = clamp(layout.x + dx, 8, Math.max(8, contentWidth - layout.width - 8));
+    const nextY = clamp(layout.y + dy, geometry.axisY - 2000, geometry.axisY + 2000);
+
+    item.startDate = original.startDate;
+    item.endDate = original.endDate;
+    item.lane = original.lane;
+    item.labelOffsetX = Math.round(nextX - markerX);
+    item.labelOffsetY = Math.round(nextY - geometry.axisY);
+  }
+
+  function resizeMarkerLabel(item, point, original, startLayout) {
+    const geometry = currentTimelineGeometry();
+    const markerX = dateToX(original.startDate);
+    const layout = startLayout || markerLabelLayout(item, markerX, geometry, currentContentWidth());
+    if (!layout) return;
+    const dx = point.x - dragState.startPoint.x;
+    const dy = point.y - dragState.startPoint.y;
+    const contentWidth = currentContentWidth();
+    const nextWidth = clamp(layout.width + dx, NOTE_MIN_WIDTH, Math.min(NOTE_MAX_WIDTH, Math.max(NOTE_MIN_WIDTH, contentWidth - layout.x - 8)));
+    const nextHeight = clamp(layout.height + dy, NOTE_MIN_HEIGHT, NOTE_MAX_HEIGHT);
+
+    item.startDate = original.startDate;
+    item.endDate = original.endDate;
+    item.lane = original.lane;
+    item.labelOffsetX = Math.round(layout.x - markerX);
+    item.labelOffsetY = Math.round(layout.y - geometry.axisY);
+    item.labelWidth = Math.round(nextWidth);
+    item.labelHeight = Math.round(nextHeight);
   }
 
   function resizeNoteBalloon(item, point, original, startLayout) {
@@ -3416,8 +3612,12 @@ import {
     renderAll({ save: dataMoved });
     if (dataMoved && endedDrag.mode === "note-resize") {
       setStatus("Note resized");
+    } else if (dataMoved && endedDrag.mode === "marker-label-resize") {
+      setStatus("Marker label resized");
     } else if (dataMoved && endedDrag.mode === "note-position") {
       setStatus("Note moved");
+    } else if (dataMoved && endedDrag.mode === "marker-label-position") {
+      setStatus("Marker label moved");
     } else {
       setStatus(dataMoved ? "Item moved" : "Item selected");
     }
@@ -3433,7 +3633,11 @@ import {
       || item.noteOffsetX !== endedDrag.original.noteOffsetX
       || item.noteOffsetY !== endedDrag.original.noteOffsetY
       || item.noteWidth !== endedDrag.original.noteWidth
-      || item.noteHeight !== endedDrag.original.noteHeight;
+      || item.noteHeight !== endedDrag.original.noteHeight
+      || item.labelOffsetX !== endedDrag.original.labelOffsetX
+      || item.labelOffsetY !== endedDrag.original.labelOffsetY
+      || item.labelWidth !== endedDrag.original.labelWidth
+      || item.labelHeight !== endedDrag.original.labelHeight;
   }
 
   function handleViewportWheel(event) {
