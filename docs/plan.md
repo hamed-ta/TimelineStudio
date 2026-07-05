@@ -2,208 +2,28 @@
 
 ## Current Goal
 
-Move Timeline Studio toward a modern account-based web app while preserving the current local timeline editor behavior.
+Move Timeline Studio toward the ADR 0009 React architecture while preserving current local JSON behavior.
 
 ## Current Slice
 
-Add capped undo/redo history while preserving local JSON compatibility and saved-state behavior.
-
-## Now
-
-- Use ADR 0009 as the target architecture for shrinking the legacy timeline editor into feature-oriented React modules.
-- Use the tested feature boundaries as the base for moving live state ownership and SVG rendering out of the legacy runtime.
-- Support undo and redo for the latest 25 timeline-changing actions, expose them from shortcuts, the toolbar, and the context menu, restore the prior selection with each history step, and clear `Unsaved changes` automatically when undo returns to the saved JSON state.
-- Keep the birthdate label to the left of the vertical line when possible.
-- Show hovered date, selected display-calendar date, age, and relative date with years, months, and days in a narrow top timeline cursor readout with a full-height thin solid guide.
-- Show selected item dates, duration, line, and age context in the bottom info panel.
-- Split selected item details into short readable lines instead of one dense metadata sentence.
-- Size the timeline viewport to the rendered axis, lines, and note area instead of stretching into unused workspace height.
-- Stack, simplify, or skip month and day labels so axis date text does not overlap at crowded zoom levels.
-- Keep Fit from zooming out below a readable minimum on long timelines.
-- Snap lane-bound items to nearby same-line item edges and prevent same-line range overlap while dragging.
-- Expand the preset color palette beyond the first 10 colors.
-- Add recognizable icons to timeline action buttons.
-- Use colored icon treatments for toolbar and context menu actions without adding another icon dependency.
-- Group create, file, and export toolbar actions.
-- Move item locking into a dedicated icon toggle instead of a checkbox inside the action row.
-- Keep manual zoom-out from going below the readable minimum.
-- Add zoom actions to the timeline context menu.
-- Show a centered empty state when the timeline has no items.
-- Use a Persian-capable modern sans-serif stack without adding a font dependency.
-- Normalize UI font sizes onto a small rem-based type scale.
-- Apply the same font stack to SVG timeline labels.
-- Add timeline-label line rename and background color editing.
-- Add in-place timeline controls for inserting lines.
-- Remove the old Rows / Lines section from the editor sidebar.
-- Replace native color inputs with a shared picker for item colors and line backgrounds.
-- Add an Add submenu to the timeline context menu with each timeline item type.
-- Keep read-only mode as a top toolbar icon and remove it from the context menu.
-- Add per-item locking in the context menu.
-- Let note balloons show multi-line text, avoid overlap automatically, use dotted highlighted leader lines behind shaped balloons, auto-align text direction, support separate balloon/text colors, and support lower zoom, manual drag positioning, resizing, and inline text editing.
-- Let note balloons be positioned above or below the central timeline.
-- Render marker titles as draggable callouts with leader arrows that can sit above or below the central timeline.
-- Let above-axis note and marker callouts expand the scrollable canvas upward instead of clamping at the top line.
-- Render marker callouts as resizable tipped balloons with dashed leaders to the top or bottom end of the solid marker line.
-- Keep the note resize grip aligned to the balloon body when the balloon uses a bottom tip above the axis.
-- Render the date axis through the center of the timeline canvas with lanes alternating above and below it.
-- Use `Line +1`, `Line -1`, `Line +2`, and `Line -2` style default labels for central-axis tracks.
-- Show a transient full-height cursor guide and top readout while hovering the central-axis timeline.
-- Suppress month bands, month grid lines, day grid lines, day ticks, and day labels when their time unit is too narrow to read.
-- Keep note leaders and anchors terminating at the central timeline axis.
-- Keep the toolbar and timeline info panel fixed outside the scrollable timeline viewport.
-- Reorder central-axis line labels by visual top-to-bottom order so swapping below-axis lines does not affect above-axis lanes.
-- Let users zoom horizontally with `Ctrl`/`Command` + mouse wheel, resize central-axis track height with `Ctrl`/`Command` + `Shift` + mouse wheel, and resize timeline area height with `Ctrl`/`Command` + `Alt` + mouse wheel, a compact toolbar height control, or a drag handle below the timeline.
-- Let users collapse the bottom timeline information panel and keep header/action controls compact.
-- Fix legacy-bound sidebar fields so focusing them does not clear values and timeline titles can include spaces while editing.
-- Move Fit, zoom, height, read-only, and right-aligned theme controls into the action toolbar, remove the toolbar heading/collapse row, and center the compact app header metadata line.
-- Let users save display-calendar preferences for Gregorian, Persian / Solar Hijri, or both, align Persian-only axis ticks to Persian / Solar Hijri boundaries, and preserve Gregorian ISO date storage and input fields.
-- Keep Persian-only and close-zoom axis rendering responsive by caching Persian calendar parts and batching dense day grid/tick SVG output.
-- Start new empty timelines with a fitted one-year range from the same day last year through today.
-- Add browser, search, chat, and social preview metadata for the public app shell.
-- Preserve line reorder, remove, save/load, and item lane assignment behavior.
-- Preserve birth line rendering, save/load behavior, and age calculations.
-- Preserve normal event, period, line, text, save/load, pan, zoom, and export behavior.
-- Keep personal timeline JSON files in ignored `user-data/`.
-- Adopt Ant Design as the UI system for shell controls, icons, panels, and light/dark theme styling.
-- Keep exact DOM IDs and compatibility bridge controls where the legacy timeline editor controller still requires native element behavior.
-- Add CI validation for branch pushes and pull requests.
-- Add tag-based GitHub Pages deployment for versioned releases.
-- Create or update a GitHub Release with changelog notes and a zipped static build artifact.
-- Document exact version bump, tag, push, and first-time Pages setup commands.
-- Adjust GitHub Pages documentation for the renamed `TimelineStudio` repository.
-- Add MIT license metadata and refresh README project documentation.
-- Add contributing, security, and code of conduct documents for open source readiness.
-- Add a concrete `0.2.0` changelog section so the release workflow can extract release notes.
-- Make release reruns tolerate already uploaded immutable GitHub Release assets.
-- Cut patch release `0.2.1` because protected tag rules prevent moving `v0.2.0`.
-- Remove tracked `.DS_Store` while keeping macOS metadata ignored.
-- Add a compact app footer with the app name and current package version.
-- Let manual release dispatch rebuild the selected main commit into the same-version release target.
+Stabilize the new undo/redo workflow, then move history-aware state ownership out of `src/features/timeline-editor/legacyTimelineEditor.js`.
 
 ## Next
 
-- Move live timeline state ownership into the reducer/context boundary in small behavior-preserving slices.
-- Convert SVG rendering item by item, starting with note rendering because note item behavior now has the strongest helper coverage.
-- Add focused tests before each state or rendering migration slice.
-- Preserve the element IDs and behavior expected by the legacy timeline editor controller until each behavior has moved into React.
-- Continue migrating remaining custom popovers, menus, picker controls, and timeline controller state into React so more Ant Design components can be used directly.
-- Verify local JSON load, edit, save, pan, zoom, fit, and export before adding Firebase.
-- Add Firebase only after the local app migration is stable.
-
-## Later
-
-- Add Firebase Auth with Google and email/password sign-in.
-- Add Firestore-backed per-user timeline storage behind a repository abstraction.
-- Add Firebase Hosting deployment.
-- Add optional Google Drive import/export as a user-owned backup path.
-- Add a lightweight automated browser test harness when the user wants true test-first red/green UI checks.
-- Add validation for malformed imported JSON.
-- Add richer PDF export options.
-- Add Playwright tests for save/load, pan, zoom, lock, fit, and export flows.
-
-## Done Recently
-
-- Removed default sample data.
-- Added save picker with download fallback.
-- Added fit button.
-- Added lock state.
-- Added Iranian date labels in English words and numbers.
-- Fixed `AGENTS.md` so it is complete and parseable.
-- Added missing workflow files referenced by `AGENTS.md`.
-- Turned `docs/handoff.md` into a real current-state handoff.
-- Added initial ADRs for decisions already made.
-- Committed the agentic workflow docs in `e3ef60b`.
-- Added `.gitignore` rules for `user-data/` and `.DS_Store`.
-- Committed ignored user data and handoff cleanup in `ca4bd12`.
-- Committed the modern web app migration plan in `4f95f80`.
-- Committed the minimal Vite, React, and TypeScript shell in `62f912a`.
-- Extracted timeline document types, default timeline creation, item normalization, and timeline normalization into `src/timeline/model.ts`.
-- Extracted shared date parsing, date math, snapping, clamping, and numeric normalization helpers into `src/timeline/dates.ts`.
-- Extracted timeline JSON parse and serialize behavior into `src/timeline/json.ts`.
-- Extracted browser download and save-picker helpers into `src/platform/files.ts`.
-- Extracted PDF byte generation into `src/timeline/export/pdf.ts`.
-- Extracted image loading and canvas-to-blob helpers into `src/platform/media.ts`.
-- Extracted SVG export serialization and export CSS into `src/timeline/export/svgExport.ts`.
-- Extracted display date, Iranian date, month, and zoom formatting into `src/timeline/formatters.ts`.
-- Added `CHANGELOG.md` and `docs/versioning.md` without bumping the package version.
-- Added system light/dark theme tokens, component styling, and a theme switcher.
-- Added dependency policy guidance in ADR 0006 and agent docs.
-- Added collapsible sidebar and toolbar controls; iconography is now handled by Ant Design.
-- Moved the timeline title, date range, and Fit action into the main top bar.
-- Added drag reordering and removal for timeline lines.
-- Added vertical all-line marker items.
-- Added annotation note items with leader arrows and balloons.
-- Updated event markers with a beveled, glass-like visual treatment.
-- Added softer period bar backgrounds.
-- Added current-file JSON save behavior where browser file handles are available.
-- Added visible unsaved-change state and `Ctrl+S` / `Command+S` JSON saving.
-- Added saved birthdate items with prominent all-line rendering.
-- Added live age hover readouts and derived period age/duration labels.
-- Added same-line item edge snapping and readable fit/axis behavior.
-- Added a curated item color palette and random palette colors for new items.
-- Added a context menu and shortcuts for timeline item commands.
-- Accepted Ant Design as the app UI system in ADR 0007.
-- Added GitHub Actions CI and tag-based GitHub Pages release deployment.
-- Accepted GitHub Pages release deployment in ADR 0008.
-- Added MIT license metadata and refreshed README documentation.
-- Added contributing, security, and code of conduct documents.
-- Added the missing `0.2.0` changelog heading required by the release workflow.
-- Allowed GitHub Pages deployment from semver tags and made release asset uploads rerun-safe.
-- Bumped release metadata to `0.2.1` for the corrected release workflow.
-- Removed the tracked `.DS_Store` file from the repository.
-- Added the app name/version footer.
-- Updated manual release dispatch for same-version release refreshes from main.
-- Accepted the modular React timeline editor architecture in ADR 0009.
-- Extracted timeline editor keyboard, edge-snap, axis, note-layout, date-span, color, reducer, selector, export, and timeline-layout boundaries as ADR 0009 migration slices.
-- Moved the timeline SVG shell into the ADR 0009 `features/timeline-editor/canvas` boundary.
-- Extracted persistent boolean UI preference state into `src/shared/hooks`.
-- Extracted note item display, color, finite-number, and sizing rules into `features/timeline-editor/items`.
-- Extracted context-menu action state rules into `features/timeline-editor/interactions`.
-- Extracted period item derived age and duration metadata into `features/timeline-editor/items`.
-- Extracted SVG text fitting, width estimation, and ID sanitizing helpers into `features/timeline-editor/canvas`.
-- Extracted drag-range clamping and overlap-prevention helpers into `features/timeline-editor/interactions`.
-- Extracted timeline info-panel pointer and selection text into a tested feature view-model helper.
-- Added tested central-axis lane geometry helpers and wired the legacy SVG renderer to draw tracks above and below the axis.
-- Refined the central-axis renderer so only the timeline canvas scrolls, note leaders end at the axis, and dense day/month detail is hidden until readable.
-- Fixed central-axis line reordering to use visual lane order, restored `Ctrl`/`Command` + mouse wheel horizontal zoom, reduced zoom increments, added wheel shortcuts for line spacing and timeline area height, compacted the zoom/height controls behind overlay popovers, added a collapsible no-scroll info panel, fixed Ant input focus value resets in legacy-bound fields, consolidated view controls into the action toolbar, and added saved display-calendar preferences with Persian-only axis boundaries.
-- Added capped undo/redo history in the legacy editor with focused history/shortcut tests, toolbar/context-menu controls, and saved-state dirty-indicator restoration.
+- Browser-smoke undo/redo with real loaded timelines, especially note and marker drag, lane reorder, and save/load boundaries.
+- Extract history-aware command and state handling from the legacy runtime into feature modules or reducer/context without changing required DOM IDs.
+- Continue the item-by-item rendering migration after the state boundary is cleaner, starting with note and marker heavy behavior.
 
 ## Risks
 
-- Browser file picker support varies.
-- Export behavior may differ across browsers.
-- Manual testing is still doing work that automated browser tests should eventually cover.
-- Workflow docs can drift if `/closeout` is not used consistently.
-- Personal JSON files should stay in ignored `user-data/`.
-- The framework migration can accidentally change timeline behavior if it is done as a rewrite instead of small preservation steps.
-- UI changes must preserve the DOM IDs and data attributes that the legacy timeline editor controller still binds to until the controller is migrated.
-- Version changes should be intentional and documented in `CHANGELOG.md`; do not bump `package.json` during routine migration slices.
-- Firebase read/write patterns can create avoidable cost if autosave and realtime listeners are not scoped carefully.
-- Dependencies can increase bundle size, audit noise, and maintenance cost if they are not scoped to real feature value.
-- Ant Design adds a larger dependency footprint; use it as the shared UI system rather than mixing unrelated component libraries.
-- GitHub Pages project deployments need the Vite base path to match the repository path unless a custom domain is configured.
-- Modularization can make the app harder to follow if files are split by generic type instead of timeline-editor feature boundaries.
-- Moving rendering into React must preserve existing local JSON behavior, item interactions, exports, and manual browser smoke checks.
-- The central-axis layout is still rendered by the legacy SVG controller; follow-up slices should refine dense axis labeling, vertical panning ergonomics, and item placement before moving this renderer into React.
+- Undo/redo currently depends on every timeline-changing mutation path recording history inside `src/features/timeline-editor/legacyTimelineEditor.js`.
+- No automated browser harness exists yet, so UI regression coverage is still manual.
+- The central-axis renderer and most interactive behavior still live in the legacy runtime.
 
-## Verification Checklist
+## Latest Verification
 
-During the current legacy-app phase:
-
-- `node --check src/features/timeline-editor/legacyTimelineEditor.js`
 - `npm test`
+- `node --check src/features/timeline-editor/legacyTimelineEditor.js`
 - `npm run typecheck`
 - `npm run build`
-- App loads at `http://127.0.0.1:8765/`
-- Create event
-- Create period
-- Rename line
-- Pan by dragging
-- Zoom in/out
-- Fit timeline
-- Undo/redo timeline changes
-- Save JSON
-- Load JSON
-- Export SVG/PNG/PDF
-
-- Existing local JSON can be loaded, edited, and saved
+- Browser smoke at `http://127.0.0.1:8767/`: toolbar/context-menu undo/redo states behaved correctly, undo removed the added event and cleared `Unsaved changes`, and redo restored it.
