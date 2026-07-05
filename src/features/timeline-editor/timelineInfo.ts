@@ -2,7 +2,11 @@ import {
   formatDetailedAgeAtDate,
   formatDetailedAgeValueAtDate,
   formatDetailedDateSpan,
+  getDateSpanParts,
 } from "../../timeline/dateSpans.ts";
+import {
+  todayIso,
+} from "../../timeline/dates.ts";
 import {
   formatDateForCalendars,
   formatDisplayDate,
@@ -36,6 +40,12 @@ export type PointerInfoText = {
   ageLabel: string;
 };
 
+export type CursorReadoutText = {
+  agoLabel: string;
+  ageLabel: string;
+  dateLabel: string;
+};
+
 export type SelectionInfoText = {
   itemLabel: string;
   lineLine: string;
@@ -67,6 +77,27 @@ export function pointerInfoText(
   };
 }
 
+export function cursorReadoutText(
+  hoverDate: string | null,
+  birthDate?: string | null,
+  displayCalendars: readonly TimelineDisplayCalendar[] = ["gregorian", "iranian"],
+  currentDate = todayIso(),
+): CursorReadoutText {
+  if (!hoverDate) {
+    return {
+      agoLabel: "",
+      ageLabel: "",
+      dateLabel: "",
+    };
+  }
+
+  return {
+    agoLabel: relativeDateLabel(hoverDate, currentDate),
+    ageLabel: birthDate ? formatDetailedAgeAtDate(birthDate, hoverDate) : "Age unavailable",
+    dateLabel: formatDateForCalendars(hoverDate, normalizeDisplayCalendars(displayCalendars)),
+  };
+}
+
 export function selectionInfoText(
   item: InfoItem | null,
   birthDate?: string | null,
@@ -92,6 +123,27 @@ export function selectionInfoText(
     durationLine: selectedItemDurationLine(item),
     ageLine: selectedItemAgeLine(item, birthDate),
   };
+}
+
+function relativeDateLabel(date: string, currentDate: string): string {
+  if (date === currentDate) return "today";
+  if (date < currentDate) return `${largestDateSpanUnit(date, currentDate)} ago`;
+  return `in ${largestDateSpanUnit(currentDate, date)}`;
+}
+
+function largestDateSpanUnit(startDate: string, endDate: string): string {
+  const span = getDateSpanParts(startDate, endDate);
+  const parts = [];
+  if (span.years) {
+    parts.push(`${span.years} ${span.years === 1 ? "year" : "years"}`);
+  }
+  if (span.months) {
+    parts.push(`${span.months} ${span.months === 1 ? "month" : "months"}`);
+  }
+  if (span.days || parts.length === 0) {
+    parts.push(`${span.days} ${span.days === 1 ? "day" : "days"}`);
+  }
+  return parts.join(" ");
 }
 
 export function itemTypeLabel(type: unknown): string {

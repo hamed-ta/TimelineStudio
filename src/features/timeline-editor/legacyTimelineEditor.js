@@ -133,7 +133,7 @@ import {
   periodDerivedMeta,
 } from "./items/periodItem";
 import {
-  pointerInfoText,
+  cursorReadoutText,
   selectionInfoText,
 } from "./timelineInfo";
 
@@ -282,9 +282,10 @@ import {
     timelineEmptyState: document.getElementById("timelineEmptyState"),
     timelineContextMenu: document.getElementById("timelineContextMenu"),
     timelineInfoPanel: document.getElementById("timelineInfoPanel"),
-    hoverDateLabel: document.getElementById("hoverDateLabel"),
-    hoverIranianLabel: document.getElementById("hoverIranianLabel"),
-    hoverAgeLabel: document.getElementById("hoverAgeLabel"),
+    timelineCursorReadout: document.getElementById("timelineCursorReadout"),
+    cursorAgoLabel: document.getElementById("cursorAgoLabel"),
+    cursorAgeLabel: document.getElementById("cursorAgeLabel"),
+    cursorDateLabel: document.getElementById("cursorDateLabel"),
     selectedItemLabel: document.getElementById("selectedItemLabel"),
     selectedItemLineLabel: document.getElementById("selectedItemLineLabel"),
     selectedItemDateLabel: document.getElementById("selectedItemDateLabel"),
@@ -313,6 +314,8 @@ import {
   let hasUnsavedChanges = false;
   let hoverDate = null;
   let hoverPoint = null;
+  let lastContentTop = 0;
+  let lastContentBottom = 0;
   let lastPaletteColorIndex = -1;
   let copiedItem = null;
   let contextMenuTarget = null;
@@ -496,6 +499,7 @@ import {
       closeContextMenu();
       closeLineEditor();
       closeColorPickers();
+      hideHoverReadout();
       repositionOpenRangeControlPanels();
     });
   }
@@ -510,6 +514,7 @@ import {
     renderTimeline();
     updateMeta();
     updateTimelineInfoPanel();
+    updateCursorReadout();
     positionNoteInlineEditor();
     if (options.save !== false) {
       markDirty();
@@ -546,6 +551,8 @@ import {
     const noteAreaHeight = getNoteAreaHeight(noteLayouts, geometry);
     const contentTop = getCalloutCanvasTop(noteLayouts, geometry, contentWidth);
     const contentBottom = getCalloutCanvasBottom(noteLayouts, geometry, contentWidth, geometry.contentHeightWithoutNotes + noteAreaHeight);
+    lastContentTop = contentTop;
+    lastContentBottom = contentBottom;
     const contentHeight = contentBottom - contentTop;
 
     svg.setAttribute("width", String(Math.ceil(contentWidth)));
@@ -576,7 +583,7 @@ import {
     sortedItems
       .filter((item) => !isGlobalTimelineItemType(item.type))
       .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentBottom, noteLayouts, geometry));
-    drawCursorGuide(svg, geometry);
+    drawCursorGuide(svg, geometry, contentTop, contentBottom);
   }
 
   function drawTimeBands(svg, settings, geometry, contentWidth) {
@@ -1020,31 +1027,31 @@ import {
     hoverPoint = point;
     hoverDate = clampIso(xToDate(pointerX), timeline.settings.startDate, timeline.settings.endDate);
     updateCursorGuide();
-    updateTimelineInfoPanel();
+    updateCursorReadout();
   }
 
   function hideHoverReadout() {
     hoverDate = null;
     hoverPoint = null;
     updateCursorGuide();
-    updateTimelineInfoPanel();
+    updateCursorReadout();
   }
 
-  function drawCursorGuide(svg, geometry) {
+  function drawCursorGuide(svg, geometry, contentTop = lastContentTop, contentBottom = lastContentBottom) {
     const line = svgEl("line", {
       id: "cursorAxisGuide",
       class: "cursor-axis-guide",
       x1: 0,
       x2: 0,
-      y1: geometry.axisY,
-      y2: geometry.axisY,
+      y1: contentTop,
+      y2: contentBottom,
       hidden: "true",
     });
     svg.append(line);
-    updateCursorGuide(line, geometry);
+    updateCursorGuide(line, geometry, contentTop, contentBottom);
   }
 
-  function updateCursorGuide(line = document.getElementById("cursorAxisGuide"), geometry = lastTimelineGeometry) {
+  function updateCursorGuide(line = document.getElementById("cursorAxisGuide"), geometry = lastTimelineGeometry, contentTop = lastContentTop, contentBottom = lastContentBottom) {
     if (!line) return;
     if (!hoverPoint || !geometry) {
       line.setAttribute("hidden", "true");
@@ -1053,8 +1060,28 @@ import {
     line.removeAttribute("hidden");
     line.setAttribute("x1", String(hoverPoint.x));
     line.setAttribute("x2", String(hoverPoint.x));
-    line.setAttribute("y1", String(hoverPoint.y));
-    line.setAttribute("y2", String(geometry.axisY));
+    line.setAttribute("y1", String(contentTop));
+    line.setAttribute("y2", String(contentBottom));
+  }
+
+  function updateCursorReadout() {
+    if (!dom.timelineCursorReadout || !dom.cursorAgoLabel || !dom.cursorAgeLabel || !dom.cursorDateLabel) return;
+    if (!hoverPoint || !hoverDate) {
+      dom.timelineCursorReadout.hidden = true;
+      return;
+    }
+    const viewportRect = dom.timelineViewport.getBoundingClientRect();
+    const shellRect = dom.timelineViewport.parentElement.getBoundingClientRect();
+    const cursorX = viewportRect.left - shellRect.left + hoverPoint.x - dom.timelineViewport.scrollLeft;
+    const labelX = clamp(cursorX, 130, Math.max(130, shellRect.width - 130));
+    const birthItem = getPrimaryBirthItem();
+    const info = cursorReadoutText(hoverDate, birthItem?.startDate, currentDisplayCalendars());
+    dom.timelineCursorReadout.style.setProperty("--cursor-x", `${cursorX}px`);
+    dom.timelineCursorReadout.style.setProperty("--cursor-label-x", `${labelX}px`);
+    dom.cursorAgoLabel.textContent = info.agoLabel;
+    dom.cursorAgeLabel.textContent = info.ageLabel;
+    dom.cursorDateLabel.textContent = info.dateLabel;
+    dom.timelineCursorReadout.hidden = false;
   }
 
   function drawLine(group, defs, item, x1, x2, y) {
@@ -1174,7 +1201,7 @@ import {
     const height = hasFiniteNumber(item.labelHeight) ? clamp(Number(item.labelHeight), NOTE_MIN_HEIGHT, NOTE_MAX_HEIGHT) : MARKER_LABEL_DEFAULT_HEIGHT;
     const text = fitSvgText(rawText, Math.max(20, width - NOTE_PADDING_X * 2), AXIS_LABEL_CHAR_WIDTH);
     const defaultX = x - width / 2;
-    const defaultY = geometry.axisY + 26;
+    const defaultY = geometry.trackBottom + NOTE_AREA_TOP_GAP;
     const rawX = hasFiniteNumber(item.labelOffsetX) ? x + Number(item.labelOffsetX) : defaultX;
     const rawY = hasFiniteNumber(item.labelOffsetY) ? geometry.axisY + Number(item.labelOffsetY) : defaultY;
     const labelX = clamp(rawX, 8, Math.max(8, contentWidth - width - 8));
@@ -1328,10 +1355,7 @@ import {
       }));
       group.append(svgEl("path", {
         class: "resize-handle note-resize-handle note-resize-icon marker-label-resize-icon",
-        d: [
-          `M ${handleX + 7} ${handleY + 12} L ${handleX + 12} ${handleY + 7}`,
-          `M ${handleX + 3} ${handleY + 12} L ${handleX + 12} ${handleY + 3}`,
-        ].join(" "),
+        d: resizeGripPath(handleX, handleY),
       }));
     } else if (isGlobalTimelineItemType(item.type)) {
       group.append(svgEl("rect", {
@@ -1363,10 +1387,7 @@ import {
       }));
       group.append(svgEl("path", {
         class: "resize-handle note-resize-handle note-resize-icon",
-        d: [
-          `M ${handleX + 7} ${handleY + 12} L ${handleX + 12} ${handleY + 7}`,
-          `M ${handleX + 3} ${handleY + 12} L ${handleX + 12} ${handleY + 3}`,
-        ].join(" "),
+        d: resizeGripPath(handleX, handleY),
       }));
     } else {
       group.append(svgEl("rect", { class: "selection-outline", x: x1 - 12, y: y - 22, width: 210, height: 44, rx: 8 }));
@@ -1462,6 +1483,14 @@ import {
     };
   }
 
+  function resizeGripPath(handleX, handleY) {
+    return [
+      `M ${handleX + 8} ${handleY + 12} L ${handleX + 12} ${handleY + 8}`,
+      `M ${handleX + 5} ${handleY + 12} L ${handleX + 12} ${handleY + 5}`,
+      `M ${handleX + 2} ${handleY + 12} L ${handleX + 12} ${handleY + 2}`,
+    ].join(" ");
+  }
+
   function noteSizeOptions() {
     return {
       defaultWidth: NOTE_DEFAULT_WIDTH,
@@ -1534,17 +1563,7 @@ import {
   }
 
   function updateTimelineInfoPanel() {
-    updatePointerInfo();
     updateSelectionInfo();
-  }
-
-  function updatePointerInfo() {
-    if (!dom.hoverDateLabel || !dom.hoverIranianLabel || !dom.hoverAgeLabel) return;
-    const birthItem = getPrimaryBirthItem();
-    const info = pointerInfoText(hoverDate, birthItem?.startDate, currentDisplayCalendars());
-    dom.hoverDateLabel.textContent = info.dateLabel;
-    setOptionalInfoLine(dom.hoverIranianLabel, info.iranianLabel);
-    dom.hoverAgeLabel.textContent = info.ageLabel;
   }
 
   function updateSelectionInfo() {

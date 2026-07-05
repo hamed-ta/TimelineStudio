@@ -14,6 +14,10 @@ This project follows semantic versioning. The current package version is `0.3.0`
 - Let above-axis note balloons and marker callouts expand the scrollable timeline canvas upward instead of clamping to the top line.
 - Changed marker callouts into resizable tipped balloons with dashed leaders that connect to the top or bottom end of the solid vertical marker line.
 - Kept the note resize grip aligned to the balloon body when the note is positioned above the timeline.
+- Replaced the bottom hover pointer details with a top timeline cursor readout and a thin full-height solid cursor guide.
+- Improved marker and note balloon selection grips and made selected marker callouts use the same dashed balloon outline as notes.
+- Changed the top cursor readout relative date to include years, months, and days when applicable.
+- Unified note and marker balloon resize grips with the same transparent hit target and diagonal grip icon.
 
 ## 0.3.0 - 2026-07-04
 

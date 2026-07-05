@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  cursorReadoutText,
   itemTypeLabel,
   pointerInfoText,
   selectionInfoText,
@@ -44,6 +45,22 @@ test("pointer info follows selected display calendars", () => {
     dateLabel: "29 Mordad 1369",
     iranianLabel: "",
     ageLabel: "Age: add a birth item",
+  });
+});
+
+test("cursor readout shows relative date age and selected calendars", () => {
+  assert.deepEqual(cursorReadoutText("2003-04-01", "1987-07-13", ["gregorian"], "2026-07-05"), {
+    agoLabel: "23 years 3 months 4 days ago",
+    ageLabel: "Age 15 years, 8 months, 19 days",
+    dateLabel: "Apr 1, 2003",
+  });
+});
+
+test("cursor readout handles future dates and missing birth date", () => {
+  assert.deepEqual(cursorReadoutText("2027-08-06", null, ["gregorian"], "2026-07-05"), {
+    agoLabel: "in 1 year 1 month 1 day",
+    ageLabel: "Age unavailable",
+    dateLabel: "Aug 6, 2027",
   });
 });
 

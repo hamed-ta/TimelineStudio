@@ -124,7 +124,7 @@ Copy and paste use an in-app item clipboard. Pasted items should receive a new I
 - The user should be able to use `Ctrl`/`Command` + mouse wheel to zoom the timeline horizontally.
 - The user should be able to use `Ctrl`/`Command` + `Shift` + mouse wheel to make line tracks taller or shorter within readable limits.
 - The user should be able to drag a handle below the timeline, use `Ctrl`/`Command` + `Alt` + mouse wheel, or open a compact height control to make the timeline area taller or shorter so more vertical canvas is visible with less internal timeline scrolling.
-- The timeline pointer and selection information panel should be collapsible so users can give more vertical space to the timeline canvas.
+- The timeline selection information panel should be collapsible so users can give more vertical space to the timeline canvas.
 - Editing fields should preserve their current values when focused and should allow normal text entry, including spaces in timeline and item names.
 - Empty timelines should show a clear centered empty state instead of a visually unbalanced blank canvas.
 - Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
@@ -200,10 +200,11 @@ And the birth item is still present after save/load.
 
 Given a timeline has a birth item on `2001-03-04`
 When the user hovers over a date on the timeline
-Then the app shows the hovered date using the selected display calendars and age calculated from the birth item in a stable info panel below the timeline
+Then the app shows a thin solid vertical cursor guide across the visible timeline canvas
+And a narrow readout at the top of the timeline shows the hovered date using the selected display calendars, the age calculated from the birth item, and how long ago or far ahead the date is from today using years, months, and days when applicable
 And updating the hover context does not move the timeline viewport
 When the user selects a timeline item
-Then the same panel shows the item type, title, selected-calendar date details, duration when the item has an end date, and age context when a birth item exists
+Then the bottom information panel shows the item type, title, selected-calendar date details, duration when the item has an end date, and age context when a birth item exists
 And lane details appear as a separate selection detail line instead of being appended to the selection title
 And selection details are split across readable labeled lines instead of one dense sentence
 And the information panel grows to fit readable content instead of showing an internal scrollbar
@@ -213,7 +214,7 @@ And the calculated age text is not saved into the timeline JSON.
 
 Given the timeline settings are visible
 When the user selects only Gregorian as the display calendar
-Then timeline axis labels, header date range, item date previews, pointer dates, and selection dates show Gregorian dates only
+Then timeline axis labels, header date range, item date previews, cursor readout dates, and selection dates show Gregorian dates only
 When the user selects only Persian / Solar Hijri
 Then those same labels show Persian / Solar Hijri dates only
 And central-axis year/month boundaries align to Persian / Solar Hijri year/month starts
@@ -244,7 +245,7 @@ When the central date axis renders
 Then only readable year labels are shown when there is not enough room for month or day detail
 And as the user zooms in, month ticks and day ticks become visible without overlapping labels
 And month background bands, month grid lines, day grid lines, day ticks, and day labels are hidden when their time unit is too narrow to read clearly
-And the hovered cursor guide connects the pointer to the central date axis.
+And the hovered cursor guide spans the full visible timeline canvas as a thin solid line.
 
 ### Keep Timeline Chrome Fixed
 
@@ -502,7 +503,7 @@ And the toolbar layout does not resize or push other toolbar controls out of pla
 
 Given the timeline information panel is visible below the canvas
 When the user collapses the information panel
-Then the pointer and selection details are hidden in a compact row
+Then the selection details are hidden in a compact row
 And the timeline canvas has more vertical room
 And the user can expand the information panel again.
 

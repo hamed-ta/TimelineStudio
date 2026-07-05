@@ -13,8 +13,8 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Use ADR 0009 as the target architecture for shrinking the legacy timeline editor into feature-oriented React modules.
 - Use the tested feature boundaries as the base for moving live state ownership and SVG rendering out of the legacy runtime.
 - Keep the birthdate label to the left of the vertical line when possible.
-- Show hovered date, Iranian date, and age in a fixed info panel below the timeline instead of a cursor-following tooltip.
-- Show selected item dates, duration, line, and age context in the same info panel.
+- Show hovered date, selected display-calendar date, age, and relative date with years, months, and days in a narrow top timeline cursor readout with a full-height thin solid guide.
+- Show selected item dates, duration, line, and age context in the bottom info panel.
 - Split selected item details into short readable lines instead of one dense metadata sentence.
 - Size the timeline viewport to the rendered axis, lines, and note area instead of stretching into unused workspace height.
 - Stack, simplify, or skip month and day labels so axis date text does not overlap at crowded zoom levels.
@@ -46,7 +46,7 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Keep the note resize grip aligned to the balloon body when the balloon uses a bottom tip above the axis.
 - Render the date axis through the center of the timeline canvas with lanes alternating above and below it.
 - Use `Line +1`, `Line -1`, `Line +2`, and `Line -2` style default labels for central-axis tracks.
-- Show a transient pointer guide from the cursor position to the central date axis.
+- Show a transient full-height cursor guide and top readout while hovering the central-axis timeline.
 - Suppress month bands, month grid lines, day grid lines, day ticks, and day labels when their time unit is too narrow to read.
 - Keep note leaders and anchors terminating at the central timeline axis.
 - Keep the toolbar and timeline info panel fixed outside the scrollable timeline viewport.

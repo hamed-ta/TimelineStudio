@@ -14,6 +14,13 @@ export function TimelineCanvas() {
           <p>Create an event, period, note, marker, birthdate, line, or text item.</p>
         </div>
       </div>
+      <div className="timeline-cursor-readout" id="timelineCursorReadout" hidden aria-hidden="true">
+        <div className="timeline-cursor-card" id="timelineCursorCard">
+          <strong id="cursorAgoLabel"></strong>
+          <span id="cursorAgeLabel"></span>
+          <span id="cursorDateLabel"></span>
+        </div>
+      </div>
       <div
         className="timeline-height-grip"
         id="timelineHeightGrip"
