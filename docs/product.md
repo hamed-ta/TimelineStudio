@@ -55,6 +55,7 @@ When items are locked, dragging the canvas should pan the timeline and should no
 
 Selected timeline items can be copied, pasted, duplicated, and deleted from the timeline context menu or keyboard shortcuts.
 Copy and paste use an in-app item clipboard. Pasted items should receive a new ID and should preserve the copied item's type, color, dates, notes, and display settings unless a timeline click location supplies a new start date or lane.
+The app should keep undo and redo history for the most recent 25 timeline-changing actions.
 
 ## Date Behavior
 
@@ -211,6 +212,17 @@ And selection details are split across readable labeled lines instead of one den
 And the information panel grows to fit readable content instead of showing an internal scrollbar
 And the calculated age text is not saved into the timeline JSON.
 
+### Undo And Redo Timeline Changes
+
+Given the user has made up to 25 timeline-changing actions since the current saved state
+When the user presses `Ctrl+Z` or `Command+Z`
+Then the most recent timeline-changing action is undone
+And the timeline document, selection, and rendered timeline return to the previous state for that action
+When the user presses `Ctrl+Y` or `Command+Y`
+Then the most recently undone timeline-changing action is restored
+And if undo returns the timeline data to the current saved JSON state, the `Unsaved changes` indicator is hidden again
+And undo and redo are available from the toolbar and timeline context menu with disabled states when no matching history step is available.
+
 ### Choose Display Calendars
 
 Given the timeline settings are visible
@@ -348,7 +360,8 @@ When the user reviews available actions
 Then create-item buttons show icons with short labels
 And toolbar icons use distinct accent colors
 And create, file, and export groups have visible titles and separators
-And item locking is available as a lock/unlock icon toggle outside the create-item button group.
+And item locking is available as a lock/unlock icon toggle outside the create-item button group
+And undo and redo are available from dedicated toolbar icon buttons.
 
 ### Show App Version Footer
 

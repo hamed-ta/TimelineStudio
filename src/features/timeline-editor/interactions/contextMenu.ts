@@ -1,5 +1,7 @@
 export type ContextMenuAction =
   | "add-menu"
+  | "undo"
+  | "redo"
   | "copy"
   | "paste"
   | "duplicate"
@@ -22,6 +24,8 @@ export type TimelineContextMenuStateInput = {
   allItemsLocked: boolean;
   selectedItemLocked: boolean;
   hasCopiedItem: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
 };
 
 export function deriveTimelineContextMenuState({
@@ -29,6 +33,8 @@ export function deriveTimelineContextMenuState({
   allItemsLocked,
   selectedItemLocked,
   hasCopiedItem,
+  canUndo,
+  canRedo,
 }: TimelineContextMenuStateInput): TimelineContextMenuState {
   const canAdd = !allItemsLocked;
   const canModifySelection = hasSelection && !allItemsLocked && !selectedItemLocked;
@@ -37,6 +43,8 @@ export function deriveTimelineContextMenuState({
     addItemsDisabled: !canAdd,
     actions: {
       "add-menu": { disabled: !canAdd },
+      undo: { disabled: !canUndo },
+      redo: { disabled: !canRedo },
       copy: { disabled: !hasSelection },
       paste: { disabled: !hasCopiedItem || allItemsLocked },
       duplicate: { disabled: !canModifySelection },

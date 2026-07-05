@@ -8,6 +8,7 @@ This project follows semantic versioning. The current package version is `0.3.0`
 
 ### Changed
 
+- Added capped undo/redo history for the latest 25 timeline-changing actions, including `Ctrl`/`Command+Z`, `Ctrl`/`Command+Y`, toolbar and context-menu actions, selection restoration, and automatic clearing of `Unsaved changes` when undo returns to the saved JSON state.
 - Added page description, Open Graph, Twitter card, app name, and theme-color metadata so shared app links render better in chats, search, and social media.
 - Allowed note balloons to be positioned above or below the central timeline with matching top or bottom tips.
 - Changed marker titles into draggable callouts with leader arrows that can be moved above or below the central timeline.

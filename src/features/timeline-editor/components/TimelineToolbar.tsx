@@ -14,9 +14,11 @@ import {
   LockOutlined,
   MoonOutlined,
   MinusOutlined,
+  RedoOutlined,
   SaveOutlined,
   SmileOutlined,
   SunOutlined,
+  UndoOutlined,
   UnlockOutlined,
   ZoomInOutlined,
   ZoomOutOutlined,
@@ -62,6 +64,24 @@ export function TimelineToolbar() {
         <div className="toolbar-group toolbar-view-group" aria-label="View actions">
           <span className="toolbar-group-title">View</span>
           <div className="toolbar-group-actions view-actions">
+            <Button
+              htmlType="button"
+              className="icon-button"
+              id="undoButton"
+              aria-label="Undo"
+              title="Undo"
+              icon={<UndoOutlined />}
+              disabled
+            />
+            <Button
+              htmlType="button"
+              className="icon-button"
+              id="redoButton"
+              aria-label="Redo"
+              title="Redo"
+              icon={<RedoOutlined />}
+              disabled
+            />
             <Button
               htmlType="button"
               className="icon-button lock-toggle-button"

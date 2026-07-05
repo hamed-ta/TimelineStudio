@@ -6,12 +6,13 @@ Move Timeline Studio toward a modern account-based web app while preserving the 
 
 ## Current Slice
 
-Refine the timeline canvas toward a central-axis layout while preserving local JSON compatibility.
+Add capped undo/redo history while preserving local JSON compatibility and saved-state behavior.
 
 ## Now
 
 - Use ADR 0009 as the target architecture for shrinking the legacy timeline editor into feature-oriented React modules.
 - Use the tested feature boundaries as the base for moving live state ownership and SVG rendering out of the legacy runtime.
+- Support undo and redo for the latest 25 timeline-changing actions, expose them from shortcuts, the toolbar, and the context menu, restore the prior selection with each history step, and clear `Unsaved changes` automatically when undo returns to the saved JSON state.
 - Keep the birthdate label to the left of the vertical line when possible.
 - Show hovered date, selected display-calendar date, age, and relative date with years, months, and days in a narrow top timeline cursor readout with a full-height thin solid guide.
 - Show selected item dates, duration, line, and age context in the bottom info panel.
@@ -165,6 +166,7 @@ Refine the timeline canvas toward a central-axis layout while preserving local J
 - Added tested central-axis lane geometry helpers and wired the legacy SVG renderer to draw tracks above and below the axis.
 - Refined the central-axis renderer so only the timeline canvas scrolls, note leaders end at the axis, and dense day/month detail is hidden until readable.
 - Fixed central-axis line reordering to use visual lane order, restored `Ctrl`/`Command` + mouse wheel horizontal zoom, reduced zoom increments, added wheel shortcuts for line spacing and timeline area height, compacted the zoom/height controls behind overlay popovers, added a collapsible no-scroll info panel, fixed Ant input focus value resets in legacy-bound fields, consolidated view controls into the action toolbar, and added saved display-calendar preferences with Persian-only axis boundaries.
+- Added capped undo/redo history in the legacy editor with focused history/shortcut tests, toolbar/context-menu controls, and saved-state dirty-indicator restoration.
 
 ## Risks
 
@@ -199,6 +201,7 @@ During the current legacy-app phase:
 - Pan by dragging
 - Zoom in/out
 - Fit timeline
+- Undo/redo timeline changes
 - Save JSON
 - Load JSON
 - Export SVG/PNG/PDF

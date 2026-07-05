@@ -12,8 +12,10 @@ import {
   LockOutlined,
   MinusOutlined,
   PlusOutlined,
+  RedoOutlined,
   RightOutlined,
   SmileOutlined,
+  UndoOutlined,
   UnlockOutlined,
   ZoomInOutlined,
   ZoomOutOutlined,
@@ -42,6 +44,9 @@ export function TimelineContextMenu() {
           <ContextMenuButton action="text" icon={<FontSizeOutlined />}>Text</ContextMenuButton>
         </div>
       </div>
+      <div className="context-menu-separator" role="separator"></div>
+      <ContextMenuAction action="undo" icon={<UndoOutlined />} shortcut="Ctrl/Cmd Z">Undo</ContextMenuAction>
+      <ContextMenuAction action="redo" icon={<RedoOutlined />} shortcut="Ctrl/Cmd Y">Redo</ContextMenuAction>
       <div className="context-menu-separator" role="separator"></div>
       <ContextMenuAction action="copy" icon={<CopyOutlined />} shortcut="Ctrl/Cmd C">Copy</ContextMenuAction>
       <ContextMenuAction action="paste" icon={<FileAddOutlined />} shortcut="Ctrl/Cmd V">Paste</ContextMenuAction>

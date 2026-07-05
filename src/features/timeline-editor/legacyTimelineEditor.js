@@ -71,6 +71,16 @@ import {
   loadImage,
 } from "../../platform/media";
 import {
+  createTimelineHistory,
+  createTimelineHistoryEntry,
+  hasUnsavedTimelineChanges,
+  markTimelineSaved,
+  recordTimelineChange,
+  redoTimelineChange,
+  resetTimelineHistory,
+  undoTimelineChange,
+} from "./history";
+import {
   deriveTimelineContextMenuState,
 } from "./interactions/contextMenu";
 import {
@@ -80,6 +90,8 @@ import {
 } from "./canvas/svgText";
 import {
   isEditableShortcutTarget,
+  isRedoShortcut,
+  isUndoShortcut,
 } from "./interactions/keyboardShortcuts";
 import {
   snapEdgeOffset,
@@ -268,6 +280,8 @@ import {
     zoomLabel: document.getElementById("zoomLabel"),
     zoomControlButton: document.getElementById("zoomControlButton"),
     zoomControlPanel: document.getElementById("zoomControlPanel"),
+    undoButton: document.getElementById("undoButton"),
+    redoButton: document.getElementById("redoButton"),
     timelineHeightRange: document.getElementById("timelineHeightRange"),
     timelineHeightLabel: document.getElementById("timelineHeightLabel"),
     timelineHeightControlButton: document.getElementById("timelineHeightControlButton"),
@@ -312,6 +326,7 @@ import {
   let currentFileHandle = null;
   let currentFileName = "";
   let hasUnsavedChanges = false;
+  let history = createTimelineHistory(timelineDataSnapshot());
   let hoverDate = null;
   let hoverPoint = null;
   let lastContentTop = 0;
@@ -339,6 +354,7 @@ import {
 
   function init() {
     timeline = normalizeTimeline(timeline);
+    history = resetTimelineHistory(timelineDataSnapshot());
     bindEvents();
     syncTimelineAreaHeight();
     setZoom(initialTimelineZoom(), { render: false });
@@ -428,6 +444,8 @@ import {
     document.addEventListener("keydown", handleGlobalKeydown);
     document.addEventListener("copy", handleGlobalCopy);
     document.addEventListener("paste", handleGlobalPaste);
+    if (dom.undoButton) dom.undoButton.addEventListener("click", undoTimelineEdit);
+    if (dom.redoButton) dom.redoButton.addEventListener("click", redoTimelineEdit);
 
     dom.exportSvgButton.addEventListener("click", exportSvgFile);
     dom.exportPngButton.addEventListener("click", exportPngFile);
@@ -1601,12 +1619,14 @@ import {
   }
 
   function markDirty() {
-    if (hasUnsavedChanges) return;
-    hasUnsavedChanges = true;
+    hasUnsavedChanges = hasUnsavedTimelineChanges(history, timelineDataSnapshot());
     updateFileState();
   }
 
   function setDirty(value) {
+    if (!value) {
+      history = markTimelineSaved(history, timelineDataSnapshot());
+    }
     hasUnsavedChanges = Boolean(value);
     updateFileState();
   }
@@ -1628,15 +1648,79 @@ import {
 
   function timelineDataSnapshot() {
     return JSON.stringify({
+      version: timeline.version,
       settings: timeline.settings,
       items: timeline.items,
     });
   }
 
-  function renderAllAfterMaybeChange(previousSnapshot) {
-    const changed = timelineDataSnapshot() !== previousSnapshot;
+  function currentHistoryEntry() {
+    return createTimelineHistoryEntry(timelineDataSnapshot(), selectedId);
+  }
+
+  function restoreHistoryEntry(entry) {
+    timeline = normalizeTimeline(JSON.parse(entry.snapshot));
+    selectedId = entry.selectedId;
+  }
+
+  function renderAllAfterMaybeChange(previousEntry) {
+    const changed = timelineDataSnapshot() !== previousEntry.snapshot;
+    if (changed) {
+      history = recordTimelineChange(history, previousEntry);
+    }
     renderAll({ save: changed });
     return changed;
+  }
+
+  function undoTimelineEdit() {
+    const result = undoTimelineChange(history, currentHistoryEntry());
+    if (!result.entry) {
+      setStatus("Nothing to undo");
+      return false;
+    }
+    closeContextMenu();
+    closeLineEditor({ commit: false });
+    closeColorPickers();
+    closeRangeControlPanels();
+    hideHoverReadout();
+    history = result.history;
+    restoreHistoryEntry(result.entry);
+    renderAll();
+    updateContextMenuItems();
+    setStatus("Change undone");
+    return true;
+  }
+
+  function redoTimelineEdit() {
+    const result = redoTimelineChange(history, currentHistoryEntry());
+    if (!result.entry) {
+      setStatus("Nothing to redo");
+      return false;
+    }
+    closeContextMenu();
+    closeLineEditor({ commit: false });
+    closeColorPickers();
+    closeRangeControlPanels();
+    hideHoverReadout();
+    history = result.history;
+    restoreHistoryEntry(result.entry);
+    renderAll();
+    updateContextMenuItems();
+    setStatus("Change redone");
+    return true;
+  }
+
+  function canUndoTimelineEdit() {
+    return history.undoStack.length > 0;
+  }
+
+  function canRedoTimelineEdit() {
+    return history.redoStack.length > 0;
+  }
+
+  function syncHistoryButtons() {
+    if (dom.undoButton) dom.undoButton.disabled = !canUndoTimelineEdit();
+    if (dom.redoButton) dom.redoButton.disabled = !canRedoTimelineEdit();
   }
 
   function syncTimelineControls() {
@@ -1651,6 +1735,7 @@ import {
     dom.timelineViewport.classList.toggle("items-locked", timeline.settings.itemsLocked);
     dom.snapInput.value = String(timeline.settings.snap);
     syncDisplayCalendarControls();
+    syncHistoryButtons();
     dom.zoomRange.value = String(zoom);
     dom.zoomLabel.textContent = `${formatZoomValue(zoom)} px/month`;
     syncTimelineAreaControls();
@@ -1677,9 +1762,9 @@ import {
   function setTimelineRowHeight(nextHeight) {
     const clampedHeight = clamp(Math.round(Number(nextHeight) || DEFAULT_ROW_HEIGHT), MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
     if (clampedHeight === timeline.settings.rowHeight) return false;
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     timeline.settings.rowHeight = clampedHeight;
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Line spacing resized");
     return changed;
   }
@@ -2205,9 +2290,9 @@ import {
     setColorPickerDisabled(itemColorPicker, false);
     if (item.color === color) return;
 
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     item.color = color;
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Item color updated");
   }
 
@@ -2219,9 +2304,9 @@ import {
     setColorPickerDisabled(itemTextColorPicker, false);
     if (item.textColor === color) return;
 
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     item.textColor = color;
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Note text color updated");
   }
 
@@ -2307,9 +2392,9 @@ import {
   function updateLaneLabel(event) {
     const index = Number(event.currentTarget.dataset.laneIndex);
     if (!Number.isInteger(index)) return;
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     timeline.settings.laneLabels[index] = event.currentTarget.value.trim() || laneDisplayLabel(index);
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Line renamed");
   }
 
@@ -2328,13 +2413,13 @@ import {
     const labels = ensureLaneLabels();
     const colors = ensureLaneColors();
     const insertAt = clamp(Number(index) + 1, 0, labels.length);
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     labels.splice(insertAt, 0, laneDisplayLabel(insertAt));
     colors.splice(insertAt, 0, "");
     timeline.items.forEach((item) => {
       if (!isGlobalTimelineItemType(item.type) && item.lane >= insertAt) item.lane += 1;
     });
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Line added");
   }
 
@@ -2346,6 +2431,7 @@ import {
       pointerId: event.pointerId,
       laneIndex: index,
       moved: false,
+      previousEntry: currentHistoryEntry(),
     };
     event.currentTarget.closest(".lane-editor-row").classList.add("is-dragging");
     document.addEventListener("pointermove", moveSidebarLanePointerDrag);
@@ -2378,13 +2464,15 @@ import {
 
   function endSidebarLanePointerDrag(event) {
     if (!sidebarLanePointerDrag || event.pointerId !== sidebarLanePointerDrag.pointerId) return;
-    const moved = sidebarLanePointerDrag.moved;
+    const endedDrag = sidebarLanePointerDrag;
+    const moved = endedDrag.moved;
     sidebarLanePointerDrag = null;
     document.removeEventListener("pointermove", moveSidebarLanePointerDrag);
     document.removeEventListener("pointerup", endSidebarLanePointerDrag);
     document.removeEventListener("pointercancel", endSidebarLanePointerDrag);
     clearLaneListDragClasses();
     if (moved) {
+      history = recordTimelineChange(history, endedDrag.previousEntry);
       renderAll();
       setStatus("Line moved");
     }
@@ -2485,6 +2573,7 @@ import {
 
     const colors = ensureLaneColors();
     const removedItemIds = new Set(itemsOnLine.map((item) => item.id));
+    const previousEntry = currentHistoryEntry();
     labels.splice(index, 1);
     colors.splice(index, 1);
     timeline.items = timeline.items
@@ -2493,7 +2582,7 @@ import {
     if (selectedId && removedItemIds.has(selectedId)) selectedId = null;
     if (lineEditorLaneIndex === index) closeLineEditor({ commit: false });
     if (lineEditorLaneIndex !== null && lineEditorLaneIndex > index) lineEditorLaneIndex -= 1;
-    renderAll();
+    renderAllAfterMaybeChange(previousEntry);
     setStatus("Line removed");
   }
 
@@ -2518,7 +2607,7 @@ import {
 
   function updateTimelineFromControls(event) {
     if (suppressControlEvents) return;
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     const settings = timeline.settings;
     settings.title = dom.timelineTitleInput.value || "New Timeline";
     settings.startDate = normalizeDateInput(dom.startDateInput.value, settings.startDate);
@@ -2533,7 +2622,7 @@ import {
     settings.itemsLocked = dom.itemsLockedInput.checked;
     settings.snap = normalizeSnap(dom.snapInput.value);
     settings.displayCalendars = selectedDisplayCalendarsFromControls();
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Timeline updated");
   }
 
@@ -2568,6 +2657,18 @@ import {
     }
 
     if (isEditableShortcutTarget(event.target)) return;
+
+    if (isUndoShortcut(event)) {
+      event.preventDefault();
+      undoTimelineEdit();
+      return;
+    }
+
+    if (isRedoShortcut(event)) {
+      event.preventDefault();
+      redoTimelineEdit();
+      return;
+    }
 
     if (hasShortcutModifier && !event.shiftKey && key === "c") {
       event.preventDefault();
@@ -2652,7 +2753,7 @@ import {
       return;
     }
 
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     const type = dom.itemTypeInput.value;
     item.type = type;
     const notes = dom.itemNotesInput.value;
@@ -2673,7 +2774,7 @@ import {
       delete item.textColor;
     }
 
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Item updated");
   }
 
@@ -2681,11 +2782,12 @@ import {
     if (!canCreateOrPasteItems()) return;
     const centerDate = getViewportCenterDate();
     const startDate = snapDate(clampIso(centerDate, timeline.settings.startDate, timeline.settings.endDate));
+    const previousEntry = currentHistoryEntry();
     const item = createItemAt(type, { date: startDate });
 
     timeline.items.push(item);
     selectedId = item.id;
-    renderAll();
+    renderAllAfterMaybeChange(previousEntry);
     setStatus(`${titleForType(type)} added`);
   }
 
@@ -2725,9 +2827,10 @@ import {
     if (!canModifyItem(item, "delete it")) return;
     const ok = window.confirm(`Delete "${item.title}"?`);
     if (!ok) return;
+    const previousEntry = currentHistoryEntry();
     timeline.items = timeline.items.filter((candidate) => candidate.id !== item.id);
     if (selectedId === item.id) selectedId = null;
-    renderAll();
+    renderAllAfterMaybeChange(previousEntry);
     setStatus("Item deleted");
   }
 
@@ -2750,10 +2853,11 @@ import {
       updateContextMenuItems();
       return false;
     }
+    const previousEntry = currentHistoryEntry();
     const copy = createPastedItem(copiedItem, target);
     timeline.items.push(copy);
     selectedId = copy.id;
-    renderAll();
+    renderAllAfterMaybeChange(previousEntry);
     setStatus("Item pasted");
     return true;
   }
@@ -2788,6 +2892,7 @@ import {
     const item = getItem(itemId);
     if (!item) return;
     if (!canModifyItem(item, "duplicate it")) return;
+    const previousEntry = currentHistoryEntry();
     const copy = {
       ...item,
       id: createId(item.type),
@@ -2797,7 +2902,7 @@ import {
     };
     timeline.items.push(copy);
     selectedId = copy.id;
-    renderAll();
+    renderAllAfterMaybeChange(previousEntry);
     setStatus("Item duplicated");
   }
 
@@ -2809,9 +2914,9 @@ import {
       return;
     }
 
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     timeline.settings.itemsLocked = nextLocked;
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     updateContextMenuItems();
     if (changed) setStatus(nextLocked ? "Read only on" : "Read only off");
   }
@@ -2865,41 +2970,41 @@ import {
     if (lineEditorLaneIndex === null) return;
     const labels = ensureLaneLabels();
     if (!labels[lineEditorLaneIndex] && dom.lineNameInput.value === "") return;
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     labels[lineEditorLaneIndex] = dom.lineNameInput.value;
-    renderAllAfterMaybeChange(previousSnapshot);
+    renderAllAfterMaybeChange(previousEntry);
   }
 
   function commitLineEditorName() {
     if (lineEditorLaneIndex === null) return;
     const labels = ensureLaneLabels();
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     labels[lineEditorLaneIndex] = dom.lineNameInput.value.trim() || laneDisplayLabel(lineEditorLaneIndex);
     dom.lineNameInput.value = labels[lineEditorLaneIndex];
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Line renamed");
   }
 
   function updateLineEditorColor() {
     if (lineEditorLaneIndex === null) return;
     const colors = ensureLaneColors();
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     const color = normalizeColor(dom.lineColorInput.value);
     colors[lineEditorLaneIndex] = color;
     dom.lineEditorPopover.dataset.color = color;
     setColorPickerValue(lineColorPicker, color, { emit: false });
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Line color updated");
   }
 
   function clearLineEditorColor() {
     if (lineEditorLaneIndex === null) return;
     const colors = ensureLaneColors();
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     colors[lineEditorLaneIndex] = "";
     dom.lineEditorPopover.dataset.color = "";
     setColorPickerValue(lineColorPicker, "", { emit: false });
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Line color cleared");
   }
 
@@ -2997,6 +3102,10 @@ import {
 
     if (action === "copy") {
       copySelectedItem(actionItemId);
+    } else if (action === "undo") {
+      undoTimelineEdit();
+    } else if (action === "redo") {
+      redoTimelineEdit();
     } else if (action === "paste") {
       pasteCopiedItem(target);
     } else if (action === "duplicate") {
@@ -3019,10 +3128,11 @@ import {
   function addItemFromContext(type, target) {
     if (!TIMELINE_ITEM_TYPES.includes(String(type))) return;
     if (!canCreateOrPasteItems()) return;
+    const previousEntry = currentHistoryEntry();
     const item = createItemAt(type, target);
     timeline.items.push(item);
     selectedId = item.id;
-    renderAll();
+    renderAllAfterMaybeChange(previousEntry);
     setStatus(`${titleForType(type)} added`);
   }
 
@@ -3038,9 +3148,9 @@ import {
       updateContextMenuItems();
       return;
     }
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     item.locked = nextLocked;
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     updateContextMenuItems();
     if (changed) setStatus(nextLocked ? "Item locked" : "Item unlocked");
   }
@@ -3053,6 +3163,8 @@ import {
       allItemsLocked: timeline.settings.itemsLocked,
       selectedItemLocked: Boolean(item?.locked),
       hasCopiedItem: Boolean(copiedItem),
+      canUndo: canUndoTimelineEdit(),
+      canRedo: canRedoTimelineEdit(),
     });
     setContextMenuAddState({ disabled: menuState.addItemsDisabled });
     Object.entries(menuState.actions).forEach(([action, state]) => {
@@ -3227,11 +3339,11 @@ import {
       renderAll({ save: false });
       return;
     }
-    const previousSnapshot = timelineDataSnapshot();
+    const previousEntry = currentHistoryEntry();
     item.notes = value;
     item.title = noteTitleFromText(value);
     selectedId = item.id;
-    const changed = renderAllAfterMaybeChange(previousSnapshot);
+    const changed = renderAllAfterMaybeChange(previousEntry);
     if (changed) setStatus("Note text updated");
   }
 
@@ -3283,6 +3395,7 @@ import {
         pointerId: event.pointerId,
         mode: "lane",
         laneIndex,
+        previousEntry: currentHistoryEntry(),
       };
       dom.timelineViewport.setPointerCapture(event.pointerId);
       dom.timelineViewport.classList.add("is-reordering-lanes");
@@ -3353,6 +3466,7 @@ import {
       itemId: item.id,
       startPoint: point,
       original: { ...item },
+      previousEntry: currentHistoryEntry(),
       startLayout: noteLayout ? { ...noteLayout, lines: noteLayout.lines.slice() } : markerLayout,
     };
     dom.timelineViewport.setPointerCapture(event.pointerId);
@@ -3624,9 +3738,15 @@ import {
       return;
     }
     if (wasLaneReorder) {
+      if (endedDrag.moved) {
+        history = recordTimelineChange(history, endedDrag.previousEntry);
+      }
       renderAll({ save: Boolean(endedDrag.moved) });
       if (endedDrag.moved) setStatus("Line moved");
       return;
+    }
+    if (dataMoved) {
+      history = recordTimelineChange(history, endedDrag.previousEntry);
     }
     renderAll({ save: dataMoved });
     if (dataMoved && endedDrag.mode === "note-resize") {
@@ -3850,6 +3970,7 @@ import {
     const text = await file.text();
     timeline = parseTimelineFileText(text);
     selectedId = null;
+    history = resetTimelineHistory(timelineDataSnapshot());
     setCurrentFile(handle, file.name);
     renderAll({ save: false });
     setDirty(false);

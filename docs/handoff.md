@@ -84,6 +84,8 @@ The item editor and line editor use a shared dependency-free color picker with a
 
 The timeline has a custom context menu for item commands. Right-clicking the timeline shows Add, Copy, Paste, Duplicate, Lock item or Unlock item, Delete, Zoom in, Zoom out, and Fit. The Add submenu is closed by default and opens after choosing Add, then exposes Birth, Event, Marker, Note, Period, Line, and Text item types; created items use the clicked date and clicked line where applicable. Copy and paste use an in-app item clipboard. Keyboard shortcuts support `Ctrl`/`Command+C`, `Ctrl`/`Command+V`, `Ctrl`/`Command+D`, `Delete`/`Backspace`, `Ctrl`/`Command+Shift+L`, `+`, and `-` when focus is not in an editor field.
 
+The legacy runtime now keeps capped undo and redo history for the latest 25 timeline-changing actions. `Ctrl`/`Command+Z` restores the previous timeline snapshot and selection, `Ctrl`/`Command+Y` reapplies the latest undone change, toolbar icon buttons and timeline context-menu actions expose the same history steps, and the `Unsaved changes` indicator now clears automatically when history returns to the last saved JSON state.
+
 Timeline items now have an optional `locked` flag. Old JSON without this field still loads with items unlocked. The top toolbar lock icon is now labeled as read-only mode; turning it on makes item content read-only while preserving selection, copy, pan, zoom, and the ability to turn read-only off. Individual item locking keeps one item selectable and copyable but blocks editing, dragging, resizing, duplicating, and deleting for that item.
 
 The timeline toolbar uses Ant Design buttons and icons with distinct accent colors. Create, file, and export actions are visually grouped with visible group titles and separators, and item locking is a dedicated icon toggle in the toolbar header instead of a checkbox in the action row.
@@ -168,6 +170,9 @@ Firebase should wait until the local Vite app is stable.
 
 ## Work Completed This Session
 
+- Added capped undo/redo history for the latest 25 timeline-changing actions in the legacy editor runtime.
+- Added toolbar undo/redo icon buttons and matching timeline context-menu undo/redo actions with shared disabled-state rules.
+- Added focused history and keyboard shortcut tests for undo/redo stack limits, redo clearing, and saved-state dirty restoration.
 - Moved the birth item label to the left side of the vertical line with a small left-edge clamp.
 - Changed the hover age readout from a cursor-following tooltip to a fixed timeline info panel below the timeline.
 - Added selected-item date, duration, line, and age context to the timeline info panel.
@@ -334,6 +339,8 @@ Firebase should wait until the local Vite app is stable.
 
 ## Verification
 
+- Current undo/redo slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The test suite now has 109 passing tests. The build still reports the expected Vite chunk-size warning.
+- Browser smoke through Vite at `http://127.0.0.1:8767/`: toolbar undo/redo buttons started disabled, adding Event enabled undo, the context menu showed undo enabled and redo disabled, context-menu Undo removed the item and hid `Unsaved changes`, toolbar Redo restored the item, and browser logs had no warnings or errors.
 - Current note, marker, and cursor readout slice: `node --check src/features/timeline-editor/legacyTimelineEditor.js`, `npm test`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. The test suite now has 102 passing tests. The build still reports the expected Vite chunk-size warning.
 - Browser smoke through Vite at `http://127.0.0.1:8766/`: adding a marker created a below-line tipped callout by default; the marker line rendered solid (`strokeDasharray: none`), the marker callout leader stayed dashed (`strokeDasharray: 4px, 6px`), the selected marker callout used a dashed balloon outline (`strokeDasharray: 4px, 4px`), and the marker resize hit target matched note behavior with transparent fill and no stroke while the compact shared grip rendered at `1.5px` stroke. Hovering the timeline showed the top cursor readout with `6 months 4 days ago`, removed hover text from the bottom info panel, and drew the cursor guide as a full-height `1px` solid line; no browser warnings or errors were reported.
 - App share metadata slice: `npm run build`, `git diff --check`, and `rg -n "description|og:title|og:description|og:url|twitter:card|twitter:title|twitter:description|theme-color|application-name" dist/index.html index.html` passed. The build still reports the expected Vite chunk-size warning.
@@ -551,51 +558,53 @@ Firebase should wait until the local Vite app is stable.
 - Timeline info panel and period labels may need visual tuning after testing with a real personal timeline.
 - Firebase is not installed or configured yet.
 - Live rendering and most DOM interaction behavior still lives in `src/features/timeline-editor/legacyTimelineEditor.js`.
+- Undo/redo history still lives in `src/features/timeline-editor/legacyTimelineEditor.js` rather than the reducer/context boundary.
 - `npm audit` reports one low-severity transitive `esbuild` advisory for Windows dev-server use.
 - Central-axis dense date labels need more real-data testing at high day-level zoom.
 
 ## Closeout Snapshot - 2026-07-05
 
 Work completed:
-- Committed the cursor and marker callout slice in `798b3f3`.
-- The top cursor readout now shows selected-calendar date, age context, and relative spans with years, months, and days.
-- The cursor guide is a thin full-height solid line instead of a dashed cursor-to-axis segment.
-- Marker callouts default below their marker line endpoint, use the same dashed selected balloon outline behavior as notes, and share the same transparent resize hit target plus diagonal grip icon as note balloons.
-- The bottom information panel is now selection-focused; hover context lives in the top cursor readout.
+- Added capped undo/redo history for the latest 25 timeline-changing actions.
+- `Ctrl`/`Command+Z` and `Ctrl`/`Command+Y` now undo and redo actual timeline changes while restoring the matching selection state.
+- Added toolbar undo/redo icon buttons and timeline context-menu undo/redo actions that follow the same history availability rules.
+- The `Unsaved changes` indicator now clears automatically when undo returns the timeline to the current saved JSON state.
+- Added focused history, keyboard shortcut, and context-menu state tests to cover stack limits, redo clearing, disabled states, and saved-state dirty restoration.
 
 Files changed by the committed slice:
 - `CHANGELOG.md`
 - `docs/handoff.md`
 - `docs/plan.md`
 - `docs/product.md`
-- `src/features/timeline-editor/canvas/TimelineCanvas.tsx`
-- `src/features/timeline-editor/components/TimelineInfoPanel.tsx`
+- `src/features/timeline-editor/history.test.js`
+- `src/features/timeline-editor/history.ts`
+- `src/features/timeline-editor/components/TimelineContextMenu.tsx`
+- `src/features/timeline-editor/components/TimelineToolbar.tsx`
+- `src/features/timeline-editor/interactions/keyboardShortcuts.test.js`
+- `src/features/timeline-editor/interactions/keyboardShortcuts.ts`
+- `src/features/timeline-editor/interactions/contextMenu.test.js`
+- `src/features/timeline-editor/interactions/contextMenu.ts`
 - `src/features/timeline-editor/legacyTimelineEditor.js`
-- `src/features/timeline-editor/timelineInfo.test.js`
-- `src/features/timeline-editor/timelineInfo.ts`
-- `styles.css`
 
 Checks run:
 - `node --check src/features/timeline-editor/legacyTimelineEditor.js`
-- `npm test` passed with 102 tests.
+- `npm test` passed with 109 tests.
 - `npm run typecheck`
 - `npm run build` passed with the existing Vite large chunk warning.
 - `git diff --check`
-- Browser smoke through Vite at `http://127.0.0.1:8766/`: marker creation selected a marker, the top cursor readout showed `6 months 4 days ago`, the cursor guide computed as `1px` solid with no dash array, the marker resize hit target had transparent fill and no stroke, the shared grip rendered at `1.5px`, and browser logs had no warnings or errors.
-- Follow-up cursor readout fix: the top cursor card now uses the full available top-bar width and disables ellipsis on the relative date, age, and selected-calendar date labels so they remain visible when horizontal space is available.
+- Browser smoke through Vite at `http://127.0.0.1:8767/`: toolbar undo/redo buttons started disabled; Event added one timeline item and showed `Unsaved changes`; the context menu showed undo enabled and redo disabled; context-menu Undo removed the item and hid `Unsaved changes`; toolbar Redo restored the item; browser logs had no warnings or errors.
 
 Known issues:
 - No automated browser test harness exists yet; browser smoke is still manual/interactive.
 - Vite still reports the expected large chunk warning because Ant Design remains bundled in the main app chunk.
 
 Uncommitted work:
-- Cursor readout no-ellipsis CSS and documentation updates are uncommitted.
-- The closeout handoff update is uncommitted.
+- Undo/redo history code, tests, and documentation updates are uncommitted.
 
 ## Suggested Commit Message
 
-`fix: prevent cursor readout truncation`
+`feat: add timeline undo redo history`
 
 ## Next Safe Step
 
-Continue testing the central-axis renderer with real loaded timeline data, especially dense date labels, vertical panning, and adding or dragging notes and markers above and below the axis.
+Test the new undo/redo flow against real loaded timeline data for note and marker drag, lane reorder, and save/load boundaries, then move the history-aware state boundary closer to the reducer/context architecture from ADR 0009.

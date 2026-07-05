@@ -11,10 +11,14 @@ test("context menu state enables add paste and selected-item actions when editab
     allItemsLocked: false,
     selectedItemLocked: false,
     hasCopiedItem: true,
+    canUndo: true,
+    canRedo: true,
   }), {
     addItemsDisabled: false,
     actions: {
       "add-menu": { disabled: false },
+      undo: { disabled: false },
+      redo: { disabled: false },
       copy: { disabled: false },
       paste: { disabled: false },
       duplicate: { disabled: false },
@@ -31,10 +35,14 @@ test("context menu state disables mutation commands in read-only mode", () => {
     allItemsLocked: true,
     selectedItemLocked: false,
     hasCopiedItem: true,
+    canUndo: false,
+    canRedo: false,
   });
 
   assert.equal(state.addItemsDisabled, true);
   assert.equal(state.actions["add-menu"].disabled, true);
+  assert.equal(state.actions.undo.disabled, true);
+  assert.equal(state.actions.redo.disabled, true);
   assert.equal(state.actions.paste.disabled, true);
   assert.equal(state.actions.duplicate.disabled, true);
   assert.equal(state.actions.delete.disabled, true);
@@ -47,10 +55,14 @@ test("context menu state swaps lock actions for locked selected items", () => {
     allItemsLocked: false,
     selectedItemLocked: true,
     hasCopiedItem: false,
+    canUndo: true,
+    canRedo: false,
   });
 
   assert.equal(state.actions["lock-item"].hidden, true);
   assert.equal(state.actions["unlock-item"].hidden, false);
+  assert.equal(state.actions.undo.disabled, false);
+  assert.equal(state.actions.redo.disabled, true);
   assert.equal(state.actions.duplicate.disabled, true);
   assert.equal(state.actions.delete.disabled, true);
 });
@@ -61,8 +73,12 @@ test("context menu state disables selection commands when nothing is selected", 
     allItemsLocked: false,
     selectedItemLocked: false,
     hasCopiedItem: false,
+    canUndo: false,
+    canRedo: false,
   });
 
+  assert.equal(state.actions.undo.disabled, true);
+  assert.equal(state.actions.redo.disabled, true);
   assert.equal(state.actions.copy.disabled, true);
   assert.equal(state.actions.duplicate.disabled, true);
   assert.equal(state.actions.delete.disabled, true);
