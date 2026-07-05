@@ -18,6 +18,7 @@ This project follows semantic versioning. The current package version is `0.3.0`
 - Improved marker and note balloon selection grips and made selected marker callouts use the same dashed balloon outline as notes.
 - Changed the top cursor readout relative date to include years, months, and days when applicable.
 - Unified note and marker balloon resize grips with the same transparent hit target and diagonal grip icon.
+- Let the top cursor readout use the available timeline width so date and age details are not ellipsized when there is room.
 
 ## 0.3.0 - 2026-07-04
 

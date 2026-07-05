@@ -1529,14 +1529,15 @@ button:focus-visible,
 .timeline-cursor-card {
   position: absolute;
   top: 0;
-  left: var(--cursor-label-x);
+  left: 50%;
   display: flex;
-  max-width: min(520px, calc(100% - 20px));
+  width: calc(100% - 20px);
+  max-width: none;
   height: 100%;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  overflow: hidden;
+  overflow: visible;
   padding: 0 10px;
   font-size: var(--font-size-sm);
   line-height: var(--line-tight);
@@ -1546,17 +1547,20 @@ button:focus-visible,
 }
 
 .timeline-cursor-card strong {
+  flex: 0 0 auto;
+  min-width: max-content;
   color: var(--timeline-cursor-guide);
   font-size: var(--font-size-md);
   font-weight: 700;
 }
 
 .timeline-cursor-card span {
-  min-width: 0;
-  overflow: hidden;
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
   color: var(--text);
   font-weight: 600;
-  text-overflow: ellipsis;
+  text-overflow: clip;
 }
 
 .timeline-cursor-card #cursorAgeLabel {

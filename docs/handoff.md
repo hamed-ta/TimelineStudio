@@ -164,7 +164,7 @@ Firebase should wait until the local Vite app is stable.
 
 ## Last Commit
 
-`da511bc Refactor timeline editor into feature modules` on `main`
+`798b3f3 fix: Improve timeline cursor readout and marker callout resizing` on `main`
 
 ## Work Completed This Session
 
@@ -554,10 +554,48 @@ Firebase should wait until the local Vite app is stable.
 - `npm audit` reports one low-severity transitive `esbuild` advisory for Windows dev-server use.
 - Central-axis dense date labels need more real-data testing at high day-level zoom.
 
+## Closeout Snapshot - 2026-07-05
+
+Work completed:
+- Committed the cursor and marker callout slice in `798b3f3`.
+- The top cursor readout now shows selected-calendar date, age context, and relative spans with years, months, and days.
+- The cursor guide is a thin full-height solid line instead of a dashed cursor-to-axis segment.
+- Marker callouts default below their marker line endpoint, use the same dashed selected balloon outline behavior as notes, and share the same transparent resize hit target plus diagonal grip icon as note balloons.
+- The bottom information panel is now selection-focused; hover context lives in the top cursor readout.
+
+Files changed by the committed slice:
+- `CHANGELOG.md`
+- `docs/handoff.md`
+- `docs/plan.md`
+- `docs/product.md`
+- `src/features/timeline-editor/canvas/TimelineCanvas.tsx`
+- `src/features/timeline-editor/components/TimelineInfoPanel.tsx`
+- `src/features/timeline-editor/legacyTimelineEditor.js`
+- `src/features/timeline-editor/timelineInfo.test.js`
+- `src/features/timeline-editor/timelineInfo.ts`
+- `styles.css`
+
+Checks run:
+- `node --check src/features/timeline-editor/legacyTimelineEditor.js`
+- `npm test` passed with 102 tests.
+- `npm run typecheck`
+- `npm run build` passed with the existing Vite large chunk warning.
+- `git diff --check`
+- Browser smoke through Vite at `http://127.0.0.1:8766/`: marker creation selected a marker, the top cursor readout showed `6 months 4 days ago`, the cursor guide computed as `1px` solid with no dash array, the marker resize hit target had transparent fill and no stroke, the shared grip rendered at `1.5px`, and browser logs had no warnings or errors.
+- Follow-up cursor readout fix: the top cursor card now uses the full available top-bar width and disables ellipsis on the relative date, age, and selected-calendar date labels so they remain visible when horizontal space is available.
+
+Known issues:
+- No automated browser test harness exists yet; browser smoke is still manual/interactive.
+- Vite still reports the expected large chunk warning because Ant Design remains bundled in the main app chunk.
+
+Uncommitted work:
+- Cursor readout no-ellipsis CSS and documentation updates are uncommitted.
+- The closeout handoff update is uncommitted.
+
 ## Suggested Commit Message
 
-`feat: center timeline axis with above-below tracks`
+`fix: prevent cursor readout truncation`
 
 ## Next Safe Step
 
-Tune the central-axis renderer with real loaded timeline data, especially dense date labels, vertical panning, and adding or dragging items above and below the axis.
+Continue testing the central-axis renderer with real loaded timeline data, especially dense date labels, vertical panning, and adding or dragging notes and markers above and below the axis.

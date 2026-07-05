@@ -202,6 +202,7 @@ Given a timeline has a birth item on `2001-03-04`
 When the user hovers over a date on the timeline
 Then the app shows a thin solid vertical cursor guide across the visible timeline canvas
 And a narrow readout at the top of the timeline shows the hovered date using the selected display calendars, the age calculated from the birth item, and how long ago or far ahead the date is from today using years, months, and days when applicable
+And the readout uses the available top-bar width instead of truncating date or age details while there is room to show them
 And updating the hover context does not move the timeline viewport
 When the user selects a timeline item
 Then the bottom information panel shows the item type, title, selected-calendar date details, duration when the item has an end date, and age context when a birth item exists
