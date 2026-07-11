@@ -17,6 +17,7 @@ import {
   snapTimelineDate,
   timelineDateToX,
   timelinePixelsPerDay,
+  timelineRenderBounds,
   timelineWheelAction,
   timelineXToDate,
 } from "./timelineLayout.ts";
@@ -92,19 +93,50 @@ test("central timeline geometry places lanes around the axis", () => {
   assert.equal(laneCenterY(4, geometry, 68), 58);
 });
 
-test("central timeline lanes expose above and below labels", () => {
+test("central timeline lanes keep stored labels independent of axis position", () => {
   assert.equal(laneSide(0), "above");
   assert.equal(laneSide(1), "below");
   assert.equal(laneSide(2), "above");
   assert.equal(laneTrackNumber(0), 1);
   assert.equal(laneTrackNumber(1), 1);
   assert.equal(laneTrackNumber(4), 3);
-  assert.equal(laneDisplayLabel(0), "Line +1");
-  assert.equal(laneDisplayLabel(1), "Line -1");
-  assert.equal(laneDisplayLabel(4), "Line +3");
+  assert.equal(laneDisplayLabel(0), "Line 1");
+  assert.equal(laneDisplayLabel(1), "Line 2");
+  assert.equal(laneDisplayLabel(4), "Line 5");
   assert.equal(laneDisplayLabel(2, "Education"), "Education");
-  assert.equal(laneDisplayLabel(2, "Line 3"), "Line +2");
-  assert.equal(laneDisplayLabel(1, "Line +1"), "Line -1");
+  assert.equal(laneDisplayLabel(2, "Line 3"), "Line 3");
+  assert.equal(laneDisplayLabel(1, "Line +1"), "Line 1");
+});
+
+test("timeline render bounds center short content in the visible viewport", () => {
+  assert.deepEqual(timelineRenderBounds(10, 510, 800), {
+    top: -140,
+    bottom: 660,
+    height: 800,
+  });
+  assert.deepEqual(timelineRenderBounds(-20, 880, 700), {
+    top: -20,
+    bottom: 880,
+    height: 900,
+  });
+});
+
+test("timeline render bounds keep manual viewport space symmetric while preserving directional content", () => {
+  assert.deepEqual(timelineRenderBounds(0, 560, 900), {
+    top: -170,
+    bottom: 730,
+    height: 900,
+  });
+  assert.deepEqual(timelineRenderBounds(0, 560, 700), {
+    top: -70,
+    bottom: 630,
+    height: 700,
+  });
+  assert.deepEqual(timelineRenderBounds(-120, 560, 800), {
+    top: -180,
+    bottom: 620,
+    height: 800,
+  });
 });
 
 test("central timeline visual order keeps below-axis swaps below the axis", () => {

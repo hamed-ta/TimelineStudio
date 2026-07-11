@@ -14,6 +14,8 @@ A horizontal date-based canvas. Time flows left to right.
 
 A named horizontal lane used to group related items, such as School, Home, Work, Family, or Notes.
 Lines can be renamed, recolored, added, removed, and reordered directly from the timeline label area. Items assigned to a line move with that line.
+New timelines start with three lines above and three lines below the central axis, named `Line 1` through `Line 6` from top to bottom.
+Default line names are stable identities: moving a line does not renumber or rename it.
 Removing a line removes the items assigned to that line and shifts lower lines upward after confirmation.
 
 ### Event
@@ -128,6 +130,7 @@ The app should keep undo and redo history for the most recent 25 timeline-changi
 - The timeline selection information panel should be collapsible so users can give more vertical space to the timeline canvas.
 - Editing fields should preserve their current values when focused and should allow normal text entry, including spaces in timeline and item names.
 - Empty timelines should show a clear centered empty state instead of a visually unbalanced blank canvas.
+- When the rendered timeline is shorter than the viewport, it should sit centered vertically with equal spare space above and below by default.
 - Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
 - Timeline settings should let users choose Gregorian, Persian / Solar Hijri, or both display calendars while keeping at least one display calendar enabled.
 - When only Persian / Solar Hijri is selected, central-axis year and month ticks should align to Persian / Solar Hijri calendar boundaries.
@@ -153,7 +156,8 @@ Given the timeline has no items
 When the timeline renders
 Then the empty canvas shows a clear centered empty state
 And the one-year empty range is fitted into view
-And the timeline grid is not visually stretched or pushed to one side.
+And the timeline grid is not visually stretched or pushed to one side
+And spare viewport height is balanced above and below the rendered timeline.
 
 ### Share App Link
 
@@ -243,12 +247,26 @@ When the timeline renders
 Then the viewport height fits the axis, visible lines, footer spacing, and note area when notes exist
 And the viewport does not stretch vertically just because the workspace has extra height.
 
+### Resize Timeline Area Symmetrically
+
+Given no timeline item extends beyond the normal line area
+When the user grows or shrinks the timeline area height
+Then the central axis remains vertically centered
+And the available space above and below the timeline changes equally
+And alternating time bands immediately fill the resized visible canvas without requiring a zoom action
+When an item or callout extends only above or only below the normal line area
+Then the canvas expands on the side required by that item instead of mirroring the item-driven space on both sides.
+
 ### Show Central Timeline Axis
 
 Given the timeline has multiple named lines
 When the timeline renders
 Then the date axis appears through the center of the canvas instead of above every line
-And lines alternate around the axis as `Line +1`, `Line -1`, `Line +2`, and `Line -2` when no custom label is set
+And a new timeline has three lines above and three lines below the axis
+And its default names read `Line 1` through `Line 6` from top to bottom without plus or minus signs
+And moving a line above or below the axis keeps that line's name unchanged
+And the add-line control is fully visible below the final line without overlapping its border
+And alternating time-band color continues through the full visible canvas above and below the lines
 And users can add and drag items on lines above or below the central axis without changing the saved JSON lane format.
 
 ### Show Zoom-Responsive Central Axis Detail
@@ -303,6 +321,21 @@ And the app derives any internal note title from the first non-empty balloon tex
 And selecting the note does not append the line number to the selection heading
 And right-clicking a note keeps the selected note outline visible for context menu actions without adding a browser focus box
 And the note is still present after save/load.
+
+### Keep Above-Axis Note Visible
+
+Given a timeline has a note balloon positioned above the central axis
+When the note approaches the top of the timeline canvas
+Then the cursor readout remains in a separate row above the scrollable timeline
+And the full balloon, its text, and its resize controls remain visible.
+
+### Keep Cursor Readout Text Stable
+
+Given the cursor readout is visible
+When the user moves across dates whose labels have different lengths
+Then the relative date, age, and displayed date remain in stable columns
+And single-digit numbers keep the same reserved width as double-digit numbers
+And changing text length does not recenter the full group.
 
 ### Create A Period
 

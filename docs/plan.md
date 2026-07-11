@@ -2,28 +2,26 @@
 
 ## Current Goal
 
-Move Timeline Studio toward the ADR 0009 React architecture while preserving current local JSON behavior.
+Continue the ADR 0009 migration by moving undo/redo history ownership into the reducer-managed editor state.
 
 ## Current Slice
 
-Stabilize the new undo/redo workflow, then move history-aware state ownership out of `src/features/timeline-editor/legacyTimelineEditor.js`.
+- Add reducer-level history state and undo/redo/save actions without changing current user-visible behavior.
+- Reuse the tested 25-entry history primitives from `history.ts`.
+- Keep the legacy controller bridge operational until reducer history behavior is fully covered.
 
 ## Next
 
-- Browser-smoke undo/redo with real loaded timelines, especially note and marker drag, lane reorder, and save/load boundaries.
-- Extract history-aware command and state handling from the legacy runtime into feature modules or reducer/context without changing required DOM IDs.
-- Continue the item-by-item rendering migration after the state boundary is cleaner, starting with note and marker heavy behavior.
+- Establish RED reducer tests for undo, redo, selection restoration, saved-state dirty tracking, and redo invalidation after a new edit.
 
 ## Risks
 
-- Undo/redo currently depends on every timeline-changing mutation path recording history inside `src/features/timeline-editor/legacyTimelineEditor.js`.
-- No automated browser harness exists yet, so UI regression coverage is still manual.
-- The central-axis renderer and most interactive behavior still live in the legacy runtime.
+- Avoid running reducer and legacy histories as competing sources of truth during the migration.
 
 ## Latest Verification
 
-- `npm test`
-- `node --check src/features/timeline-editor/legacyTimelineEditor.js`
-- `npm run typecheck`
-- `npm run build`
-- Browser smoke at `http://127.0.0.1:8767/`: toolbar/context-menu undo/redo states behaved correctly, undo removed the added event and cleared `Unsaved changes`, and redo restored it.
+- `npm test` passed 113 tests.
+- `node --check src/features/timeline-editor/legacyTimelineEditor.js` passed.
+- `npm run typecheck` passed.
+- `npm run build` passed with the existing Vite chunk-size warning.
+- Browser smoke passed for symmetric grow/shrink behavior, immediate full-height band updates, centered scrolling, directional note overflow, and console errors.

@@ -50,24 +50,32 @@ test("pointer info follows selected display calendars", () => {
 
 test("cursor readout shows relative date age and selected calendars", () => {
   assert.deepEqual(cursorReadoutText("2003-04-01", "1987-07-13", ["gregorian"], "2026-07-05"), {
-    agoLabel: "23 years 3 months 4 days ago",
-    ageLabel: "Age 15 years, 8 months, 19 days",
+    agoLabel: "23 years \u20073 months \u20074 days ago",
+    ageLabel: "Age 15 years, \u20078 months, 19 days",
     dateLabel: "Apr 1, 2003",
   });
 });
 
 test("cursor readout handles future dates and missing birth date", () => {
   assert.deepEqual(cursorReadoutText("2027-08-06", null, ["gregorian"], "2026-07-05"), {
-    agoLabel: "in 1 year 1 month 1 day",
+    agoLabel: "in \u20071 year \u20071 month \u20071 day",
     ageLabel: "Age unavailable",
     dateLabel: "Aug 6, 2027",
+  });
+});
+
+test("cursor readout reserves digit width for single-digit values", () => {
+  assert.deepEqual(cursorReadoutText("2025-03-08", "2024-02-01", ["gregorian"], "2026-07-05"), {
+    agoLabel: "\u20071 year \u20073 months 27 days ago",
+    ageLabel: "Age \u20071 year, \u20071 month, \u20077 days",
+    dateLabel: "Mar 8, 2025",
   });
 });
 
 test("selection info formats period dates duration line and age range", () => {
   assert.deepEqual(selectionInfoText(period, "1987-07-13"), {
     itemLabel: "Period: School",
-    lineLine: "Line: Line -1",
+    lineLine: "Line: Line 2",
     dateLine: "Start: Jul 13, 1987 / 22 Tir 1366",
     endLine: "End: Aug 20, 1990 / 29 Mordad 1369",
     durationLine: "Duration: 3 years, 1 month, 7 days",
@@ -78,7 +86,8 @@ test("selection info formats period dates duration line and age range", () => {
 test("selection info follows selected display calendars", () => {
   assert.equal(selectionInfoText(period, null, ["gregorian"]).dateLine, "Start: Jul 13, 1987");
   assert.equal(selectionInfoText(period, null, ["iranian"]).dateLine, "Start: 22 Tir 1366");
-  assert.equal(selectionInfoText(period, null, ["iranian"]).lineLine, "Line: Line -1");
+  assert.equal(selectionInfoText(period, null, ["iranian"]).lineLine, "Line: Line 2");
+  assert.equal(selectionInfoText(period, null, ["gregorian"], ["Home", "Education"]).lineLine, "Line: Education");
 });
 
 test("selection info formats notes without line metadata", () => {

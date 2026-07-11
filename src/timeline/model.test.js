@@ -23,6 +23,26 @@ test("new timelines default to the last year ending today", () => {
   assert.equal(timeline.settings.autoEndDate, true);
 });
 
+test("new timelines start with six stable line names arranged top to bottom", () => {
+  const labels = createEmptyTimeline().settings.laneLabels;
+  assert.deepEqual(labels, [
+    "Line 3",
+    "Line 4",
+    "Line 2",
+    "Line 5",
+    "Line 1",
+    "Line 6",
+  ]);
+  assert.deepEqual([labels[4], labels[2], labels[0], labels[1], labels[3], labels[5]], [
+    "Line 1",
+    "Line 2",
+    "Line 3",
+    "Line 4",
+    "Line 5",
+    "Line 6",
+  ]);
+});
+
 test("timeline normalization preserves or repairs display calendar settings", () => {
   assert.deepEqual(normalizeTimeline({ settings: {} }).settings.displayCalendars, ["gregorian", "iranian"]);
   assert.deepEqual(normalizeTimeline({ settings: { displayCalendars: ["iranian"] } }).settings.displayCalendars, ["iranian"]);

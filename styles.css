@@ -1431,7 +1431,7 @@ button:focus-visible,
 .timeline-canvas-shell {
   position: relative;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: 36px minmax(0, 1fr) auto;
   gap: 7px;
   min-width: 0;
   min-height: 0;
@@ -1482,6 +1482,9 @@ button:focus-visible,
 
 .timeline-viewport {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   min-height: 0;
   height: 100%;
   overflow: auto;
@@ -1497,11 +1500,8 @@ button:focus-visible,
 .timeline-cursor-readout {
   --cursor-x: 0px;
   --cursor-label-x: 0px;
-  position: absolute;
+  position: relative;
   z-index: 6;
-  top: 0;
-  right: 0;
-  left: 0;
   height: 36px;
   border: 1px solid color-mix(in srgb, var(--line-strong) 58%, transparent);
   border-bottom-color: color-mix(in srgb, var(--line-strong) 72%, transparent);
@@ -1523,44 +1523,51 @@ button:focus-visible,
 }
 
 .timeline-cursor-readout[hidden] {
-  display: none;
+  display: block !important;
+  visibility: hidden;
 }
 
 .timeline-cursor-card {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  display: flex;
-  width: calc(100% - 20px);
+  display: grid;
+  width: 100%;
   max-width: none;
   height: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  justify-content: center;
   gap: 10px;
   overflow: visible;
   padding: 0 10px;
+  font-variant-numeric: tabular-nums;
   font-size: var(--font-size-sm);
   line-height: var(--line-tight);
   text-align: center;
-  transform: translateX(-50%);
   white-space: nowrap;
 }
 
 .timeline-cursor-card strong {
-  flex: 0 0 auto;
-  min-width: max-content;
+  min-width: 0;
   color: var(--timeline-cursor-guide);
   font-size: var(--font-size-md);
   font-weight: 700;
+  text-align: right;
+  white-space: pre;
 }
 
 .timeline-cursor-card span {
-  flex: 0 0 auto;
-  min-width: max-content;
+  min-width: 0;
   overflow: visible;
   color: var(--text);
   font-weight: 600;
   text-overflow: clip;
+  white-space: pre;
+}
+
+.timeline-cursor-card #cursorAgeLabel {
+  text-align: center;
+}
+
+.timeline-cursor-card #cursorDateLabel {
+  text-align: left;
 }
 
 .timeline-cursor-card #cursorAgeLabel {
@@ -2041,6 +2048,8 @@ body.is-timeline-height-dragging * {
 
 #timelineSvg {
   display: block;
+  flex: 0 0 auto;
+  margin-block: auto;
   min-width: 100%;
   user-select: none;
   touch-action: none;

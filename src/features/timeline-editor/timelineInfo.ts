@@ -46,6 +46,8 @@ export type CursorReadoutText = {
   dateLabel: string;
 };
 
+const FIGURE_SPACE = "\u2007";
+
 export type SelectionInfoText = {
   itemLabel: string;
   lineLine: string;
@@ -92,8 +94,8 @@ export function cursorReadoutText(
   }
 
   return {
-    agoLabel: relativeDateLabel(hoverDate, currentDate),
-    ageLabel: birthDate ? formatDetailedAgeAtDate(birthDate, hoverDate) : "Age unavailable",
+    agoLabel: stabilizeReadoutNumericWidth(relativeDateLabel(hoverDate, currentDate)),
+    ageLabel: stabilizeReadoutNumericWidth(birthDate ? formatDetailedAgeAtDate(birthDate, hoverDate) : "Age unavailable"),
     dateLabel: formatDateForCalendars(hoverDate, normalizeDisplayCalendars(displayCalendars)),
   };
 }
@@ -102,6 +104,7 @@ export function selectionInfoText(
   item: InfoItem | null,
   birthDate?: string | null,
   displayCalendars: readonly TimelineDisplayCalendar[] = ["gregorian", "iranian"],
+  laneLabels: readonly string[] = [],
 ): SelectionInfoText {
   const calendars = normalizeDisplayCalendars(displayCalendars);
   if (!item) {
@@ -117,7 +120,7 @@ export function selectionInfoText(
 
   return {
     itemLabel: selectedItemTitle(item),
-    lineLine: selectedItemLineLine(item),
+    lineLine: selectedItemLineLine(item, laneLabels),
     dateLine: selectedItemStartLine(item, calendars),
     endLine: selectedItemEndLine(item, calendars),
     durationLine: selectedItemDurationLine(item),
@@ -146,6 +149,15 @@ function largestDateSpanUnit(startDate: string, endDate: string): string {
   return parts.join(" ");
 }
 
+function stabilizeReadoutNumericWidth(label: string): string {
+  return label.replace(/\d+/g, (digits) => {
+    if (digits.length >= 2) {
+      return digits;
+    }
+    return `${FIGURE_SPACE}${digits}`;
+  });
+}
+
 export function itemTypeLabel(type: unknown): string {
   return {
     birth: "Birth",
@@ -164,9 +176,9 @@ function selectedItemTitle(item: InfoItem): string {
   return `${lockedText}${itemTypeLabel(item.type)}: ${title}`;
 }
 
-function selectedItemLineLine(item: InfoItem): string {
+function selectedItemLineLine(item: InfoItem, laneLabels: readonly string[]): string {
   if (isGlobalTimelineItemType(item.type) || item.type === "note") return "";
-  return `Line: ${laneDisplayLabel(item.lane)}`;
+  return `Line: ${laneDisplayLabel(item.lane, laneLabels[item.lane])}`;
 }
 
 function selectedItemStartLine(item: InfoItem, displayCalendars: readonly TimelineDisplayCalendar[]): string {

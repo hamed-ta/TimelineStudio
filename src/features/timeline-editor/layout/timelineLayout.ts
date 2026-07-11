@@ -65,6 +65,12 @@ export type TimelineWheelInput = {
 
 export type TimelineWheelAction = "timeline-area" | "row-height" | "horizontal-zoom" | "none";
 
+export type TimelineRenderBounds = {
+  top: number;
+  bottom: number;
+  height: number;
+};
+
 export function timelinePixelsPerDay(zoom: number, avgDaysPerMonth: number): number {
   return zoom / avgDaysPerMonth;
 }
@@ -134,17 +140,26 @@ export function laneTrackNumber(laneIndex: number): number {
 
 export function laneDisplayLabel(laneIndex: number, storedLabel = ""): string {
   const normalizedLabel = String(storedLabel || "").trim();
-  const legacyDefault = `Line ${Math.max(0, Math.floor(laneIndex)) + 1}`;
-  const sign = laneSide(laneIndex) === "above" ? "+" : "-";
-  const centralDefault = `Line ${sign}${laneTrackNumber(laneIndex)}`;
-  if (
-    normalizedLabel
-    && normalizedLabel !== legacyDefault
-    && !/^Line [+-]\d+$/.test(normalizedLabel)
-  ) {
-    return normalizedLabel;
-  }
-  return centralDefault;
+  if (normalizedLabel) return normalizedLabel.replace(/^Line [+-](\d+)$/, "Line $1");
+  return `Line ${Math.max(0, Math.floor(laneIndex)) + 1}`;
+}
+
+export function timelineRenderBounds(
+  contentTop: number,
+  contentBottom: number,
+  viewportHeight: number,
+): TimelineRenderBounds {
+  const safeTop = Number.isFinite(contentTop) ? contentTop : 0;
+  const safeBottom = Math.max(safeTop, Number.isFinite(contentBottom) ? contentBottom : safeTop);
+  const contentHeight = safeBottom - safeTop;
+  const height = Math.max(contentHeight, Math.max(0, Number(viewportHeight) || 0));
+  const extraHeight = height - contentHeight;
+  const top = safeTop - extraHeight / 2;
+  return {
+    top,
+    bottom: top + height,
+    height,
+  };
 }
 
 export function laneVisualOrder(laneCount: number): number[] {

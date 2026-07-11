@@ -116,6 +116,7 @@ import {
   laneDisplayLabel,
   laneRowTop,
   laneSourceMapForVisualMove,
+  timelineRenderBounds,
   nearestLaneIndexForY,
   minDurationDaysForSnap,
   snapTimelineDate,
@@ -156,8 +157,8 @@ import {
   const LEFT_GUTTER = 132;
   const RIGHT_GUTTER = 110;
   const AXIS_HEIGHT = 88;
-  const TIMELINE_TOP_PADDING = 24;
-  const FOOTER_HEIGHT = 34;
+  const TIMELINE_TOP_PADDING = 32;
+  const FOOTER_HEIGHT = TIMELINE_TOP_PADDING;
   const DEFAULT_ROW_HEIGHT = 68;
   const MIN_ROW_HEIGHT = 48;
   const MAX_ROW_HEIGHT = 120;
@@ -347,6 +348,9 @@ import {
   let editingNoteOriginalNotes = "";
   let editingNoteOriginalDisplayText = "";
   let timelineAreaHeightDrag = null;
+  let timelineViewportResizeObserver = null;
+  let lastTimelineViewportWidth = -1;
+  let lastTimelineViewportHeight = -1;
   const iranianDatePartsCache = new Map();
   const iranianMonthStartsCache = new Map();
 
@@ -513,6 +517,19 @@ import {
     document.addEventListener("pointerdown", closeColorPickersFromPointer, true);
     document.addEventListener("pointerdown", closeRangeControlPanelsFromPointer, true);
     document.addEventListener("keydown", closeRangeControlPanelsFromEscape);
+    if (typeof ResizeObserver === "function") {
+      timelineViewportResizeObserver = new ResizeObserver(() => {
+        const width = Math.round(dom.timelineViewport.clientWidth || 0);
+        const height = Math.round(dom.timelineViewport.clientHeight || 0);
+        if (width === lastTimelineViewportWidth && height === lastTimelineViewportHeight) return;
+        lastTimelineViewportWidth = width;
+        lastTimelineViewportHeight = height;
+        renderTimeline();
+        centerTimelineViewportVertically();
+        positionNoteInlineEditor();
+      });
+      timelineViewportResizeObserver.observe(dom.timelineViewport);
+    }
     window.addEventListener("resize", () => {
       closeContextMenu();
       closeLineEditor();
@@ -569,22 +586,22 @@ import {
     const noteAreaHeight = getNoteAreaHeight(noteLayouts, geometry);
     const contentTop = getCalloutCanvasTop(noteLayouts, geometry, contentWidth);
     const contentBottom = getCalloutCanvasBottom(noteLayouts, geometry, contentWidth, geometry.contentHeightWithoutNotes + noteAreaHeight);
-    lastContentTop = contentTop;
-    lastContentBottom = contentBottom;
-    const contentHeight = contentBottom - contentTop;
+    const renderBounds = timelineRenderBounds(contentTop, contentBottom, dom.timelineViewport.clientHeight);
+    lastContentTop = renderBounds.top;
+    lastContentBottom = renderBounds.bottom;
 
     svg.setAttribute("width", String(Math.ceil(contentWidth)));
-    svg.setAttribute("height", String(Math.ceil(contentHeight)));
-    svg.setAttribute("viewBox", `0 ${Math.floor(contentTop)} ${Math.ceil(contentWidth)} ${Math.ceil(contentHeight)}`);
+    svg.setAttribute("height", String(Math.ceil(renderBounds.height)));
+    svg.setAttribute("viewBox", `0 ${Math.floor(renderBounds.top)} ${Math.ceil(contentWidth)} ${Math.ceil(renderBounds.height)}`);
 
     const defs = svgEl("defs");
     svg.append(defs);
-    svg.append(svgEl("rect", { class: "canvas-bg", x: 0, y: contentTop, width: contentWidth, height: contentHeight }));
-    drawTimeBands(svg, settings, geometry, contentWidth);
+    svg.append(svgEl("rect", { class: "canvas-bg", x: 0, y: renderBounds.top, width: contentWidth, height: renderBounds.height }));
+    drawTimeBands(svg, settings, contentWidth, renderBounds.top, renderBounds.bottom);
     svg.append(svgEl("rect", { class: "axis-band", x: 0, y: geometry.axisBandTop, width: contentWidth, height: AXIS_HEIGHT }));
 
     drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth, geometry);
-    drawGrid(svg, settings, laneCount, rowHeight, contentTop, contentBottom, contentWidth, geometry);
+    drawGrid(svg, settings, laneCount, rowHeight, renderBounds.top, renderBounds.bottom, contentWidth, geometry);
     drawLaneLabels(svg, settings, laneCount, rowHeight, geometry);
 
     const isEmpty = timeline.items.length === 0;
@@ -597,14 +614,19 @@ import {
     drawNoteLeaderLayer(svg, defs, sortedItems, laneCount, rowHeight, noteLayouts, geometry);
     sortedItems
       .filter((item) => isGlobalTimelineItemType(item.type))
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentBottom, noteLayouts, geometry));
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, renderBounds.bottom, noteLayouts, geometry));
     sortedItems
       .filter((item) => !isGlobalTimelineItemType(item.type))
-      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, contentBottom, noteLayouts, geometry));
-    drawCursorGuide(svg, geometry, contentTop, contentBottom);
+      .forEach((item) => drawItem(svg, defs, item, rowHeight, laneCount, contentWidth, renderBounds.bottom, noteLayouts, geometry));
+    drawCursorGuide(svg, geometry, renderBounds.top, renderBounds.bottom);
   }
 
-  function drawTimeBands(svg, settings, geometry, contentWidth) {
+  function centerTimelineViewportVertically() {
+    const overflowHeight = Math.max(0, dom.timelineViewport.scrollHeight - dom.timelineViewport.clientHeight);
+    dom.timelineViewport.scrollTop = overflowHeight / 2;
+  }
+
+  function drawTimeBands(svg, settings, contentWidth, contentTop, contentBottom) {
     const axisDetail = axisDetailForZoom(zoom, AVG_DAYS_PER_MONTH);
     if (!axisDetail.monthBands) return;
     const contentEndDate = addDaysIso(settings.endDate, 1);
@@ -623,9 +645,9 @@ import {
           svg.append(svgEl("rect", {
             class: "time-band-alternate",
             x,
-            y: geometry.trackTop,
+            y: contentTop,
             width,
-            height: geometry.trackBottom - geometry.trackTop,
+            height: contentBottom - contentTop,
           }));
         }
       });
@@ -646,9 +668,9 @@ import {
           svg.append(svgEl("rect", {
             class: "time-band-alternate",
             x,
-            y: geometry.trackTop,
+            y: contentTop,
             width,
-            height: geometry.trackBottom - geometry.trackTop,
+            height: contentBottom - contentTop,
           }));
         }
         bandIndex += 1;
@@ -1597,7 +1619,12 @@ import {
     }
     const item = getItem(selectedId);
     const birthItem = getPrimaryBirthItem();
-    const info = selectionInfoText(item, birthItem?.startDate, currentDisplayCalendars());
+    const info = selectionInfoText(
+      item,
+      birthItem?.startDate,
+      currentDisplayCalendars(),
+      timeline.settings.laneLabels,
+    );
     dom.selectedItemLabel.textContent = info.itemLabel;
     setOptionalInfoLine(dom.selectedItemLineLabel, info.lineLine);
     dom.selectedItemDateLabel.textContent = info.dateLine;
@@ -2369,10 +2396,18 @@ import {
       ...timeline.items.map((item) => Math.max(0, Number(item.lane) + 1)),
     );
     while (labels.length < laneCount) {
-      labels.push(laneDisplayLabel(labels.length));
+      labels.push(nextLaneLabel(labels));
     }
     ensureLaneColors();
     return labels;
+  }
+
+  function nextLaneLabel(labels) {
+    const highestNumber = labels.reduce((highest, label) => {
+      const match = String(label || "").trim().match(/^Line [+-]?(\d+)$/);
+      return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0);
+    return `Line ${highestNumber + 1}`;
   }
 
   function ensureLaneColors() {
@@ -2414,7 +2449,7 @@ import {
     const colors = ensureLaneColors();
     const insertAt = clamp(Number(index) + 1, 0, labels.length);
     const previousEntry = currentHistoryEntry();
-    labels.splice(insertAt, 0, laneDisplayLabel(insertAt));
+    labels.splice(insertAt, 0, nextLaneLabel(labels));
     colors.splice(insertAt, 0, "");
     timeline.items.forEach((item) => {
       if (!isGlobalTimelineItemType(item.type) && item.lane >= insertAt) item.lane += 1;

@@ -8,6 +8,12 @@ This project follows semantic versioning. The current package version is `0.3.0`
 
 ### Changed
 
+- Fixed above-axis note and marker balloons being covered by the timeline cursor readout.
+- Stabilized cursor-readout text in three fixed columns so changing date lengths do not recenter the full row.
+- Reserved digit width in the cursor readout so single-digit values do not shift when they become double-digit values.
+- Centered shorter rendered timelines vertically in the viewport and matched the default top and bottom timeline padding.
+- Changed new timelines to six stable lines named `Line 1` through `Line 6` from top to bottom, kept names unchanged when lines move, fixed the clipped add-line control, and extended alternating time bands through the full visible canvas.
+- Kept the timeline centered while its area grows or shrinks, rerendered alternating time bands immediately on viewport resize, and preserved one-sided canvas expansion for item callouts.
 - Added capped undo/redo history for the latest 25 timeline-changing actions, including `Ctrl`/`Command+Z`, `Ctrl`/`Command+Y`, toolbar and context-menu actions, selection restoration, and automatic clearing of `Unsaved changes` when undo returns to the saved JSON state.
 - Added page description, Open Graph, Twitter card, app name, and theme-color metadata so shared app links render better in chats, search, and social media.
 - Allowed note balloons to be positioned above or below the central timeline with matching top or bottom tips.

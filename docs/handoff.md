@@ -2,55 +2,39 @@
 
 ## Current Goal
 
-Move live timeline editor state ownership toward ADR 0009 feature and reducer boundaries without changing local JSON behavior.
+Continue the ADR 0009 migration by moving undo/redo history ownership into reducer-managed editor state.
 
-## Last Completed Work
+## Completed Work
 
-- Added capped undo/redo history for the latest 25 timeline-changing actions.
-- Wired `Ctrl`/`Command+Z` and `Ctrl`/`Command+Y` to the same live history model.
-- Added toolbar and context-menu undo/redo actions with disabled states driven by the actual undo/redo stacks.
-- Restored the previous selection during undo and redo, and cleared `Unsaved changes` automatically when the saved snapshot is reached.
-- Swapped the undo and redo icons to `UndoOutlined` and `RedoOutlined`.
+- Stabilized cursor-readout layout and default line identities, including six lines named top-to-bottom that keep their names when moved.
+- Centered responsive timeline bounds, fixed add-line clipping, extended alternating bands through resized canvas space, and preserved directional item overflow.
 
 ## Files Changed
 
-- `src/features/timeline-editor/history.ts`
-- `src/features/timeline-editor/history.test.js`
-- `src/features/timeline-editor/interactions/keyboardShortcuts.ts`
-- `src/features/timeline-editor/interactions/keyboardShortcuts.test.js`
-- `src/features/timeline-editor/interactions/contextMenu.ts`
-- `src/features/timeline-editor/interactions/contextMenu.test.js`
-- `src/features/timeline-editor/components/TimelineToolbar.tsx`
-- `src/features/timeline-editor/components/TimelineContextMenu.tsx`
-- `src/features/timeline-editor/legacyTimelineEditor.js`
-- `docs/product.md`
-- `CHANGELOG.md`
+- Timeline behavior: `src/features/timeline-editor/legacyTimelineEditor.js`, `timelineInfo.ts`, `layout/timelineLayout.ts`, `canvas/TimelineCanvas.tsx`, and `styles.css`.
+- Defaults and tests: `src/timeline/model.ts` plus focused model, info, and layout tests.
+- Product/process: `docs/product.md`, `docs/workflows/browser-smoke.md`, `docs/plan.md`, `CHANGELOG.md`, and this handoff.
 
 ## Checks Run
 
-- `npm test` passed with 109 tests.
-- `node --check src/features/timeline-editor/legacyTimelineEditor.js`
-- `npm run typecheck`
-- `npm run build` passed with the existing Vite large chunk warning.
-- `git diff --check`
-- Browser smoke through Vite at `http://127.0.0.1:8767/`: toolbar undo/redo buttons started disabled, adding Event enabled undo, the context menu showed undo enabled and redo disabled, context-menu Undo removed the item and hid `Unsaved changes`, toolbar Redo restored the item, and browser logs had no warnings or errors.
+- `npm test` passed 113 tests.
+- `node --check src/features/timeline-editor/legacyTimelineEditor.js` passed.
+- `npm run typecheck` passed.
+- `npm run build` passed with the existing Vite chunk-size warning.
+- Browser smoke passed in the in-app browser: symmetric grow/shrink behavior, immediate full-height bands, centered scrolling, directional note overflow, and no console errors.
 
 ## Known Issues
 
-- Undo/redo history and most live interactions still live in `src/features/timeline-editor/legacyTimelineEditor.js`.
-- No automated browser test harness exists yet.
-- The central-axis renderer still needs more real-data smoke after future state-migration slices.
+- ResizeObserver-driven layout behavior has browser-smoke coverage but no automated browser harness.
 
 ## Uncommitted Work
 
-- `docs/plan.md`
-- `docs/handoff.md`
+- Cursor-readout stabilization, stable six-line defaults, responsive centered canvas behavior, and supporting tests/docs are uncommitted.
 
 ## Suggested Commit Message
 
-`docs: trim closeout plan and handoff`
+`fix: stabilize timeline labels and responsive canvas layout`
 
 ## Next Safe Step
 
-- Browser-smoke undo/redo against real loaded timelines, especially note and marker drag, lane reorder, and save/load boundaries.
-- Then move the history-aware state boundary out of `src/features/timeline-editor/legacyTimelineEditor.js` into the ADR 0009 reducer/context path without breaking current DOM IDs.
+- Add failing reducer tests for history ownership, then integrate the existing `history.ts` primitives into `TimelineEditorState` without switching the legacy runtime source of truth prematurely.
