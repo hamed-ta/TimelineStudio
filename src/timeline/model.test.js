@@ -10,8 +10,8 @@ import {
   todayIso,
 } from "./dates.ts";
 
-test("new timelines display Gregorian and Persian calendars by default", () => {
-  assert.deepEqual(createEmptyTimeline().settings.displayCalendars, ["gregorian", "iranian"]);
+test("new timelines display Gregorian only by default", () => {
+  assert.deepEqual(createEmptyTimeline().settings.displayCalendars, ["gregorian"]);
 });
 
 test("new timelines default to the last year ending today", () => {
@@ -44,9 +44,10 @@ test("new timelines start with six stable line names arranged top to bottom", ()
 });
 
 test("timeline normalization preserves or repairs display calendar settings", () => {
-  assert.deepEqual(normalizeTimeline({ settings: {} }).settings.displayCalendars, ["gregorian", "iranian"]);
+  assert.deepEqual(normalizeTimeline({ settings: {} }).settings.displayCalendars, ["gregorian"]);
   assert.deepEqual(normalizeTimeline({ settings: { displayCalendars: ["iranian"] } }).settings.displayCalendars, ["iranian"]);
-  assert.deepEqual(normalizeTimeline({ settings: { displayCalendars: ["unknown"] } }).settings.displayCalendars, ["gregorian", "iranian"]);
+  assert.deepEqual(normalizeTimeline({ settings: { displayCalendars: ["gregorian", "iranian"] } }).settings.displayCalendars, ["gregorian", "iranian"]);
+  assert.deepEqual(normalizeTimeline({ settings: { displayCalendars: ["unknown"] } }).settings.displayCalendars, ["gregorian"]);
 });
 
 test("timeline normalization preserves note and marker callout offsets", () => {

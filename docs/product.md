@@ -133,6 +133,10 @@ The app should keep undo and redo history for the most recent 25 timeline-changi
 - When the rendered timeline is shorter than the viewport, it should sit centered vertically with equal spare space above and below by default.
 - Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
 - Timeline settings should let users choose Gregorian, Persian / Solar Hijri, or both display calendars while keeping at least one display calendar enabled.
+- A new timeline should display Gregorian dates only and have no secondary calendar selected.
+- The user should be able to select one optional secondary calendar, and when Gregorian is hidden the selected secondary calendar should own the timeline axis labels and boundaries.
+- Gregorian should remain selected and not be turn-off-able when no secondary calendar is selected.
+- Loading a saved timeline with a recognized secondary calendar unsupported by the browser should preserve the saved selection, temporarily render Gregorian, and not mark the timeline as changed.
 - When only Persian / Solar Hijri is selected, central-axis year and month ticks should align to Persian / Solar Hijri calendar boundaries.
 - Layout preferences should be remembered in the browser.
 - Layout changes should not alter saved timeline data.
@@ -149,6 +153,31 @@ When no timeline file has been loaded
 Then the timeline starts empty
 And no personal sample data is displayed
 And the timeline range starts on the same day last year and ends today.
+
+### Selectable Secondary Calendars
+
+Scenario: A new timeline starts with Gregorian only
+  Given the user creates a new timeline
+  Then Gregorian is displayed
+  And the secondary calendar is None
+
+Scenario: Display one optional secondary calendar
+  Given Gregorian is displayed
+  When the user selects Hebrew as the secondary calendar
+  Then Gregorian and Hebrew dates are displayed
+  When the user turns Gregorian off
+  Then Hebrew owns the timeline axis labels and boundaries
+
+Scenario: Prevent an empty calendar display
+  Given no secondary calendar is selected
+  Then Gregorian is selected and cannot be turned off
+
+Scenario: Restore an unsupported secondary calendar safely
+  Given a saved timeline selects a recognized calendar unsupported by the browser
+  When the timeline is loaded
+  Then the saved selection remains unchanged
+  And the timeline temporarily renders Gregorian
+  And the app does not mark the timeline as changed
 
 ### Show Empty Timeline State
 

@@ -149,7 +149,7 @@ export function createEmptyTimeline(): TimelineDocument {
       itemsLocked: false,
       snap: "month",
       rowHeight: DEFAULT_ROW_HEIGHT,
-      displayCalendars: ["gregorian", "iranian"],
+      displayCalendars: ["gregorian"],
       // Storage order alternates above/below the axis; visual order reads Line 1 through Line 6.
       laneLabels: ["Line 3", "Line 4", "Line 2", "Line 5", "Line 1", "Line 6"],
       laneColors: ["", "", "", "", "", ""],
