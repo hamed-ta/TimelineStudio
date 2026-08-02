@@ -4,6 +4,11 @@ import {
   normalizeDisplayCalendars,
   type TimelineDisplayCalendar,
 } from "./calendars.ts";
+import {
+  formatCalendarDate,
+  formatCalendarMonthName,
+  formatCalendarParts,
+} from "./calendarRegistry.ts";
 
 const EN_DATE_FORMAT = new Intl.DateTimeFormat("en", {
   month: "short",
@@ -15,43 +20,13 @@ const EN_MONTH_FORMAT = new Intl.DateTimeFormat("en", {
   month: "short",
   timeZone: "UTC",
 });
-const IRANIAN_DATE_FORMAT = new Intl.DateTimeFormat("en-US-u-ca-persian", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
-const IRANIAN_YEAR_FORMAT = new Intl.DateTimeFormat("en-US-u-ca-persian", {
-  year: "numeric",
-  timeZone: "UTC",
-});
-const IRANIAN_DAY_FORMAT = new Intl.DateTimeFormat("en-US-u-ca-persian", {
-  day: "numeric",
-  timeZone: "UTC",
-});
-const IRANIAN_MONTH_FORMAT = new Intl.DateTimeFormat("en-US-u-ca-persian", {
-  month: "short",
-  timeZone: "UTC",
-});
-const IRANIAN_NUMERIC_FORMAT = new Intl.DateTimeFormat("en-US-u-ca-persian", {
-  day: "numeric",
-  month: "numeric",
-  year: "numeric",
-  timeZone: "UTC",
-});
 
 export function formatDisplayDate(isoDate: string): string {
   return EN_DATE_FORMAT.format(dateFromIso(isoDate));
 }
 
 export function formatIranianDate(isoDate: string): string {
-  const parts = IRANIAN_DATE_FORMAT
-    .formatToParts(dateFromIso(isoDate))
-    .reduce<Record<string, string>>((result, part) => {
-      if (part.type !== "literal" && part.type !== "era") result[part.type] = part.value;
-      return result;
-    }, {});
-  return `${parts.day} ${parts.month} ${parts.year}`;
+  return formatCalendarDate(isoDate, "iranian");
 }
 
 export function formatDatePair(isoDate: string): string {
@@ -63,7 +38,7 @@ export function formatDateForCalendars(
   displayCalendars: readonly TimelineDisplayCalendar[] = ["gregorian", "iranian"],
 ): string {
   return normalizeDisplayCalendars(displayCalendars)
-    .map((calendar) => (calendar === "gregorian" ? formatDisplayDate(isoDate) : formatIranianDate(isoDate)))
+    .map((calendar) => (calendar === "gregorian" ? formatDisplayDate(isoDate) : formatCalendarDate(isoDate, calendar)))
     .join(" / ");
 }
 
@@ -84,30 +59,22 @@ export function monthName(isoDate: string): string {
 }
 
 export function iranianYear(isoDate: string): string {
-  const parts = IRANIAN_YEAR_FORMAT
-    .formatToParts(dateFromIso(isoDate))
-    .find((part) => part.type === "year");
-  return parts?.value || IRANIAN_YEAR_FORMAT.format(dateFromIso(isoDate)).replace(/\s*AP$/, "");
+  return formatCalendarParts(isoDate, "iranian").year;
 }
 
 export function iranianDay(isoDate: string): string {
-  return IRANIAN_DAY_FORMAT.format(dateFromIso(isoDate));
+  return formatCalendarParts(isoDate, "iranian").day;
 }
 
 export function iranianDateParts(isoDate: string): { year: number; month: number; day: number } {
-  const parts = IRANIAN_NUMERIC_FORMAT
-    .formatToParts(dateFromIso(isoDate))
-    .reduce<Record<string, string>>((result, part) => {
-      if (part.type === "year" || part.type === "month" || part.type === "day") result[part.type] = part.value;
-      return result;
-    }, {});
+  const parts = formatCalendarParts(isoDate, "iranian");
   return {
     year: Number(parts.year),
-    month: Number(parts.month),
+    month: Number(parts.numericMonth),
     day: Number(parts.day),
   };
 }
 
 export function iranianMonthName(isoDate: string): string {
-  return IRANIAN_MONTH_FORMAT.format(dateFromIso(isoDate));
+  return formatCalendarMonthName(isoDate, "iranian");
 }
