@@ -8,7 +8,8 @@ The project is migrating toward a modern Vite, React, TypeScript, Ant Design, an
 
 - Horizontal SVG timeline with pan, zoom, fit, and readable zoom limits.
 - Event, period, marker, birth, note, line, and text item types.
-- Live Gregorian and Iranian calendar display derived from stored Gregorian dates.
+- Gregorian display with one optional secondary calendar: Persian / Solar Hijri, Islamic / Umm al-Qura, Hebrew, Buddhist, Japanese, or Indian / Saka.
+- Gregorian-only, dual-calendar, and secondary-only timeline axes while all stored dates remain Gregorian ISO values.
 - Birthdate-based age readouts and optional period age/duration labels.
 - Drag, resize, reorder, rename, recolor, lock, copy, paste, duplicate, and delete timeline items.
 - Line editing directly from the timeline label area.

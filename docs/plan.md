@@ -4,11 +4,10 @@
 
 Continue the ADR 0009 migration by moving undo/redo history ownership into the reducer-managed editor state.
 
-## Current Slice
+## Completed
 
-- Add reducer-level history state and undo/redo/save actions without changing current user-visible behavior.
-- Reuse the tested 25-entry history primitives from `history.ts`.
-- Keep the legacy controller bridge operational until reducer history behavior is fully covered.
+- Added Gregorian-only, dual-calendar, and secondary-only display using one optional secondary calendar: Persian / Solar Hijri, Islamic / Umm al-Qura, Hebrew, Buddhist, Japanese, or Indian / Saka.
+- Preserved Gregorian ISO storage and calculations, existing Persian JSON compatibility, and non-mutating fallback for recognized calendars unsupported by the browser.
 
 ## Next
 
@@ -20,8 +19,4 @@ Continue the ADR 0009 migration by moving undo/redo history ownership into the r
 
 ## Latest Verification
 
-- `npm test` passed 113 tests.
-- `node --check src/features/timeline-editor/legacyTimelineEditor.js` passed.
-- `npm run typecheck` passed.
-- `npm run build` passed with the existing Vite chunk-size warning.
-- Browser smoke passed for symmetric grow/shrink behavior, immediate full-height band updates, centered scrolling, directional note overflow, and console errors.
+- Final calendar-feature verification is recorded in `docs/handoff.md`.

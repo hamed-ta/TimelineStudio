@@ -38,6 +38,24 @@ http://127.0.0.1:8765/
 - Grow and shrink the timeline area with the bottom resize handle and confirm the axis stays centered, top and bottom space change equally, and alternating time bands resize immediately without zooming.
 - Move a note or marker callout beyond only one side of the normal line area and confirm the additional item-driven canvas space remains on that side.
 
+## Display Calendar Checks
+
+- Confirm a new timeline starts with Gregorian enabled and Secondary calendar set to None.
+- Confirm Gregorian cannot be disabled while Secondary calendar is None.
+- Select each supported secondary option and confirm English labels with Latin digits render without console errors.
+- Confirm Gregorian plus a secondary calendar shows dual date text while Gregorian continues to own timeline boundaries.
+- Disable Gregorian and confirm the selected secondary calendar owns year/month boundaries, day values, grid lines, ticks, and alternating bands.
+- Switch secondary calendars while Gregorian is disabled and confirm secondary-only mode is preserved.
+- Return Secondary calendar to None and confirm Gregorian is automatically enabled and disabled from editing.
+- Confirm header dates, cursor readout, selected-item details, item previews, and SVG/PNG/PDF exports follow the selected display calendars.
+- Save and reload Gregorian-only, dual-calendar, and secondary-only JSON and confirm the display selection is restored.
+- Load an existing Persian `displayCalendars` selection and confirm it remains compatible.
+- Undo a calendar display change back to the saved state and confirm `Unsaved changes` clears; redo it and confirm the display change returns.
+
 ## Recording Results
 
 Record the checks run, browser used, and any failures in `docs/handoff.md`.
+
+## Latest Result
+
+- 2026-08-02: The selectable secondary-calendar feature was user-confirmed working in the browser. The browser family was not recorded.

@@ -8,6 +8,9 @@ This project follows semantic versioning. The current package version is `0.3.0`
 
 ### Changed
 
+- Added one selectable secondary display calendar from Persian / Solar Hijri, Islamic / Umm al-Qura, Hebrew, Buddhist, Japanese, and Indian / Saka, with Gregorian-only, dual-calendar, and secondary-only timeline modes while preserving Gregorian ISO storage and calculations.
+- Generalized timeline year/month boundaries, day values, grid lines, ticks, alternating bands, cursor dates, item details, previews, and exports to use the selected display calendars.
+- Added defensive runtime support detection that preserves unsupported saved calendar selections while temporarily rendering Gregorian without dirtying the timeline.
 - Fixed above-axis note and marker balloons being covered by the timeline cursor readout.
 - Stabilized cursor-readout text in three fixed columns so changing date lengths do not recenter the full row.
 - Reserved digit width in the cursor readout so single-digit values do not shift when they become double-digit values.
