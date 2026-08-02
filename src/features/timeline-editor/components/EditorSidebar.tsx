@@ -1,7 +1,23 @@
 import { Button, Card, Typography } from "antd";
+import {
+  CALENDAR_REGISTRY,
+  isCalendarSupported as isCalendarRuntimeSupported,
+} from "../../../timeline/calendarRegistry";
+import {
+  type TimelineSecondaryCalendar,
+} from "../../../timeline/calendars";
 import { ColorPickerField } from "./ColorPickerField";
 import { FieldLabel } from "./FieldLabel";
 import { MenuFoldIcon, MenuUnfoldIcon } from "./PanelToggleIcons";
+
+const CALENDAR_OPTION_LABELS = {
+  iranian: "Persian / Solar Hijri",
+  "islamic-umalqura": "Islamic / Umm al-Qura",
+  hebrew: "Hebrew",
+  buddhist: "Buddhist",
+  japanese: "Japanese",
+  indian: "Indian / Saka",
+} satisfies Record<TimelineSecondaryCalendar, string>;
 
 export function EditorSidebar({
   collapsed,
@@ -75,10 +91,19 @@ export function EditorSidebar({
               <input id="displayGregorianInput" className="legacy-checkbox" type="checkbox" defaultChecked />
               <span>Gregorian</span>
             </label>
-            <label className="check-row">
-              <input id="displayIranianInput" className="legacy-checkbox" type="checkbox" defaultChecked />
-              <span>Persian / Solar Hijri</span>
-            </label>
+            <FieldLabel label="Secondary calendar">
+              <select id="secondaryCalendarInput" className="legacy-select" defaultValue="">
+                <option value="">None</option>
+                {Object.values(CALENDAR_REGISTRY).map(({ id }) => (
+                  <option key={id} value={id} disabled={!isCalendarRuntimeSupported(id)}>
+                    {CALENDAR_OPTION_LABELS[id]}
+                  </option>
+                ))}
+              </select>
+            </FieldLabel>
+            <p id="calendarSupportWarning" className="calendar-support-warning" role="status" hidden>
+              The selected secondary calendar is not supported by this browser. Showing Gregorian dates instead.
+            </p>
           </fieldset>
         </Card>
 

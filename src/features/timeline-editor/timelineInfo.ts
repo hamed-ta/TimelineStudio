@@ -9,13 +9,14 @@ import {
 } from "../../timeline/dates.ts";
 import {
   formatDateForCalendars,
-  formatDisplayDate,
-  formatIranianDate,
 } from "../../timeline/formatters.ts";
 import {
   normalizeDisplayCalendars,
   type TimelineDisplayCalendar,
 } from "../../timeline/calendars.ts";
+import {
+  CALENDAR_REGISTRY,
+} from "../../timeline/calendarRegistry.ts";
 import {
   noteDisplayText,
   noteTitleFromText,
@@ -215,11 +216,12 @@ function isGlobalTimelineItemType(type: unknown): boolean {
 }
 
 function pointerDateLines(hoverDate: string, displayCalendars: readonly TimelineDisplayCalendar[]): string[] {
-  return displayCalendars.map((calendar) => (calendar === "gregorian" ? formatDisplayDate(hoverDate) : formatIranianDate(hoverDate)));
+  return displayCalendars.map((calendar) => formatDateForCalendars(hoverDate, [calendar]));
 }
 
 function calendarPlaceholder(displayCalendars: readonly TimelineDisplayCalendar[]): string {
-  if (displayCalendars.length === 1 && displayCalendars[0] === "gregorian") return "Gregorian date";
-  if (displayCalendars.length === 1 && displayCalendars[0] === "iranian") return "Persian / Solar Hijri date";
-  return "Gregorian and Persian dates";
+  const labels = displayCalendars.map((calendar) => (
+    calendar === "gregorian" ? "Gregorian" : CALENDAR_REGISTRY[calendar].label
+  ));
+  return labels.length === 1 ? `${labels[0]} date` : `${labels[0]} and ${labels[1]} dates`;
 }

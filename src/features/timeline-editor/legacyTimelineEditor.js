@@ -51,8 +51,15 @@ import {
   monthName,
 } from "../../timeline/formatters";
 import {
+  calendarControlState,
+  displayCalendarsFromControls,
+  isSecondaryCalendar,
   normalizeDisplayCalendars,
 } from "../../timeline/calendars";
+import {
+  effectiveDisplayCalendars,
+  isCalendarSupported as isCalendarRuntimeSupported,
+} from "../../timeline/calendarRegistry";
 import {
   buildPdfFromJpeg,
 } from "../../timeline/export/pdf";
@@ -212,7 +219,8 @@ import {
     itemsLockedButton: document.getElementById("itemsLockedButton"),
     snapInput: document.getElementById("snapInput"),
     displayGregorianInput: document.getElementById("displayGregorianInput"),
-    displayIranianInput: document.getElementById("displayIranianInput"),
+    secondaryCalendarInput: document.getElementById("secondaryCalendarInput"),
+    calendarSupportWarning: document.getElementById("calendarSupportWarning"),
     laneList: document.getElementById("laneList"),
     addLaneButton: document.getElementById("addLaneButton"),
     lineEditorPopover: document.getElementById("lineEditorPopover"),
@@ -398,7 +406,7 @@ import {
     dom.itemsLockedButton.addEventListener("click", () => setItemsLocked(!timeline.settings.itemsLocked));
     dom.snapInput.addEventListener("change", updateTimelineFromControls);
     if (dom.displayGregorianInput) dom.displayGregorianInput.addEventListener("change", updateTimelineFromControls);
-    if (dom.displayIranianInput) dom.displayIranianInput.addEventListener("change", updateTimelineFromControls);
+    if (dom.secondaryCalendarInput) dom.secondaryCalendarInput.addEventListener("change", updateTimelineFromControls);
     [dom.itemStartInput, dom.itemEndInput].forEach((control) => {
       control.addEventListener("input", updateItemCalendarPreviewFromInputs);
       control.addEventListener("change", updateItemCalendarPreviewFromInputs);
@@ -630,7 +638,7 @@ import {
     const axisDetail = axisDetailForZoom(zoom, AVG_DAYS_PER_MONTH);
     if (!axisDetail.monthBands) return;
     const contentEndDate = addDaysIso(settings.endDate, 1);
-    const displayCalendars = normalizeDisplayCalendars(settings.displayCalendars);
+    const displayCalendars = effectiveDisplayCalendars(settings.displayCalendars);
     if (usesIranianAxis(displayCalendars)) {
       const monthStarts = iranianMonthStartDates(addDaysIso(settings.startDate, -32), addDaysIso(contentEndDate, 32))
         .filter((date) => compareIso(date, contentEndDate) < 0);
@@ -680,7 +688,7 @@ import {
 
   function drawGrid(svg, settings, laneCount, rowHeight, contentTop, contentBottom, contentWidth, geometry) {
     const axisDetail = axisDetailForZoom(zoom, AVG_DAYS_PER_MONTH);
-    const displayCalendars = normalizeDisplayCalendars(settings.displayCalendars);
+    const displayCalendars = effectiveDisplayCalendars(settings.displayCalendars);
     const startYear = isoYear(settings.startDate);
     const endYear = isoYear(settings.endDate);
     const yearLabelStep = zoom < 13 ? 5 : zoom < 21 ? 2 : 1;
@@ -1115,7 +1123,7 @@ import {
     const cursorX = viewportRect.left - shellRect.left + hoverPoint.x - dom.timelineViewport.scrollLeft;
     const labelX = clamp(cursorX, 130, Math.max(130, shellRect.width - 130));
     const birthItem = getPrimaryBirthItem();
-    const info = cursorReadoutText(hoverDate, birthItem?.startDate, currentDisplayCalendars());
+    const info = cursorReadoutText(hoverDate, birthItem?.startDate, effectiveCurrentDisplayCalendars());
     dom.timelineCursorReadout.style.setProperty("--cursor-x", `${cursorX}px`);
     dom.timelineCursorReadout.style.setProperty("--cursor-label-x", `${labelX}px`);
     dom.cursorAgoLabel.textContent = info.agoLabel;
@@ -1598,7 +1606,7 @@ import {
   function updateMeta() {
     const settings = timeline.settings;
     dom.stageTitle.textContent = settings.title;
-    const displayCalendars = currentDisplayCalendars();
+    const displayCalendars = effectiveCurrentDisplayCalendars();
     dom.stageMeta.textContent = `${formatDateForCalendars(settings.startDate, displayCalendars)} to ${formatDateForCalendars(settings.endDate, displayCalendars)}`;
   }
 
@@ -1622,7 +1630,7 @@ import {
     const info = selectionInfoText(
       item,
       birthItem?.startDate,
-      currentDisplayCalendars(),
+      effectiveCurrentDisplayCalendars(),
       timeline.settings.laneLabels,
     );
     dom.selectedItemLabel.textContent = info.itemLabel;
@@ -1770,20 +1778,30 @@ import {
   }
 
   function syncDisplayCalendarControls() {
-    const displayCalendars = currentDisplayCalendars();
-    if (dom.displayGregorianInput) dom.displayGregorianInput.checked = displayCalendars.includes("gregorian");
-    if (dom.displayIranianInput) dom.displayIranianInput.checked = displayCalendars.includes("iranian");
+    const controlState = calendarControlState(currentDisplayCalendars());
+    if (dom.displayGregorianInput) {
+      dom.displayGregorianInput.checked = controlState.showGregorian;
+      dom.displayGregorianInput.disabled = controlState.gregorianDisabled;
+    }
+    if (dom.secondaryCalendarInput) dom.secondaryCalendarInput.value = controlState.secondary || "";
+    if (dom.calendarSupportWarning) {
+      dom.calendarSupportWarning.hidden = !controlState.secondary
+        || isCalendarRuntimeSupported(controlState.secondary);
+    }
   }
 
   function selectedDisplayCalendarsFromControls() {
-    const selected = [];
-    if (dom.displayGregorianInput?.checked) selected.push("gregorian");
-    if (dom.displayIranianInput?.checked) selected.push("iranian");
-    return selected.length > 0 ? selected : currentDisplayCalendars();
+    const selectedSecondary = dom.secondaryCalendarInput?.value;
+    const secondary = isSecondaryCalendar(selectedSecondary) ? selectedSecondary : null;
+    return displayCalendarsFromControls(Boolean(dom.displayGregorianInput?.checked), secondary);
   }
 
   function currentDisplayCalendars() {
     return normalizeDisplayCalendars(timeline.settings.displayCalendars);
+  }
+
+  function effectiveCurrentDisplayCalendars() {
+    return effectiveDisplayCalendars(currentDisplayCalendars());
   }
 
   function setTimelineRowHeight(nextHeight) {
@@ -1980,7 +1998,7 @@ import {
       updateItemFieldVisibilityForType("event");
       updateItemNotesLabel(null);
       updateNotesInputDirection();
-      dom.itemCalendarPreview.textContent = "Select an item to see Gregorian and Iranian dates.";
+      dom.itemCalendarPreview.textContent = "Select an item to inspect calendar dates.";
       dom.itemEndField.hidden = true;
       dom.itemDerivedLabelsField.hidden = true;
       setColorPickerValue(itemColorPicker, TYPE_COLORS.event, { emit: false });
@@ -2627,14 +2645,14 @@ import {
     const endDate = hasEndYear(dom.itemTypeInput.value)
       ? normalizeDateInput(dom.itemEndInput.value, startDate)
       : startDate;
-    const displayCalendars = currentDisplayCalendars();
+    const displayCalendars = effectiveCurrentDisplayCalendars();
     dom.itemCalendarPreview.textContent = hasEndYear(dom.itemTypeInput.value)
       ? `${formatDateForCalendars(startDate, displayCalendars)} to ${formatDateForCalendars(endDate, displayCalendars)}`
       : formatDateForCalendars(startDate, displayCalendars);
   }
 
   function updateItemCalendarPreview(item) {
-    const displayCalendars = currentDisplayCalendars();
+    const displayCalendars = effectiveCurrentDisplayCalendars();
     dom.itemCalendarPreview.textContent = hasEndYear(item.type)
       ? `${formatDateForCalendars(item.startDate, displayCalendars)} to ${formatDateForCalendars(item.endDate, displayCalendars)}`
       : formatDateForCalendars(item.startDate, displayCalendars);

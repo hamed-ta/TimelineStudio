@@ -21,7 +21,7 @@ const period = {
 test("pointer info shows placeholders until a date is hovered", () => {
   assert.deepEqual(pointerInfoText(null, null), {
     dateLabel: "Hover over the timeline",
-    iranianLabel: "Gregorian and Persian dates",
+    iranianLabel: "Gregorian and Persian / Solar Hijri dates",
     ageLabel: "Add a birth item to calculate age",
   });
   assert.equal(pointerInfoText(null, "1987-07-13").ageLabel, "Age appears here");
@@ -36,6 +36,9 @@ test("pointer info formats hovered dates and age labels", () => {
 });
 
 test("pointer info follows selected display calendars", () => {
+  assert.equal(pointerInfoText(null, null, ["gregorian"]).iranianLabel, "Gregorian date");
+  assert.equal(pointerInfoText(null, null, ["hebrew"]).iranianLabel, "Hebrew date");
+  assert.equal(pointerInfoText(null, null, ["gregorian", "hebrew"]).iranianLabel, "Gregorian and Hebrew dates");
   assert.deepEqual(pointerInfoText("1990-08-20", null, ["gregorian"]), {
     dateLabel: "Aug 20, 1990",
     iranianLabel: "",
@@ -49,6 +52,10 @@ test("pointer info follows selected display calendars", () => {
 });
 
 test("cursor readout shows relative date age and selected calendars", () => {
+  assert.equal(
+    cursorReadoutText("1990-08-20", null, ["hebrew"], "2026-07-05").dateLabel,
+    "29 Av 5750 AM",
+  );
   assert.deepEqual(cursorReadoutText("2003-04-01", "1987-07-13", ["gregorian"], "2026-07-05"), {
     agoLabel: "23 years \u20073 months \u20074 days ago",
     ageLabel: "Age 15 years, \u20078 months, 19 days",
