@@ -39,15 +39,13 @@ import {
   serializeTimelineJson,
 } from "../../timeline/json";
 import {
+  calendarDayLabel,
+  calendarMonthLabel,
+  calendarYearLabel,
   formatDateForCalendars,
   formatDisplayDate,
-  formatIranianDate,
   formatZoomValue,
   hasGregorianDisplay,
-  hasIranianDisplay,
-  iranianDateParts,
-  iranianMonthName,
-  iranianYear,
   monthName,
 } from "../../timeline/formatters";
 import {
@@ -60,6 +58,9 @@ import {
   effectiveDisplayCalendars,
   isCalendarSupported as isCalendarRuntimeSupported,
 } from "../../timeline/calendarRegistry";
+import {
+  calendarBoundaryDates,
+} from "../../timeline/calendarBoundaries";
 import {
   buildPdfFromJpeg,
 } from "../../timeline/export/pdf";
@@ -204,6 +205,8 @@ import {
   const EDGE_SNAP_PIXELS = 14;
   const EDGE_SNAP_MAX_DAYS = 14;
   const AVG_DAYS_PER_MONTH = 365.2425 / 12;
+  const CALENDAR_MONTH_BOUNDARY_PADDING_DAYS = 40;
+  const CALENDAR_YEAR_BOUNDARY_PADDING_DAYS = 400;
   const TIMELINE_ITEM_TYPES = ["birth", "event", "marker", "note", "period", "line", "text"];
   const TIMELINE_JSON_FILE_TYPE = {
     description: "Timeline JSON",
@@ -359,8 +362,6 @@ import {
   let timelineViewportResizeObserver = null;
   let lastTimelineViewportWidth = -1;
   let lastTimelineViewportHeight = -1;
-  const iranianDatePartsCache = new Map();
-  const iranianMonthStartsCache = new Map();
 
   init();
 
@@ -639,8 +640,9 @@ import {
     if (!axisDetail.monthBands) return;
     const contentEndDate = addDaysIso(settings.endDate, 1);
     const displayCalendars = effectiveDisplayCalendars(settings.displayCalendars);
-    if (usesIranianAxis(displayCalendars)) {
-      const monthStarts = iranianMonthStartDates(addDaysIso(settings.startDate, -32), addDaysIso(contentEndDate, 32))
+    const secondaryAxis = secondaryAxisCalendar(displayCalendars);
+    if (secondaryAxis) {
+      const monthStarts = secondaryMonthBoundaries(secondaryAxis, settings.startDate, contentEndDate)
         .filter((date) => compareIso(date, contentEndDate) < 0);
       monthStarts.forEach((startDate, index) => {
         const nextDate = monthStarts[index + 1] || contentEndDate;
@@ -694,7 +696,7 @@ import {
     const yearLabelStep = zoom < 13 ? 5 : zoom < 21 ? 2 : 1;
     const contentEndDate = addDaysIso(settings.endDate, 1);
     const totalDays = daysBetween(settings.startDate, contentEndDate);
-    const useIranianAxis = usesIranianAxis(displayCalendars);
+    const secondaryAxis = secondaryAxisCalendar(displayCalendars);
     const dayLabelInterval = axisDayLabelInterval(totalDays, zoom);
     const gridTop = Math.min(geometry.trackTop, contentTop);
     let lastMonthLabelEnd = -Infinity;
@@ -711,9 +713,11 @@ import {
         if (axisDetail.dayTicks) {
           dayTickPath += `M ${x} ${geometry.axisY - 5} V ${geometry.axisY + 5} `;
         }
-        const day = useIranianAxis ? iranianDatePartsFor(date).day : isoDay(date);
-        if (axisDetail.dayLabels && isDayLabelCandidate(day, dayLabelInterval)) {
-          lastDayLabelEnd = drawDayAxisLabel(svg, date, x, contentEndDate, lastDayLabelEnd, geometry, String(day));
+        if (axisDetail.dayLabels && dayLabelInterval > 0) {
+          const dayLabel = secondaryAxis ? calendarDayLabel(date, secondaryAxis) : String(isoDay(date));
+          if (isDayLabelCandidate(Number(dayLabel), dayLabelInterval)) {
+            lastDayLabelEnd = drawDayAxisLabel(svg, date, x, contentEndDate, lastDayLabelEnd, geometry, dayLabel);
+          }
         }
       }
       if (dayGridPath) {
@@ -724,24 +728,31 @@ import {
       }
     }
 
-    if (useIranianAxis) {
-      const monthStarts = iranianMonthStartDates(settings.startDate, contentEndDate);
-      const firstIranianYearStart = monthStarts.find((date) => iranianDatePartsFor(date).month === 1);
-      const firstIranianYear = firstIranianYearStart
-        ? iranianDatePartsFor(firstIranianYearStart).year
-        : iranianDatePartsFor(settings.startDate).year;
-      monthStarts.forEach((date, index) => {
-        const parts = iranianDatePartsFor(date);
+    if (secondaryAxis) {
+      const yearStarts = calendarBoundaryDates(
+        secondaryAxis,
+        addDaysIso(settings.startDate, -CALENDAR_YEAR_BOUNDARY_PADDING_DAYS),
+        contentEndDate,
+        "year",
+      );
+      const yearStartIndexes = new Map(yearStarts.map((date, index) => [date, index]));
+      const baseYearIndex = yearStarts.findLastIndex((date) => compareIso(date, settings.startDate) <= 0);
+      const axisBoundaries = axisDetail.monthGrid
+        ? secondaryMonthBoundaries(secondaryAxis, settings.startDate, contentEndDate)
+        : yearStarts;
+      axisBoundaries.forEach((date, index) => {
+        if (compareIso(date, settings.startDate) < 0 || compareIso(date, contentEndDate) > 0) return;
         const x = dateToX(date);
-        const isYearStart = parts.month === 1;
+        const yearStartIndex = yearStartIndexes.get(date);
+        const isYearStart = yearStartIndex !== undefined;
         if (isYearStart || axisDetail.monthGrid) {
           svg.append(svgEl("line", { class: isYearStart ? "grid-major" : "grid-minor", x1: x, x2: x, y1: gridTop, y2: contentBottom }));
           svg.append(svgEl("line", { class: isYearStart ? "axis-tick axis-tick-year" : "axis-tick axis-tick-month", x1: x, x2: x, y1: geometry.axisY - 10, y2: geometry.axisY + 10 }));
         }
-        if (isYearStart && (parts.year - firstIranianYear) % yearLabelStep === 0) {
+        if (isYearStart && (yearStartIndex - baseYearIndex) % yearLabelStep === 0) {
           svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: geometry.axisY + 38 }, axisYearLabel(date, displayCalendars)));
         } else if (!isYearStart && axisDetail.monthGrid) {
-          const nextDate = monthStarts[index + 1] || contentEndDate;
+          const nextDate = axisBoundaries[index + 1] || contentEndDate;
           lastMonthLabelEnd = drawMonthAxisLabel(svg, date, x, contentEndDate, lastMonthLabelEnd, axisDetail.dayLabels, geometry, displayCalendars, nextDate);
         }
       });
@@ -759,8 +770,9 @@ import {
 
           if (isYearStart && (year - startYear) % yearLabelStep === 0) {
             svg.append(svgEl("text", { class: "axis-year", x: x + 8, y: geometry.axisY + 38 }, axisYearLabel(date, displayCalendars)));
-            if (zoom >= 42 && hasGregorianDisplay(displayCalendars) && hasIranianDisplay(displayCalendars)) {
-              svg.append(svgEl("text", { class: "axis-iranian", x: x + 8, y: geometry.axisY + 56 }, formatIranianDate(date)));
+            const secondary = selectedSecondaryCalendar(displayCalendars);
+            if (zoom >= 42 && secondary) {
+              svg.append(svgEl("text", { class: "axis-iranian", x: x + 8, y: geometry.axisY + 56 }, formatDateForCalendars(date, [secondary])));
             }
           } else if (!isYearStart && axisDetail.monthGrid) {
             lastMonthLabelEnd = drawMonthAxisLabel(svg, date, x, contentEndDate, lastMonthLabelEnd, axisDetail.dayLabels, geometry, displayCalendars);
@@ -782,7 +794,10 @@ import {
     if (hasGregorianDisplay(displayCalendars)) {
       return zoom < 42 ? String(isoYear(date)) : formatDisplayDate(date);
     }
-    return zoom < 42 ? iranianYear(date) : formatIranianDate(date);
+    const secondary = secondaryAxisCalendar(displayCalendars);
+    return secondary && zoom < 42
+      ? calendarYearLabel(date, secondary)
+      : formatDateForCalendars(date, displayCalendars);
   }
 
   function drawLaneBackgrounds(svg, settings, laneCount, rowHeight, contentWidth, geometry) {
@@ -826,29 +841,29 @@ import {
     const cellWidth = Math.max(0, dateToX(cellEndDate) - x);
     const centerX = x + cellWidth / 2;
     const gregorian = monthName(date);
-    const iranian = iranianMonthName(date);
+    const secondary = selectedSecondaryCalendar(displayCalendars);
+    const secondaryLabel = secondary ? calendarMonthLabel(date, secondary) : "";
     const showGregorian = hasGregorianDisplay(displayCalendars);
-    const showIranian = hasIranianDisplay(displayCalendars);
     const stackedWidth = Math.max(
       estimateSvgTextWidth(gregorian, AXIS_LABEL_CHAR_WIDTH),
-      estimateSvgTextWidth(iranian, AXIS_LABEL_CHAR_WIDTH),
+      estimateSvgTextWidth(secondaryLabel, AXIS_LABEL_CHAR_WIDTH),
     );
     const gregorianY = hasDayLabels ? geometry.axisY - 31 : geometry.axisY - 23;
-    const iranianY = hasDayLabels ? geometry.axisY - 15 : geometry.axisY - 7;
+    const secondaryY = hasDayLabels ? geometry.axisY - 15 : geometry.axisY - 7;
     const compactY = hasDayLabels ? geometry.axisY - 18 : geometry.axisY - 11;
 
-    if (showGregorian && showIranian && cellWidth >= stackedWidth + 18 && canPlaceAxisLabel({
+    if (showGregorian && secondary && cellWidth >= stackedWidth + 18 && canPlaceAxisLabel({
       centerX,
       width: stackedWidth,
       lastLabelEnd,
       gap: AXIS_MONTH_LABEL_GAP,
     })) {
       svg.append(svgEl("text", { class: "axis-month axis-month-gregorian", x: centerX, y: gregorianY, "text-anchor": "middle" }, gregorian));
-      svg.append(svgEl("text", { class: "axis-month axis-month-iranian", x: centerX, y: iranianY, "text-anchor": "middle" }, iranian));
+      svg.append(svgEl("text", { class: "axis-month axis-month-iranian", x: centerX, y: secondaryY, "text-anchor": "middle" }, secondaryLabel));
       return centerX + stackedWidth / 2;
     }
 
-    const compactLabel = showGregorian ? gregorian : iranian;
+    const compactLabel = showGregorian ? gregorian : secondaryLabel;
     const compactWidth = estimateSvgTextWidth(compactLabel, AXIS_LABEL_CHAR_WIDTH);
     if (cellWidth >= compactWidth + 12 && canPlaceAxisLabel({
       centerX,
@@ -863,29 +878,21 @@ import {
     return lastLabelEnd;
   }
 
-  function usesIranianAxis(displayCalendars) {
-    return hasIranianDisplay(displayCalendars) && !hasGregorianDisplay(displayCalendars);
+  function selectedSecondaryCalendar(displayCalendars) {
+    return displayCalendars.find(isSecondaryCalendar) || null;
   }
 
-  function iranianMonthStartDates(startDate, endDate) {
-    const cacheKey = `${startDate}|${endDate}`;
-    const cached = iranianMonthStartsCache.get(cacheKey);
-    if (cached) return cached;
-    const starts = [];
-    for (let date = startDate; compareIso(date, endDate) < 0; date = addDaysIso(date, 1)) {
-      const parts = iranianDatePartsFor(date);
-      if (parts.day === 1) starts.push(date);
-    }
-    iranianMonthStartsCache.set(cacheKey, starts);
-    return starts;
+  function secondaryAxisCalendar(displayCalendars) {
+    return hasGregorianDisplay(displayCalendars) ? null : selectedSecondaryCalendar(displayCalendars);
   }
 
-  function iranianDatePartsFor(date) {
-    const cached = iranianDatePartsCache.get(date);
-    if (cached) return cached;
-    const parts = iranianDateParts(date);
-    iranianDatePartsCache.set(date, parts);
-    return parts;
+  function secondaryMonthBoundaries(calendar, startDate, endDate) {
+    return calendarBoundaryDates(
+      calendar,
+      addDaysIso(startDate, -CALENDAR_MONTH_BOUNDARY_PADDING_DAYS),
+      addDaysIso(endDate, CALENDAR_MONTH_BOUNDARY_PADDING_DAYS),
+      "month",
+    );
   }
 
   function drawLaneLabels(svg, settings, laneCount, rowHeight, geometry) {

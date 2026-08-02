@@ -3,6 +3,7 @@ import {
   hasDisplayCalendar,
   normalizeDisplayCalendars,
   type TimelineDisplayCalendar,
+  type TimelineSecondaryCalendar,
 } from "./calendars.ts";
 import {
   formatCalendarDate,
@@ -56,6 +57,18 @@ export function formatZoomValue(value: number): string {
 
 export function monthName(isoDate: string): string {
   return EN_MONTH_FORMAT.format(dateFromIso(isoDate));
+}
+
+export function calendarYearLabel(isoDate: string, calendar: TimelineSecondaryCalendar): string {
+  return formatCalendarParts(isoDate, calendar).yearKey;
+}
+
+export function calendarMonthLabel(isoDate: string, calendar: TimelineSecondaryCalendar): string {
+  return formatCalendarMonthName(isoDate, calendar);
+}
+
+export function calendarDayLabel(isoDate: string, calendar: TimelineSecondaryCalendar): string {
+  return formatCalendarParts(isoDate, calendar).day;
 }
 
 export function iranianYear(isoDate: string): string {
