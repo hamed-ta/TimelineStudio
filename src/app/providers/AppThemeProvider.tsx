@@ -13,7 +13,7 @@ const THEME_LABELS: Record<ThemeMode, string> = {
 };
 
 const APP_FONT_STACK =
-  '"Vazirmatn", "Noto Sans Arabic", "Noto Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif';
+  '"Inter Variable", "Vazirmatn Variable", "Noto Sans Arabic", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif';
 
 type AppThemeContextValue = {
   themeMode: ThemeMode;
@@ -34,17 +34,41 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     () => ({
       algorithm: resolvedTheme === "dark" ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
       token: {
-        colorPrimary: "#1677ff",
-        borderRadius: 8,
+        colorPrimary: "#663af3",
+        colorInfo: "#663af3",
+        colorBgBase: resolvedTheme === "dark" ? "#05060f" : "#eef2f8",
+        colorBgContainer: resolvedTheme === "dark" ? "#101522" : "#f8faff",
+        colorBgElevated: resolvedTheme === "dark" ? "#0b0e19" : "#ffffff",
+        colorText: resolvedTheme === "dark" ? "#d1e4fa" : "#17243b",
+        colorTextSecondary: resolvedTheme === "dark" ? "#c7d3ea" : "#465775",
+        colorTextTertiary: resolvedTheme === "dark" ? "#9da7ba" : "#576780",
+        colorTextPlaceholder: resolvedTheme === "dark" ? "#9da7ba" : "#576780",
+        colorTextDisabled: resolvedTheme === "dark" ? "#8190a8" : "#697892",
+        colorBorder: resolvedTheme === "dark" ? "#66748b" : "#8292ac",
+        colorBorderSecondary: resolvedTheme === "dark" ? "rgba(186,215,247,0.12)" : "rgba(47,65,94,0.18)",
+        colorError: resolvedTheme === "dark" ? "#f49b9b" : "#b93835",
+        borderRadius: 6,
+        borderRadiusLG: 16,
+        fontSize: 14,
         fontFamily: APP_FONT_STACK,
       },
       components: {
         Button: {
           controlHeight: 34,
-          borderRadius: 8,
+          borderRadius: 999,
+          defaultBg: resolvedTheme === "dark" ? "rgba(186,214,247,0.06)" : "rgba(255,255,255,0.6)",
+          defaultColor: resolvedTheme === "dark" ? "#d1e4fa" : "#17243b",
+          defaultBorderColor: resolvedTheme === "dark" ? "rgba(186,215,247,0.12)" : "rgba(47,65,94,0.18)",
+          defaultHoverColor: resolvedTheme === "dark" ? "#d8ecf8" : "#17243b",
+          defaultHoverBg: resolvedTheme === "dark" ? "rgba(186,214,247,0.12)" : "#e4eaf3",
+          defaultHoverBorderColor: resolvedTheme === "dark" ? "rgba(186,215,247,0.24)" : "rgba(47,65,94,0.42)",
+          fontWeight: 500,
         },
         Card: {
-          borderRadiusLG: 8,
+          borderRadiusLG: 16,
+          colorBgContainer: resolvedTheme === "dark" ? "rgba(186,214,247,0.03)" : "rgba(255,255,255,0.78)",
+          headerFontSize: 16,
+          headerHeight: 48,
         },
       },
     }),

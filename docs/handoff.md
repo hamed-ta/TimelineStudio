@@ -1,5 +1,31 @@
 # Handoff
 
+## Release 0.4.0 — 2026-10-25
+
+- User approved the visual update and requested a minor-version release, push, and live GitHub Pages deployment.
+- Bumped package and lockfile versions from `0.3.0` to `0.4.0`; moved all pending changelog entries into the dated `0.4.0` release section and updated versioning notes.
+- The release includes the approved AuthKit-inspired appearance and changes accumulated since `0.3.0`, including selectable secondary calendars.
+- Release verification passed: JavaScript syntax, 135/135 tests, production build/typecheck with `/TimelineStudio/` asset paths, matching package/lockfile versions, release-note extraction, and `git diff --check`.
+- Publication of `v0.4.0` is next. The tag push runs `.github/workflows/release.yml`; deployment and live-site evidence will be recorded after completion.
+
+## AuthKit Visual Direction — 2026-10-25
+
+- The engineering-skill setup was committed and pushed to `origin/main` as `f91b6d9` before starting this work.
+- User confirmed existing product facts remain in place, selected code-first for future showcase work, and requested code styling after `DESIGN.md` is written.
+- Added Impeccable schema/platform metadata and a visual acceptance scenario without replacing existing product requirements.
+- Recorded the supplied midnight/glass direction in `DESIGN.md` before implementation, as requested.
+- RED browser check: the original dark editor computed `--bg: #141414`, `--accent: #1677ff`, and 7px Save-button corners; the requested midnight palette and pill/glass styling were absent.
+- GREEN: updated `styles.css`, Ant Design theme tokens, font imports, and the sidebar heading. Fixed desktop command clipping and narrow metadata overlap; preserved all legacy IDs, controller/model code, and saved data behavior.
+- Narrow dependencies: `@fontsource-variable/inter`, `@fontsource-variable/space-grotesk`, and `@fontsource-variable/vazirmatn`. Fonts are served locally; their license notices are included under `public/licenses/fonts/`.
+- Verification: legacy JavaScript syntax passed, `npm test` passed 135/135, and production build/typecheck passed with the existing chunk-size advisory.
+- Browser evidence: Codex in-app browser at 1440×1000 and 390×844 in dark/light, plus the user's 660×954 preview in dark. Final full-page captures are in ignored `.impeccable/review/`; document and inspector scroll positions were reset and checked before each final capture.
+- Browser smoke passed for temporary bilingual period editing, Gregorian/Persian display, theme retention of visible title/ISO dates/color/calendar/unsaved state, undo/redo, sidebar collapse, accessible command wrapping, zoom-popover placement, and visible keyboard focus. No synthetic review data was added to app defaults or repository timeline files.
+- The mechanical detector ran once. The thick warning edge was removed; reference-pinned heading gradient and blueprint grid were retained. Remaining palette/geometry advisories were supplied to the reviewer for context.
+- Independent Impeccable finish review returned `ship` after all six required final captures were reopened. The documenter reconciled `DESIGN.md` with implemented tokens and produced `.impeccable/design.json` with nine representative components, depth/motion/breakpoints, and matching narrative.
+- Documentation/configuration checks and `git diff --check` passed. The production build includes all three font license notices. The preview was restored to an empty timeline with System appearance and an expanded inspector after undoing the four temporary review edits.
+- Rendered reduced-motion/forced-colors emulation and physical-device checks remain explicitly deferred. Their source rules are present; these are not recorded as rendered passes.
+- The visual work is included in the `0.4.0` release preparation above. Next implementation task remains reducer-owned undo/redo history.
+
 ## Engineering Skill Setup — 2026-10-25
 
 - Added `AGENTS.md` consumer pointers and `docs/agents/` configuration for GitHub Issues in `hamed-ta/TimelineStudio`, the five default triage labels, and a single-context domain-doc layout.

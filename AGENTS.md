@@ -19,6 +19,7 @@ Dependencies are allowed when they are the reasonable way to deliver a feature s
 ## Project Documents
 
 - `docs/product.md`: product behavior, concepts, and BDD acceptance scenarios
+- `DESIGN.md`: visual direction and reusable design rules; read before UI changes
 - `docs/plan.md`: current short-term plan and priorities
 - `docs/handoff.md`: current state for session handoff
 - `docs/startup.md`: `/startup` workflow

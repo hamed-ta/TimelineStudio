@@ -2,12 +2,15 @@
 
 All notable project changes should be recorded here.
 
-This project follows semantic versioning. The current package version is `0.3.0`.
+This project follows semantic versioning. The current package version is `0.4.0`.
 
 ## Unreleased
 
+## 0.4.0 - 2026-10-25
+
 ### Changed
 
+- Adopted the supplied AuthKit-inspired midnight glass style with a matching light appearance, local Inter/Space Grotesk/Vazirmatn fonts, pill controls, frosted panels, clearer keyboard focus, and responsive toolbar/metadata wrapping. Recorded the visual system in `DESIGN.md` while preserving existing timeline behavior.
 - Configured engineering-skill guidance for GitHub Issues, default triage labels, and the single-context domain-document layout.
 - Added one selectable secondary display calendar from Persian / Solar Hijri, Islamic / Umm al-Qura, Hebrew, Buddhist, Japanese, and Indian / Saka, with Gregorian-only, dual-calendar, and secondary-only timeline modes while preserving Gregorian ISO storage and calculations.
 - Generalized timeline year/month boundaries, day values, grid lines, ticks, alternating bands, cursor dates, item details, previews, and exports to use the selected display calendars.

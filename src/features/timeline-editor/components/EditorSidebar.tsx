@@ -30,7 +30,6 @@ export function EditorSidebar({
     <aside className="inspector" aria-label="Timeline editor">
       <div className="sidebar-header">
         <div className="sidebar-title">
-          <span className="sidebar-title-kicker">Editor</span>
           <strong>Timeline</strong>
         </div>
         <div className="sidebar-actions">

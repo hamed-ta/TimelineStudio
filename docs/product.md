@@ -1,8 +1,18 @@
 # Timeline Studio Product Notes
 
+<!-- impeccable:product-schema 1 -->
+
+## Platform
+
+web
+
 ## Purpose
 
 Timeline Studio lets a user create a personal horizontal timeline with events, periods, marker dates, annotation notes, text notes, and named lines. The timeline can be panned, zoomed, saved, loaded, and exported.
+
+## Brand Commitments
+
+Keep the Timeline Studio name and existing product behavior. Adopt the user-supplied AuthKit “Frosted glass cathedral at midnight” reference as the visual direction, adapted for a working timeline editor. `../DESIGN.md` owns the visual rules; this file owns behavior and acceptance scenarios.
 
 ## Core Concepts
 
@@ -145,6 +155,17 @@ The app should keep undo and redo history for the most recent 25 timeline-changi
 - Shared links should expose a useful page title and social preview description for search engines, chats, and social media.
 
 ## Acceptance Scenarios
+
+### AuthKit-Inspired Editor Appearance
+
+Given the user has an empty or populated timeline
+When Dark appearance is active
+Then the editor uses the midnight canvas, luminous text, frosted panels, pill buttons, and clear keyboard focus defined in `../DESIGN.md`
+When the user switches to Light or System appearance
+Then the same controls and timeline remain readable in the resolved appearance
+And timeline colors, dates, saved JSON, undo history, and editor commands retain their existing behavior
+And narrow layouts keep toolbar actions accessible without horizontal page overflow
+And reduced-motion preferences suppress nonessential transitions.
 
 ### Start Empty
 

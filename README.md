@@ -14,7 +14,7 @@ The project is migrating toward a modern Vite, React, TypeScript, Ant Design, an
 - Drag, resize, reorder, rename, recolor, lock, copy, paste, duplicate, and delete timeline items.
 - Line editing directly from the timeline label area.
 - Shared item and line color picker with preset palette, hue control, and hex entry.
-- Light, dark, and system themes.
+- AuthKit-inspired frosted workspace with light, dark, and system themes.
 - JSON load/save with direct file saving when the browser supports it.
 - SVG, PNG, and PDF export.
 
@@ -99,6 +99,7 @@ git push origin v0.2.0
 ## Project Docs
 
 - [Product notes](docs/product.md)
+- [Visual design system](DESIGN.md)
 - [Plan](docs/plan.md)
 - [Versioning](docs/versioning.md)
 - [Changelog](CHANGELOG.md)
@@ -110,3 +111,5 @@ git push origin v0.2.0
 ## License
 
 Timeline Studio is released under the [MIT License](LICENSE).
+
+Inter, Space Grotesk, and Vazirmatn are served locally through the Fontsource variable-font packages. Their license notices ship in [public/licenses/fonts/](public/licenses/fonts/).
