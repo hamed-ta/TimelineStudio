@@ -6,6 +6,7 @@ Continue the ADR 0009 migration by moving undo/redo history ownership into the r
 
 ## Completed
 
+- Configured the engineering skills for GitHub Issues, the five default triage labels, and a single-context domain-doc layout in `docs/agents/`, with consumer pointers in `AGENTS.md`.
 - Added Gregorian-only, dual-calendar, and secondary-only display using one optional secondary calendar: Persian / Solar Hijri, Islamic / Umm al-Qura, Hebrew, Buddhist, Japanese, or Indian / Saka.
 - Preserved Gregorian ISO storage and calculations, existing Persian JSON compatibility, and non-mutating fallback for recognized calendars unsupported by the browser.
 
@@ -19,4 +20,5 @@ Continue the ADR 0009 migration by moving undo/redo history ownership into the r
 
 ## Latest Verification
 
+- Engineering-skill configuration passed the documentation audit and `git diff --check`; details are recorded in `docs/handoff.md`.
 - Final calendar-feature verification is recorded in `docs/handoff.md`.

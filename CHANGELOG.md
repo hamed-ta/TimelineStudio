@@ -8,6 +8,7 @@ This project follows semantic versioning. The current package version is `0.3.0`
 
 ### Changed
 
+- Configured engineering-skill guidance for GitHub Issues, default triage labels, and the single-context domain-document layout.
 - Added one selectable secondary display calendar from Persian / Solar Hijri, Islamic / Umm al-Qura, Hebrew, Buddhist, Japanese, and Indian / Saka, with Gregorian-only, dual-calendar, and secondary-only timeline modes while preserving Gregorian ISO storage and calculations.
 - Generalized timeline year/month boundaries, day values, grid lines, ticks, alternating bands, cursor dates, item details, previews, and exports to use the selected display calendars.
 - Added defensive runtime support detection that preserves unsupported saved calendar selections while temporarily rendering Gregorian without dirtying the timeline.

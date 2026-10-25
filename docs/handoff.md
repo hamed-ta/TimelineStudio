@@ -1,5 +1,12 @@
 # Handoff
 
+## Engineering Skill Setup — 2026-10-25
+
+- Added `AGENTS.md` consumer pointers and `docs/agents/` configuration for GitHub Issues in `hamed-ta/TimelineStudio`, the five default triage labels, and a single-context domain-doc layout.
+- Domain terms will be maintained in root `CONTEXT.md` when resolved by `domain-modeling`; existing architectural decisions remain in `docs/adr/`.
+- Updated the plan and changelog for this documentation-only setup.
+- Verification: `git diff --check` and a focused documentation audit passed. The audit checked the single Agent skills block, preserved existing instructions, three resolving configuration pointers, tracker/origin agreement, exact label mappings, single-context rules, and file whitespace. The calendar application checks below are retained evidence from the earlier implementation session and were not rerun for this setup.
+
 ## Current State
 
 Selectable secondary calendars are implemented on `main`. Gregorian remains the stored main calendar; users can display Gregorian only, Gregorian plus one secondary, or one secondary calendar only.

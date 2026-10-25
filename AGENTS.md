@@ -90,3 +90,17 @@ Do not consider a feature complete unless the behavior scenario, verification re
 - Keep date calculations deterministic and based on stored Gregorian ISO dates.
 - Keep Iranian date text as display output derived from Gregorian dates.
 - Do not add sample personal data to the default app state.
+
+## Agent skills
+
+### Issue tracker
+
+Track issues and specs in GitHub Issues for `hamed-ta/TimelineStudio`. Before reading or publishing tickets, read `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five default triage labels. Before triaging issues, read `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use a single-context layout with root `CONTEXT.md` and `docs/adr/`. Before exploring domain concepts or architecture, read `docs/agents/domain.md`.
