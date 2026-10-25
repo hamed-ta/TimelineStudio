@@ -14,6 +14,8 @@ Timeline Studio lets a user create a personal horizontal timeline with events, p
 
 Keep the Timeline Studio name and existing product behavior. Adopt the user-supplied AuthKit “Frosted glass cathedral at midnight” reference as the visual direction, adapted for a working timeline editor. `../DESIGN.md` owns the visual rules; this file owns behavior and acceptance scenarios.
 
+Use the approved Gentle turn logo in Sage + amber for app identity, browser/home-screen icons, and link previews. Its light/dark treatments follow `../DESIGN.md`; brand colours do not replace control meanings or user-selected timeline colours.
+
 ## Core Concepts
 
 ### Timeline
@@ -155,6 +157,17 @@ The app should keep undo and redo history for the most recent 25 timeline-changi
 - Shared links should expose a useful page title and social preview description for search engines, chats, and social media.
 
 ## Acceptance Scenarios
+
+### Sage + Amber App Identity
+
+Given the user opens Timeline Studio on desktop or a narrow screen
+When the editor resolves Light, Dark, or System appearance
+Then the header and footer show the approved Gentle turn symbol in the matching Sage + amber treatment
+And the brand name remains readable without obscuring timeline metadata or controls
+And browser tabs, home-screen icons, and shared-link previews use the same identity
+And icon assets resolve when the app is hosted under `/TimelineStudio/`
+And forced-colour mode preserves a visible one-colour mark
+And appearance changes do not modify timeline dates, colours, JSON, or undo history.
 
 ### AuthKit-Inspired Editor Appearance
 

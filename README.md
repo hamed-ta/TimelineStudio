@@ -1,5 +1,10 @@
 # Timeline Studio
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="public/brand/lockup-dark.svg">
+  <img src="public/brand/lockup-light.svg" alt="Gentle turn, the Timeline Studio logo" width="220" height="79">
+</picture>
+
 Timeline Studio is a local-first web app for building personal horizontal timelines. It runs in the browser, saves portable JSON files, and can export the visible timeline as SVG, PNG, or PDF.
 
 The project is migrating toward a modern Vite, React, TypeScript, Ant Design, and eventually Firebase-based app while preserving local JSON ownership.
@@ -15,6 +20,7 @@ The project is migrating toward a modern Vite, React, TypeScript, Ant Design, an
 - Line editing directly from the timeline label area.
 - Shared item and line color picker with preset palette, hue control, and hex entry.
 - AuthKit-inspired frosted workspace with light, dark, and system themes.
+- Sage + amber Gentle turn identity with matching browser/home-screen icons and link previews.
 - JSON load/save with direct file saving when the browser supports it.
 - SVG, PNG, and PDF export.
 
@@ -58,6 +64,10 @@ npm run preview
 Timeline Studio starts with an empty timeline. Use `Load JSON` to open saved timelines and `Save` to write JSON back to the current file when browser support allows it. JSON import/export remains the portable user-owned format.
 
 Personal timeline files should stay outside git, for example under ignored `user-data/`.
+
+## Brand Assets
+
+Approved SVG artwork and web icons are in [public/brand](public/brand/). See the [one-page usage guide](docs/brand/usage.md) for colours, spacing, and regeneration. The manifest supplies home-screen icon metadata; it does not add offline caching.
 
 ## Deployment
 

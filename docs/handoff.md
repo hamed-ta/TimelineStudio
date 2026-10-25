@@ -1,5 +1,32 @@
 # Handoff
 
+## Sage + Amber Brand Integration — 2026-10-25
+
+- User approved palette 03 **Sage + amber** for A, **Gentle turn**, requested integration wherever appropriate, explicitly invoked Impeccable and `DESIGN.md`, and requested commit/push. The two historical concept checkpoints below are resolved.
+- Replaced the gradient-square header mark with shared `BrandMark` SVG geometry, added it beside the footer name, and made the live brand name solid. Theme-specific semantic brand tokens preserve the existing editor/action/data colours; forced colours use CanvasText.
+- Added outlined light/dark lockups and symbols, black/white masters, adaptive SVG favicon, 16/32/48 ICO, Apple/192/512/maskable icons, a base-relative manifest, 1200×630 social card, README artwork, and `docs/brand/usage.md`. Optional `scripts/generate-brand-assets.py` uses local `rsvg-convert`; there are no new runtime dependencies. All shipping PNGs embed vector-source provenance, and the Impeccable raster scan found no missing provenance.
+- BDD/RED: added the brand identity acceptance scenario and browser-smoke checks. Baseline browser at 660×988 showed a header `SPAN` gradient tile, no footer symbol, and no icon metadata. GREEN replaced these surfaces without changing timeline controllers, saved JSON, dates, or defaults.
+- Automated verification passed: legacy JS syntax, 135/135 tests, production build/typecheck with `VITE_BASE_PATH=/TimelineStudio/`, XML/master geometry, PNG dimensions/opacity/provenance, three-size ICO, manifest paths, built icon links, and `git diff --check`. The existing >500 kB chunk advisory remains.
+- Browser verification used the production preview at `http://127.0.0.1:8766/TimelineStudio/` in the Codex in-app browser. Inspected full-page captures at desktop 1440×1000, mobile 390×844, and actual preview 660×988, all light/dark. No page-width overflow, incorrect brand fills, or console errors were found. Files: ignored `.impeccable/review/brand-{desktop,mobile,user-660}-{light,dark}.png`.
+- Functional smoke passed: a temporary period retained its visible title/ISO dates/colour/dirty state through System/Light/Dark changes; undo returned to empty/clean, redo restored it, and a final undo restored empty data. System preference was restored. Forced-colour behavior was source-reviewed, not browser-emulated; real home-screen installation and external social crawlers were not tested.
+- Impeccable context and incumbent surface brief were read; a single detector pass reported only existing advisory patterns/functional palette values. Independent finish review found the six captures valid and the brand integration faithful. Its sole provenance finding was cleared on the verdict pass after loading PNG chunks: all eight PNGs already contained their vector-origin metadata. Final disposition: `ship` for the scoped identity work. The documenter reconciled `DESIGN.md` and `.impeccable/design.json` with the code, adding brand metadata/preview and removing obsolete gradient rules. Version stays `0.4.0`; deployment is release-triggered, so this ordinary push does not publish the live site.
+
+## A Logo Colour Studies — 2026-10-25
+
+- User accepted A, **Gentle turn**, and requested colour. The direction-selection checkpoint below is resolved; palette choice is still open.
+- Added **Blue hour** (recommended muted blue/lavender), **Violet moment** (neutral with a violet dot), and **Sage + amber** (warmer alternative), each with light/dark symbol and outlined lockup SVGs. Review image and palette/check notes: `docs/brand/logo-concepts/2026-10-25/a-colour/`.
+- Preserved A's exact v2 geometry. Rendered and inspected the comparison across daylight/midnight and at 32/16 px in daylight. Twelve artwork files passed XML, geometry-preservation, and structural checks without FAIL/WARN findings. All body/dot colours exceed 4.6:1 against their intended background; `git diff --check` passed.
+- These are colour-only design artifacts. No app behavior or dependency changed; no BDD update, app test/build, integration, release, commit, or push was performed. Full logo/icon kit and usage guide remain pending after the palette is settled.
+
+## Logo Concepts — 2026-10-25
+
+- Interpreted the request as a Timeline Studio logo brief: calm, safe, personal, and suitable for different kinds of personal timelines. Treated the quoted Kiln/asset examples as illustrative prompts.
+- Read `DESIGN.md` and reviewed the existing CSS gradient-square identity. Used the logo-design skill to develop three directions: A **Gentle turn** (recommended rounded t/moment), B **Open chapters** (abstract pages), and C **At your pace** (wordmark-led capsule/moment).
+- Review image, outlined v2 SVG symbols/lockups, first iterations, brief, rationale, and test notes are in `docs/brand/logo-concepts/2026-10-25/`. Font artwork derives from the project's OFL-licensed Space Grotesk; no runtime dependency was added.
+- Two design/test rounds completed. All six v2 SVG drawings passed structural audit without FAIL/WARN findings. Inspected overview and separate scale/background/reference renders, including 16 px symbols and 160 px lockups. Ignored evidence: `.impeccable/review/logo-concepts-2026-10-25-qa.png`.
+- Final XML/asset and `git diff --check` checks passed. Headless Chrome could not capture the generated HTML sheet; visual evidence is from inspected `rsvg-convert` images. App/browser/device tests were not rerun for these design-only artifacts. No product behavior changed, so `docs/product.md` and the BDD scenarios remain unchanged.
+- User selection is pending at the logo-design skill's required concept checkpoint. Full colour/reversed/icon kit, usage guide, app integration, and trademark clearance are not complete. The existing app remains at `0.4.0`; no release, commit, or push was requested.
+
 ## Release 0.4.0 — 2026-10-25
 
 - User approved the visual update and requested a minor-version release, push, and live GitHub Pages deployment.

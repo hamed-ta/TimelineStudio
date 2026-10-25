@@ -13,6 +13,8 @@
   --text-muted: #465775;
   --text-subtle: #576780;
   --heading: #17243b;
+  --brand-sage: #426b64;
+  --brand-amber: #996c36;
   --accent: #663af3;
   --accent-strong: #5626dc;
   --accent-soft: rgba(102, 58, 243, 0.08);
@@ -81,6 +83,8 @@
   --text-muted: #c7d3ea;
   --text-subtle: #9da7ba;
   --heading: #d8ecf8;
+  --brand-sage: #a4cbbb;
+  --brand-amber: #e6bb7e;
   --accent-strong: #7652ff;
   --accent-soft: rgba(102, 58, 243, 0.16);
   --accent-text: #c0adff;
@@ -124,6 +128,8 @@
     --text-muted: #c7d3ea;
     --text-subtle: #9da7ba;
     --heading: #d8ecf8;
+    --brand-sage: #a4cbbb;
+    --brand-amber: #e6bb7e;
     --accent-strong: #7652ff;
     --accent-soft: rgba(102, 58, 243, 0.16);
     --accent-text: #c0adff;
@@ -221,9 +227,17 @@ textarea:disabled {
 }
 
 .app-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--text);
   font-family: var(--font-display);
   font-weight: 500;
+}
+
+.app-footer-brand .brand-symbol {
+  width: 22px;
+  height: 22px;
 }
 
 .app-footer-divider {
@@ -254,17 +268,19 @@ textarea:disabled {
   min-width: 0;
 }
 
-.brand-mark {
-  width: 30px;
-  height: 30px;
+.brand-symbol {
+  display: block;
   flex: 0 0 auto;
-  border-radius: 6px;
-  background:
-    linear-gradient(90deg, transparent 46%, rgba(216, 236, 248, 0.85) 49%, rgba(216, 236, 248, 0.85) 51%, transparent 54%),
-    linear-gradient(180deg, #526580, #26354c);
-  box-shadow:
-    inset 0 1px 1px rgba(216, 236, 248, 0.4),
-    inset 0 0 0 1px var(--line);
+  width: 36px;
+  height: 36px;
+}
+
+.brand-symbol-body {
+  fill: var(--brand-sage);
+}
+
+.brand-symbol-moment {
+  fill: var(--brand-amber);
 }
 
 h1,
@@ -274,17 +290,12 @@ p {
 }
 
 .brand h1 {
+  color: var(--heading);
   font-family: var(--font-display);
   font-size: var(--font-size-md);
   font-weight: 500;
   letter-spacing: -0.025em;
   line-height: var(--line-tight);
-}
-
-:root[data-resolved-theme="dark"] .brand h1 {
-  background: linear-gradient(0deg, #98c0ef, #d8ecf8);
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .brand p,
@@ -2700,10 +2711,9 @@ button:focus-visible {
 }
 
 @media (forced-colors: active) {
-  .brand h1,
-  :root[data-resolved-theme="dark"] .brand h1 {
-    background: none;
-    -webkit-text-fill-color: CanvasText;
+  .brand-symbol-body,
+  .brand-symbol-moment {
+    fill: CanvasText;
   }
 
   button,

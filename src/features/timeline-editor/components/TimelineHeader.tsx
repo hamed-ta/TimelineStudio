@@ -1,10 +1,11 @@
 import { Typography } from "antd";
+import { BrandMark } from "../../../shared/brand/BrandMark";
 
 export function TimelineHeader() {
   return (
     <header className="topbar">
       <div className="brand">
-        <span className="brand-mark" aria-hidden="true"></span>
+        <BrandMark className="brand-mark" />
         <div>
           <Typography.Title level={1}>Timeline Studio</Typography.Title>
           <Typography.Text id="statusText" aria-live="polite" type="secondary">

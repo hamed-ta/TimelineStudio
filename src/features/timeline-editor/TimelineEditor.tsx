@@ -1,4 +1,5 @@
 import { usePersistentBoolean } from "../../shared/hooks/usePersistentBoolean";
+import { BrandMark } from "../../shared/brand/BrandMark";
 import { TimelineCanvas } from "./canvas/TimelineCanvas";
 import { EditorSidebar } from "./components/EditorSidebar";
 import { LineEditorPopover } from "./components/LineEditorPopover";
@@ -41,7 +42,7 @@ export function TimelineEditor() {
         </main>
 
         <footer className="app-footer" aria-label="Application information">
-          <span className="app-footer-brand">{__APP_NAME__}</span>
+          <span className="app-footer-brand"><BrandMark />{__APP_NAME__}</span>
           <span className="app-footer-divider" aria-hidden="true"></span>
           <span className="app-footer-version">Version {__APP_VERSION__}</span>
         </footer>

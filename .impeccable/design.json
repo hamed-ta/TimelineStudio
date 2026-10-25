@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-25T01:20:09.472953Z",
+  "generatedAt": "2026-10-25T02:42:51.211807Z",
   "title": "Design System: Timeline Studio",
   "extensions": {
     "colorMeta": {
@@ -100,20 +100,6 @@
           "oklch(72% 0.0268 233.97)",
           "oklch(84% 0.0268 233.97)",
           "oklch(95% 0.0268 233.97)"
-        ]
-      },
-      "skywash-blue": {
-        "role": "neutral",
-        "displayName": "Skywash Blue",
-        "tonalRamp": [
-          "oklch(15% 0.0797 252.82)",
-          "oklch(26% 0.0797 252.82)",
-          "oklch(38% 0.0797 252.82)",
-          "oklch(49% 0.0797 252.82)",
-          "oklch(61% 0.0797 252.82)",
-          "oklch(72% 0.0797 252.82)",
-          "oklch(84% 0.0797 252.82)",
-          "oklch(95% 0.0797 252.82)"
         ]
       },
       "frost-glow": {
@@ -535,12 +521,68 @@
           "oklch(84% 0.1164 57.79)",
           "oklch(95% 0.1164 57.79)"
         ]
+      },
+      "brand-sage-light": {
+        "role": "secondary",
+        "displayName": "Brand Sage Light",
+        "tonalRamp": [
+          "oklch(15% 0.0476 182.32)",
+          "oklch(26% 0.0476 182.32)",
+          "oklch(38% 0.0476 182.32)",
+          "oklch(49% 0.0476 182.32)",
+          "oklch(61% 0.0476 182.32)",
+          "oklch(72% 0.0476 182.32)",
+          "oklch(84% 0.0476 182.32)",
+          "oklch(95% 0.0476 182.32)"
+        ]
+      },
+      "brand-amber-light": {
+        "role": "secondary",
+        "displayName": "Brand Amber Light",
+        "tonalRamp": [
+          "oklch(15% 0.0909 69.10)",
+          "oklch(26% 0.0909 69.10)",
+          "oklch(38% 0.0909 69.10)",
+          "oklch(49% 0.0909 69.10)",
+          "oklch(61% 0.0909 69.10)",
+          "oklch(72% 0.0909 69.10)",
+          "oklch(84% 0.0909 69.10)",
+          "oklch(95% 0.0909 69.10)"
+        ]
+      },
+      "brand-sage-dark": {
+        "role": "secondary",
+        "displayName": "Brand Sage Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0471 168.26)",
+          "oklch(26% 0.0471 168.26)",
+          "oklch(38% 0.0471 168.26)",
+          "oklch(49% 0.0471 168.26)",
+          "oklch(61% 0.0471 168.26)",
+          "oklch(72% 0.0471 168.26)",
+          "oklch(84% 0.0471 168.26)",
+          "oklch(95% 0.0471 168.26)"
+        ]
+      },
+      "brand-amber-dark": {
+        "role": "secondary",
+        "displayName": "Brand Amber Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0925 75.56)",
+          "oklch(26% 0.0925 75.56)",
+          "oklch(38% 0.0925 75.56)",
+          "oklch(49% 0.0925 75.56)",
+          "oklch(61% 0.0925 75.56)",
+          "oklch(72% 0.0925 75.56)",
+          "oklch(84% 0.0925 75.56)",
+          "oklch(95% 0.0925 75.56)"
+        ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Compact Brand",
-        "purpose": "Local Space Grotesk for the app brand; its dark-only gradient stays out of working text."
+        "purpose": "Local Space Grotesk for the app name, kept solid beside the Sage + amber Gentle turn symbol."
       },
       "title": {
         "displayName": "Working Heading",
@@ -709,6 +751,14 @@
       "description": "The editor signature: precise grid detail around a strong central date axis.",
       "html": "<div class=\"ds-axis-frame\"><svg class=\"ds-axis\" viewBox=\"0 0 440 160\" role=\"img\" aria-label=\"Timeline axis with three month ticks\"><rect class=\"ds-axis-band\" x=\"0\" y=\"52\" width=\"440\" height=\"56\"/><path class=\"ds-axis-grid\" d=\"M100 0v160M220 0v160M340 0v160\"/><path class=\"ds-axis-line\" d=\"M0 80h440\"/><path class=\"ds-axis-ticks\" d=\"M100 70v20M220 70v20M340 70v20\"/><text class=\"ds-axis-label\" x=\"100\" y=\"68\" text-anchor=\"middle\">Jan</text><text class=\"ds-axis-label\" x=\"220\" y=\"68\" text-anchor=\"middle\">Feb</text><text class=\"ds-axis-label\" x=\"340\" y=\"68\" text-anchor=\"middle\">Mar</text></svg></div>",
       "css": ".ds-axis-frame { overflow: hidden; border: 1px solid var(--canvas-border, rgba(186,215,247,0.12)); border-radius: var(--radius, 16px); background: var(--canvas, #05060f); box-shadow: var(--shadow, inset 0 1px 1px rgba(216,236,248,0.2), inset 0 24px 48px rgba(168,216,245,0.06), 0 16px 32px rgba(0,0,0,0.3)); } .ds-axis { display: block; width: 100%; min-width: 300px; font-family: var(--font-sans, \"Inter Variable\", \"Vazirmatn Variable\", \"Noto Sans Arabic\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Tahoma, sans-serif); } .ds-axis-band { fill: var(--timeline-axis-bg, #101725); } .ds-axis-grid { stroke: var(--timeline-grid-major, rgba(186,215,247,0.2)); stroke-width: 1; } .ds-axis-line { stroke: var(--timeline-axis-line, #9cb9dc); stroke-width: 5; stroke-linecap: round; } .ds-axis-ticks { stroke: var(--timeline-axis-line, #9cb9dc); stroke-width: 2.5; stroke-linecap: round; } .ds-axis-label { fill: var(--timeline-label, #c7d3ea); font-size: 12px; }"
+    },
+    {
+      "name": "Gentle turn identity",
+      "kind": "custom",
+      "refersTo": "brand-mark",
+      "description": "The shared Sage + amber mark beside the solid, compact application name; 36px in the header and 22px in the footer.",
+      "html": "<div class=\"ds-brand-examples\"><div class=\"ds-brand-header\"><svg class=\"ds-brand-symbol\" viewBox=\"0 0 256 256\" width=\"36\" height=\"36\" aria-hidden=\"true\" focusable=\"false\"><path class=\"ds-brand-body\" d=\"M100 48 A16 16 0 0 1 132 48 V88 H164 A16 16 0 0 1 164 120 H132 V156 Q132 180 156 180 H164 A16 16 0 0 1 164 212 H156 Q100 212 100 156 V120 H44 A16 16 0 0 1 44 88 H100 Z\"/><circle class=\"ds-brand-moment\" cx=\"212\" cy=\"104\" r=\"16\"/></svg><span class=\"ds-brand-name\">Timeline Studio</span></div><div class=\"ds-brand-footer\"><svg class=\"ds-brand-symbol\" viewBox=\"0 0 256 256\" width=\"36\" height=\"36\" aria-hidden=\"true\" focusable=\"false\"><path class=\"ds-brand-body\" d=\"M100 48 A16 16 0 0 1 132 48 V88 H164 A16 16 0 0 1 164 120 H132 V156 Q132 180 156 180 H164 A16 16 0 0 1 164 212 H156 Q100 212 100 156 V120 H44 A16 16 0 0 1 44 88 H100 Z\"/><circle class=\"ds-brand-moment\" cx=\"212\" cy=\"104\" r=\"16\"/></svg><span>Timeline Studio</span></div></div>",
+      "css": ".ds-brand-examples { display: grid; gap: 16px; } .ds-brand-header, .ds-brand-footer { display: inline-flex; align-items: center; font-family: var(--font-display, \"Space Grotesk Variable\", \"Inter Variable\", \"Vazirmatn Variable\", sans-serif); font-weight: 500; } .ds-brand-header { gap: 10px; color: var(--heading, #d8ecf8); font-size: .9375rem; line-height: 1.2; } .ds-brand-name { letter-spacing: -.025em; } .ds-brand-footer { gap: 6px; color: var(--text, #d1e4fa); font-size: .75rem; line-height: 1.4; } .ds-brand-symbol { display: block; flex: 0 0 auto; width: 36px; height: 36px; } .ds-brand-footer .ds-brand-symbol { width: 22px; height: 22px; } .ds-brand-body { fill: var(--brand-sage, #a4cbbb); } .ds-brand-moment { fill: var(--brand-amber, #e6bb7e); } @media (forced-colors: active) { .ds-brand-body, .ds-brand-moment { fill: CanvasText; } }"
     }
   ],
   "narrative": {
@@ -719,7 +769,8 @@
       "Translucent surfaces with lit inset edges and restrained depth.",
       "Compact working controls and breathing room around the timeline.",
       "Familiar editor layout, accurate dates, and user-owned timeline colors.",
-      "A daylight interpretation with System, Light, and Dark preferences."
+      "A daylight interpretation with System, Light, and Dark preferences.",
+      "A Sage + amber Gentle turn symbol beside a solid, readable application name."
     ],
     "rules": [
       {
@@ -729,7 +780,7 @@
       },
       {
         "name": "The Solid Working Text Rule",
-        "body": "Keep functional text solid; the brand gradient does not spread to labels, fields, or timeline content.",
+        "body": "Keep the brand name and functional text solid; colour expression belongs to the symbol and the editor's existing semantic roles.",
         "section": "typography"
       },
       {
@@ -742,12 +793,14 @@
       "Do use semantic CSS variables and matching Ant Design tokens so both themes retain the same hierarchy.",
       "Do carry midnight, luminous text, inset frost, and the three radius families into new editor surfaces.",
       "Do preserve System/Light/Dark, Persian-capable text, user colors, and precise timeline geometry.",
+      "Do use the shared Gentle turn geometry and theme-specific Sage + amber roles with a solid application name.",
       "Do verify new surfaces in both themes, at desktop and narrow widths, with keyboard focus and accessibility preferences."
     ],
     "donts": [
       "Don't copy AuthKit/WorkOS branding, auth mockups, a marketing hero, or their product claims.",
       "Don't dim body text, essential field boundaries, or timeline labels to decorative hairline opacity.",
-      "Don't put gradients on working text, blur the canvas, animate the grid, or recolor saved data to satisfy the shell palette."
+      "Don't put gradients on working text, blur the canvas, animate the grid, or recolor saved data to satisfy the shell palette.",
+      "Don't stretch or rotate the brand symbol, move its moment, add effects to it, or replace control accents and stored item colours with brand colours."
     ]
   }
 }
