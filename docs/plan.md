@@ -6,7 +6,7 @@ Continue the ADR 0009 migration by moving undo/redo history ownership into the r
 
 ## Completed
 
-- Prepared the requested minor release `0.4.0`, including the approved visual update and pending changelog entries; deployment status is recorded in `docs/handoff.md`.
+- Released `0.4.0` with the approved visual update and accumulated changelog entries. GitHub Actions and Pages deployment passed, and the live website's version/theme were verified; evidence is in `docs/handoff.md`.
 - Applied the supplied AuthKit direction to the editor after writing `DESIGN.md`: midnight/daylight themes, frosted surfaces, pill controls, responsive metadata/toolbars, and visible focus.
 - Added narrow presentation dependencies `@fontsource-variable/inter`, `@fontsource-variable/space-grotesk`, and `@fontsource-variable/vazirmatn` for locally served type with Persian coverage; bundled their font license notices.
 - Configured the engineering skills for GitHub Issues, the five default triage labels, and a single-context domain-doc layout in `docs/agents/`, with consumer pointers in `AGENTS.md`.

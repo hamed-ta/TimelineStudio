@@ -6,7 +6,9 @@
 - Bumped package and lockfile versions from `0.3.0` to `0.4.0`; moved all pending changelog entries into the dated `0.4.0` release section and updated versioning notes.
 - The release includes the approved AuthKit-inspired appearance and changes accumulated since `0.3.0`, including selectable secondary calendars.
 - Release verification passed: JavaScript syntax, 135/135 tests, production build/typecheck with `/TimelineStudio/` asset paths, matching package/lockfile versions, release-note extraction, and `git diff --check`.
-- Publication of `v0.4.0` is next. The tag push runs `.github/workflows/release.yml`; deployment and live-site evidence will be recorded after completion.
+- Published `v0.4.0` from release commit `46e4e07` and pushed `main` and the tag together. [Release/deployment workflow 40150712520](https://github.com/hamed-ta/TimelineStudio/actions/runs/40150712520) succeeded, including tests, typecheck, build, Pages deployment, and GitHub Release publication; branch CI also passed.
+- [GitHub Release 0.4.0](https://github.com/hamed-ta/TimelineStudio/releases/tag/v0.4.0) includes `timeline-studio-0.4.0.zip` (608,087 bytes).
+- Live verification passed at [the GitHub Pages site](https://hamed-ta.github.io/TimelineStudio/): rendered footer `Version 0.4.0`, midnight canvas `#05060f`, pill control radius `999px`, fonts loaded, and no browser console errors. The live app opened with empty data. Screenshot: ignored `.impeccable/review/live-0.4.0.jpg`.
 
 ## AuthKit Visual Direction — 2026-10-25
 
