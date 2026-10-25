@@ -5,11 +5,5 @@ node_modules/
 dist/
 # macOS
 .DS_Store
-# local design previews and review evidence
-.impeccable/questions/
-.impeccable/mocks/
-.impeccable/review/
-.impeccable/build/
-.impeccable/live/sessions/
-.impeccable/live/roots.json
-.impeccable/live/inject-journal.json
+# local Impeccable tooling, design sidecars, and review evidence
+.impeccable/

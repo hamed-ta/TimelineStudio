@@ -10,6 +10,7 @@ This project follows semantic versioning. The current package version is `0.4.0`
 
 - Adopted the approved Gentle turn logo in Sage + amber in the app header/footer, browser and home-screen icons, README, and shared-link artwork. Added theme-aware SVG masters, a web manifest, a one-page usage guide, and documented visual/asset checks while preserving the editor's existing control and timeline colours.
 - Preserved the logo concept and colour studies as the decision record.
+- Ignored the complete local `.impeccable/` tooling directory and removed its metadata/configuration from git tracking while preserving local files and the tracked `DESIGN.md` reference.
 
 ## 0.4.0 - 2026-10-25
 

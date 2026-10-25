@@ -10,6 +10,8 @@ Continue the ADR 0009 migration by moving undo/redo history ownership into the r
 - Production masters are in `public/brand/`; `DESIGN.md` and `docs/brand/usage.md` record the approved identity. Earlier concepts remain archived under `docs/brand/logo-concepts/2026-10-25/`.
 - No runtime dependency was added. Optional raster regeneration uses the locally installed `rsvg-convert` via `scripts/generate-brand-assets.py`.
 - Syntax, 135 tests, production build/typecheck, asset checks, and desktop/mobile/660px light/dark browser checks passed. The independent finish reviewer cleared the scoped brand integration, and the documenter reconciled `DESIGN.md` and its sidecar with the finished code.
+- Deployed the approved identity from `b29f16b` through the same-version `0.4.0` workflow refresh. Live browser and eight asset-content checks passed; the workflow and evidence are recorded in `docs/handoff.md`.
+- `.impeccable/` is now local tooling only: ignored and untracked, with existing local files preserved. `DESIGN.md` remains the tracked design reference.
 
 ## Completed
 

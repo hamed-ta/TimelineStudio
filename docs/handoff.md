@@ -1,5 +1,14 @@
 # Handoff
 
+## Live Brand Deployment And Local Tooling — 2026-10-25
+
+- User requested a build/deployment of the approved logo and asked to ignore the project's `.impeccable/` directory.
+- Manually dispatched `release.yml` on `main` with `tag=v0.4.0`, using its documented same-version refresh path. [Workflow 40158160023](https://github.com/hamed-ta/TimelineStudio/actions/runs/40158160023) successfully built and deployed source commit `b29f16bf10579ffb71a01130adc483032abb238c`, ran syntax/tests/typecheck/build, and refreshed the release ZIP. No version bump or new tag was created.
+- Verified [the live website](https://hamed-ta.github.io/TimelineStudio/) in the in-app browser: both header/footer marks are present, the resolved dark sage/amber fills match the approved colours, version remains `0.4.0`, icon/social metadata use the correct Pages paths, and there were no console errors or page-width overflow. Screenshot: ignored `.impeccable/review/live-sage-amber.png`.
+- Eight live assets returned HTTP 200 and matched local SHA-256 content exactly: SVG/ICO favicons, Apple icon, manifest, normal 192/512 icons, maskable icon, and social card. External social-crawler cache refresh and real home-screen installation remain untested.
+- Replaced the partial Impeccable ignore rules with `.impeccable/` and removed four existing metadata/config/surface files from the git index using `git rm --cached`. The local files are preserved; `DESIGN.md`, product docs, production artwork, and usage guidance remain tracked.
+- Verified the whole directory is ignored, no `.impeccable` files remain tracked, local metadata files still exist, and the change passes whitespace checks. This cleanup is documentation/tooling only and does not change the deployed app.
+
 ## Sage + Amber Brand Integration — 2026-10-25
 
 - User approved palette 03 **Sage + amber** for A, **Gentle turn**, requested integration wherever appropriate, explicitly invoked Impeccable and `DESIGN.md`, and requested commit/push. The two historical concept checkpoints below are resolved.
