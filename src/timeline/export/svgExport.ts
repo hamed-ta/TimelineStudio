@@ -37,10 +37,21 @@ export const TIMELINE_EXPORT_CSS = `
 export function serializeTimelineSvg(svg: SVGSVGElement, exportCss = TIMELINE_EXPORT_CSS): string {
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  clone.querySelectorAll(".selection-outline,.resize-handle").forEach((node) => node.remove());
+  clone.setAttribute("direction", "ltr");
+  clone.setAttribute("font-family", '"Inter Variable", "Vazirmatn Variable", sans-serif');
+  clone.querySelectorAll(".selection-outline,.resize-handle,.lane-add-control,.lane-label-hit,.lane-label-grip,.cursor-axis-guide").forEach((node) => node.remove());
+  clone.querySelectorAll("[tabindex]").forEach((node) => node.removeAttribute("tabindex"));
+  clone.querySelectorAll(".lane-label-control").forEach((node) => node.removeAttribute("aria-label"));
   clone.querySelectorAll(".selected").forEach((node) => node.classList.remove("selected"));
   const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
   style.textContent = exportCss;
   clone.insertBefore(style, clone.firstChild);
   return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(clone)}`;
+}
+
+export async function serializeTimelineSvgForExport(svg: SVGSVGElement): Promise<string> {
+  await document.fonts.ready;
+  const { exportFontCss } = await import("./fonts");
+  const fontCss = await exportFontCss();
+  return serializeTimelineSvg(svg, `${fontCss}\n${TIMELINE_EXPORT_CSS}`);
 }

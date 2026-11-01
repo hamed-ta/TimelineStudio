@@ -1,7 +1,9 @@
+import { useAppLocale } from "../../../app/providers/AppLocaleProvider";
 import { Typography } from "antd";
 import { BrandMark } from "../../../shared/brand/BrandMark";
 
 export function TimelineHeader() {
+  const { t } = useAppLocale();
   return (
     <header className="topbar">
       <div className="brand">
@@ -9,24 +11,24 @@ export function TimelineHeader() {
         <div>
           <Typography.Title level={1}>Timeline Studio</Typography.Title>
           <Typography.Text id="statusText" aria-live="polite" type="secondary">
-            Ready
+            {t("ready")}
           </Typography.Text>
         </div>
       </div>
 
       <div className="timeline-context">
         <Typography.Title level={2} id="stageTitle">
-          New Timeline
+          {t("new_timeline")}
         </Typography.Title>
         <span className="separator" aria-hidden="true"></span>
         <Typography.Text id="stageMeta" type="secondary">
-          Create or load a timeline
+          {t("create_load")}
         </Typography.Text>
         <span className="separator" aria-hidden="true"></span>
         <p className="file-state" id="fileState" aria-live="polite">
-          <span id="fileNameLabel">No file selected</span>
+          <span id="fileNameLabel">{t("no_file")}</span>
           <span className="dirty-indicator" id="dirtyIndicator" hidden>
-            Unsaved changes
+            {t("unsaved")}
           </span>
         </p>
       </div>

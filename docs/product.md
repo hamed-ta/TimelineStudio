@@ -26,7 +26,7 @@ A horizontal date-based canvas. Time flows left to right.
 
 A named horizontal lane used to group related items, such as School, Home, Work, Family, or Notes.
 Lines can be renamed, recolored, added, removed, and reordered directly from the timeline label area. Items assigned to a line move with that line.
-New timelines start with three lines above and three lines below the central axis, named `Line 1` through `Line 6` from top to bottom.
+New timelines start with three lines above and three lines below the central axis, named `Line 1` through `Line 6` in English, or their creation-language equivalents, from top to bottom.
 Default line names are stable identities: moving a line does not renumber or rename it.
 Removing a line removes the items assigned to that line and shifts lower lines upward after confirmation.
 
@@ -74,7 +74,7 @@ The app should keep undo and redo history for the most recent 25 timeline-changi
 ## Date Behavior
 
 - Gregorian ISO dates are the internal source of truth.
-- Timeline labels may show Gregorian dates, Persian / Solar Hijri dates in English letters and numbers, or both.
+- Timeline labels follow the interface language and explicit display-calendar selection; language, calendar and numbering are separate from stored Gregorian ISO dates.
 - Display-calendar settings affect only labels and summaries; saved item dates, timeline start/end dates, drag math, age math, and duration math remain based on Gregorian ISO dates.
 - Timeline start, end, and item date inputs currently accept Gregorian ISO `YYYY-MM-DD` values.
 - Saved data should preserve exact dates.
@@ -120,13 +120,13 @@ The app should keep undo and redo history for the most recent 25 timeline-changi
 
 - The timeline editor sidebar should be collapsible.
 - The timeline action toolbar should stay compact enough that it does not need its own collapse control on desktop.
-- The timeline editor sidebar should stay on the left side of the workspace on wider screens.
+- The timeline editor sidebar should stay at the reading-start side on wider screens: left for LTR, right for RTL.
 - The timeline action toolbar should stay near the top of the timeline stage.
 - The current timeline title, date range, and file state should stay in a single compact metadata row in the main app header.
 - The timeline action toolbar should not duplicate the timeline title or date range.
 - The main header and action toolbar should stay compact so the timeline canvas gets most of the vertical space.
 - View actions such as read-only, Fit, theme, zoom, and height controls should live in the action toolbar with create, file, and export actions.
-- View actions should remain pinned on the right side of the toolbar, with the theme switcher as the right-most control.
+- View actions should remain at the reading-end side of the toolbar, with the theme switcher last and the language selector aligned with the other controls.
 - Timeline action buttons should use recognizable icons with short labels.
 - Timeline action icons should use distinct accent color treatment while preserving text contrast.
 - Create-item actions should be grouped separately from file and export actions.
@@ -145,7 +145,7 @@ The app should keep undo and redo history for the most recent 25 timeline-changi
 - When the rendered timeline is shorter than the viewport, it should sit centered vertically with equal spare space above and below by default.
 - Timeline axis date labels should stack, simplify, or skip month and day labels when spacing is tight so date text does not overlap.
 - Timeline settings should let users choose Gregorian, Persian / Solar Hijri, or both display calendars while keeping at least one display calendar enabled.
-- A new timeline should display Gregorian dates only and have no secondary calendar selected.
+- A new timeline should initially display only the creation language’s default calendar: Persian / Solar Hijri for Persian, Islamic / Umm al-Qura for Arabic, Gregorian for English/Spanish/French.
 - The user should be able to select one optional secondary calendar, and when Gregorian is hidden the selected secondary calendar should own the timeline axis labels and boundaries.
 - Gregorian should remain selected and not be turn-off-able when no secondary calendar is selected.
 - Loading a saved timeline with a recognized secondary calendar unsupported by the browser should preserve the saved selection, temporarily render Gregorian, and not mark the timeline as changed.
@@ -157,6 +157,28 @@ The app should keep undo and redo history for the most recent 25 timeline-changi
 - Shared links should expose a useful page title and social preview description for search engines, chats, and social media.
 
 ## Acceptance Scenarios
+
+### Interface Language
+
+Given the user opens Timeline Studio
+Then the interface supports English, Spanish, French, Persian and Arabic
+And the saved language preference takes precedence over supported browser languages, with English as fallback
+When the user changes language using the language selector
+Then controls, tooltips, accessible names, status, confirmations, calendar labels, ages and durations use that language
+And Persian and Arabic use right-to-left interface layout while chronological coordinates still run left to right
+And the preference is remembered outside timeline JSON
+And dates, user text, selected calendars, file handles, selection, drafts, zoom, dirty state and undo history remain intact
+And new document/item/line default names use the creation language and remain ordinary saved text afterward
+And SVG, PNG and PDF exports retain readable localized labels and mixed-script text.
+
+Scenario: Choose the initial display calendar by creation language
+  Given the user creates a new timeline
+  Then Persian uses Persian / Solar Hijri as its sole initial display calendar
+  And Arabic uses Islamic / Umm al-Qura as its sole initial display calendar
+  And English, Spanish and French use Gregorian as their sole initial display calendar
+  When the user changes the interface language or loads a saved timeline
+  Then the current or saved calendar choices remain unchanged
+  And stored dates remain Gregorian ISO values.
 
 ### Sage + Amber App Identity
 
@@ -190,8 +212,8 @@ And the timeline range starts on the same day last year and ends today.
 
 ### Selectable Secondary Calendars
 
-Scenario: A new timeline starts with Gregorian only
-  Given the user creates a new timeline
+Scenario: A new English timeline starts with Gregorian only
+  Given the user creates a new timeline in English
   Then Gregorian is displayed
   And the secondary calendar is None
 
@@ -326,7 +348,7 @@ Given the timeline has multiple named lines
 When the timeline renders
 Then the date axis appears through the center of the canvas instead of above every line
 And a new timeline has three lines above and three lines below the axis
-And its default names read `Line 1` through `Line 6` from top to bottom without plus or minus signs
+And its default names read `Line 1` through `Line 6` in English, or their creation-language equivalents, from top to bottom without plus or minus signs
 And moving a line above or below the axis keeps that line's name unchanged
 And the add-line control is fully visible below the final line without overlapping its border
 And alternating time-band color continues through the full visible canvas above and below the lines

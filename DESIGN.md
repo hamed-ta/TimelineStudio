@@ -199,11 +199,13 @@ Use locally bundled Inter Variable for functional text, Space Grotesk Variable f
 
 ## Layout
 
-Keep the compact metadata header, collapsible left inspector, grouped Create/File/Export toolbar, right-side View controls, custom timeline, and collapsible information panel. The canvas receives most of the working area. The reference's 120px section gaps and centered 1200px marketing container do not constrain the editor.
+Keep the compact metadata header, collapsible inspector on the leading side, grouped Create/File/Export toolbar, trailing View controls, custom timeline, and collapsible information panel. The canvas receives most of the working area. The reference's 120px section gaps and centered 1200px marketing container do not constrain the editor.
 
 Use the compact spacing steps in the frontmatter, with small optical gaps of 5–10px between controls. Panel bodies use 16px padding, inspector padding is 14px, and the stage uses 10px by 12px. The inspector is 320px wide, collapsing to 58px. The canvas receives the remaining width and scrolls within its own viewport.
 
 At 1600px and below, toolbar action groups wrap and View moves to a separate row. At 960px and below, the header and inspector stack above a stage with a 580px minimum height; the inspector is capped at 420px. At 560px and below, paired form fields become one column and shell padding is 12px. Coarse pointers increase the principal command and field targets to 44px.
+
+English, Spanish, and French use a left-to-right shell; Persian and Arabic use a right-to-left shell. The inspector, toolbar separators, and control alignment follow that reading direction; mirror the inspector's expand/collapse icon with its side. Keep the chronological viewport and SVG explicitly left-to-right, along with range controls, the color plane, and color values. Isolate mixed-direction titles and filenames; the Gentle turn and application-name lockup retains its left-to-right order.
 
 The signature is an illuminated time axis in a quiet glass workspace. A faint 96px shell grid and static cool radial glow support it without replacing the precise SVG date grid. Exported data and timeline geometry retain their product meanings.
 
@@ -237,13 +239,17 @@ Inspector cards use translucent frost, a lit top edge, 48px headers, and 16px bo
 
 ### Inputs and States
 
-Fields use a faint cool wash, the stronger Control Edge, solid text, 36px minimum height, and 7px by 9px padding. Native title, date, and select fields inherit the Label typography (12px, semibold, 1.4 line height); selects reserve 30px on the right for the chevron. Focus uses the outline and halo above. Preserve labels, native editing behavior, disabled distinctions, and legible placeholders. Read-only fields use muted text and the hover surface. Destructive text uses Danger; color selection exposes the stored value rather than a brand substitution.
+Fields use a faint cool wash, the stronger Control Edge, solid text, 36px minimum height, and 7px by 9px padding. Native title, date, and select fields inherit the Label typography (12px, semibold, 1.4 line height); selects leave 30px of padding at the trailing edge. Focus uses the outline and halo above. Preserve labels, native editing behavior, disabled distinctions, and legible placeholders. Read-only fields use muted text and the hover surface. Destructive text uses Danger; color selection exposes the stored value rather than a brand substitution.
 
 ### Timeline and Theme Control
 
 The SVG shares the shell's cool ground and typography while retaining readable major/minor date lines, alternating time bands, a prominent axis, and a distinct cursor. Data colors are never replaced by brand tokens. Theme changes alter presentation only, preserving saved JSON and undo history.
 
 State transitions use 140ms ease; panel/layout changes use 160–200ms ease. Ambient glows stay still. Source rules disable transitions and animations under reduced motion, and replace essential boundaries and both brand-symbol fills in forced colors. These two media modes were source-reviewed; the final screenshot set covers desktop dark/light, mobile dark/light, 660px dark, and a dark zoom overlay rather than simulated accessibility media modes.
+
+### Language Control
+
+Use a compact native select beside a globe icon in the View group. Show each language's native name—English, Español, Français, فارسی, العربية—with its own language and direction metadata. The surrounding pill uses the existing surface, text, line, and button-radius roles. Align it vertically with neighboring View controls without the form-label bottom margin. It is at least 34px high, constrains the select to 8rem, and grows to a 44px target for coarse pointers. A semantic 2px focus outline surrounds the pill when the select has focus. This preference shares the existing glass material in both themes.
 
 ## Do's and Don'ts
 

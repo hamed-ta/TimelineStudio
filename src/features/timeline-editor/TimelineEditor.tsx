@@ -1,3 +1,5 @@
+import { useAppLocale } from "../../app/providers/AppLocaleProvider";
+import { useEffect } from "react";
 import { usePersistentBoolean } from "../../shared/hooks/usePersistentBoolean";
 import { BrandMark } from "../../shared/brand/BrandMark";
 import { TimelineCanvas } from "./canvas/TimelineCanvas";
@@ -15,6 +17,8 @@ const SIDEBAR_COLLAPSED_STORAGE_KEY = "timeline-studio-sidebar-collapsed";
 const INFO_PANEL_COLLAPSED_STORAGE_KEY = "timeline-studio-info-panel-collapsed";
 
 export function TimelineEditor() {
+  const { t } = useAppLocale();
+  useEffect(() => { void import("./legacyTimelineEditor.js"); }, []);
   const [sidebarCollapsed, setSidebarCollapsed] = usePersistentBoolean(SIDEBAR_COLLAPSED_STORAGE_KEY);
   const [infoPanelCollapsed, setInfoPanelCollapsed] = usePersistentBoolean(INFO_PANEL_COLLAPSED_STORAGE_KEY);
 
@@ -29,7 +33,7 @@ export function TimelineEditor() {
             onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)}
           />
 
-          <section className="timeline-stage" id="timelineStage" aria-label="Timeline canvas">
+          <section className="timeline-stage" id="timelineStage" aria-label={t("timeline_canvas")}>
             <TimelineToolbar />
             <TimelineCanvas />
             <LineEditorPopover />
@@ -41,10 +45,10 @@ export function TimelineEditor() {
           </section>
         </main>
 
-        <footer className="app-footer" aria-label="Application information">
+        <footer className="app-footer" aria-label={t("app_information")}>
           <span className="app-footer-brand"><BrandMark />{__APP_NAME__}</span>
           <span className="app-footer-divider" aria-hidden="true"></span>
-          <span className="app-footer-version">Version {__APP_VERSION__}</span>
+          <span className="app-footer-version">{t("version", { value: __APP_VERSION__ })}</span>
         </footer>
       </div>
 

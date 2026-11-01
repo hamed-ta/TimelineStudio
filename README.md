@@ -7,10 +7,14 @@
 
 Timeline Studio is a local-first web app for building personal horizontal timelines. It runs in the browser, saves portable JSON files, and can export the visible timeline as SVG, PNG, or PDF.
 
+Current release: **0.5.0**, with a five-language interface and language-specific calendar defaults for new timelines. [Open Timeline Studio](https://hamed-ta.github.io/TimelineStudio/) or see the [release notes](CHANGELOG.md).
+
 The project is migrating toward a modern Vite, React, TypeScript, Ant Design, and eventually Firebase-based app while preserving local JSON ownership.
 
 ## Features
 
+- English, Spanish, French, Persian and Arabic interface, with a remembered language selector and RTL controls.
+- New timelines default to Persian / Solar Hijri for Persian, Islamic / Umm al-Qura for Arabic, and Gregorian for English/Spanish/French. Existing calendar choices survive language changes.
 - Horizontal SVG timeline with pan, zoom, fit, and readable zoom limits.
 - Event, period, marker, birth, note, line, and text item types.
 - Gregorian display with one optional secondary calendar: Persian / Solar Hijri, Islamic / Umm al-Qura, Hebrew, Buddhist, Japanese, or Indian / Saka.
@@ -50,6 +54,7 @@ Run validation:
 node --check src/features/timeline-editor/legacyTimelineEditor.js
 npm test
 npm run typecheck
+npm run i18n:check
 npm run build
 ```
 
@@ -58,6 +63,10 @@ Preview the production build locally:
 ```sh
 npm run preview
 ```
+
+## Localization
+
+Translation catalogs live in `src/i18n/locales/`; add stable keys and complete all five languages. `npm run i18n:check` validates messages, interpolation, language-specific plural forms and static JSX/call coverage; production builds run it automatically. Runtime typed keys use the English catalog. Native number/date formatting keeps explicit calendars and UTC separate from stored Gregorian ISO dates. See [ADR 0010](docs/adr/0010-interface-localization.md).
 
 ## Data
 
@@ -73,8 +82,8 @@ Approved SVG artwork and web icons are in [public/brand](public/brand/). See the
 
 The repository includes GitHub Actions for CI and release deployment.
 
-- Branch pushes and pull requests run syntax check, typecheck, and build.
-- Version tags like `v0.2.0` build the app, deploy `dist` to GitHub Pages, create or update a GitHub Release, and attach a zipped static build.
+- Branch pushes and pull requests run syntax checks, tests, typecheck, catalog validation and build.
+- Version tags like `v0.5.0` build the app, deploy `dist` to GitHub Pages, create or update a GitHub Release, and attach a zipped static build.
 
 Before the first deployment, configure the GitHub repository:
 
@@ -94,16 +103,15 @@ The release workflow sets Vite's base path from the actual repository name, so t
 
 See [docs/versioning.md](docs/versioning.md) for the full release process.
 
-Typical release:
+Typical release (replace the example version with the newly bumped package version, and stage the approved feature files too):
 
 ```sh
 npm version minor --no-git-tag-version
-# Move CHANGELOG.md Unreleased entries to: ## 0.2.0 - YYYY-MM-DD
+# Move CHANGELOG.md Unreleased entries to: ## 0.5.0 - YYYY-MM-DD
 git add package.json package-lock.json CHANGELOG.md
-git commit -m "chore: release 0.2.0"
-git tag v0.2.0
-git push origin main
-git push origin v0.2.0
+git commit -m "chore: release 0.5.0"
+git tag -a v0.5.0 -m "Timeline Studio 0.5.0"
+git push --atomic origin main v0.5.0
 ```
 
 ## Project Docs

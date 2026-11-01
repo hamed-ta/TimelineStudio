@@ -20,3 +20,9 @@ test("svg text fitting keeps short labels and truncates long labels", () => {
 test("safe svg ids replace characters that cannot be used in generated ids", () => {
   assert.equal(safeSvgId("item 1/#?"), "item-1---");
 });
+
+test("svg fitting preserves complete emoji and combining-character clusters", () => {
+  const family = "👨‍👩‍👧‍👦";
+  assert.equal(fitSvgText(family.repeat(10), 42, 7), `${family.repeat(3)}...`);
+  assert.equal(fitSvgText("e\u0301".repeat(10), 42, 7), `${"e\u0301".repeat(3)}...`);
+});

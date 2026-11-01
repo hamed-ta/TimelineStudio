@@ -40,9 +40,9 @@ http://127.0.0.1:8765/
 
 ## Display Calendar Checks
 
-- Confirm a new timeline starts with Gregorian enabled and Secondary calendar set to None.
+- In English, Spanish and French, confirm a new timeline starts with Gregorian enabled and Secondary calendar set to None. In Persian, confirm Gregorian is off and Persian / Solar Hijri is selected; in Arabic, confirm Gregorian is off and Islamic / Umm al-Qura is selected.
 - Confirm Gregorian cannot be disabled while Secondary calendar is None.
-- Select each supported secondary option and confirm English labels with Latin digits render without console errors.
+- Select each supported secondary option and confirm labels follow the chosen interface language and numbering system without console errors.
 - Confirm Gregorian plus a secondary calendar shows dual date text while Gregorian continues to own timeline boundaries.
 - Disable Gregorian and confirm the selected secondary calendar owns year/month boundaries, day values, grid lines, ticks, and alternating bands.
 - Switch secondary calendars while Gregorian is disabled and confirm secondary-only mode is preserved.
@@ -62,11 +62,24 @@ http://127.0.0.1:8765/
 
 Branding RED baseline, 2026-10-25: the in-app browser at 660×988 showed the CSS gradient-square `SPAN` in the header, no footer symbol, and no `link[rel~=icon]` metadata. The approved symbol and icon coverage were absent. There is no automated browser harness; use the checklist above as the manual RED/GREEN seam.
 
+## Language Checks
+
+- Switch through English, Español, Français, فارسی and العربية; confirm labels, accessible names, theme names, statuses, confirmations and date/age/duration text update.
+- Reload after choosing a language; confirm it is remembered and a new empty timeline has that language’s calendar and default names.
+- Change language with existing calendars, selected items, typed-but-unapplied form/hex/note drafts and undo history; confirm those values survive, dates/x coordinates stay fixed and the document does not gain an edit.
+- Check the language control’s vertical center against the theme/zoom/height controls. In RTL, verify sidebar collapse/expand arrows point toward/away from the correct edge and custom select chevrons appear left of text.
+- Inspect desktop, 390 px mobile and 660 px light/dark; check no page overflow, readable mixed-script fields, keyboard focus and usable popovers/context menus.
+- Export mixed Persian/Arabic/Latin text as SVG, PNG and PDF. Open SVG independently and inspect the raster/PDF; fonts should be embedded and add-line controls, cursor guides and selection grips absent.
+- Run `npm run i18n:check`, syntax, tests, typecheck and a build using `/TimelineStudio/` paths.
+
+Localization RED: initial English-only interface had no language selector. Automated locale tests initially failed on the missing locale module; grapheme fitting split a family emoji; the language-calendar-default test initially returned Gregorian for Persian. User screenshots additionally showed the inherited 11 px label margin lifting the selector and an unmirrored RTL sidebar toggle. These are the corresponding automated/manual RED checks for this feature.
+
 ## Recording Results
 
 Record the checks run, browser used, and any failures in `docs/handoff.md`.
 
 ## Latest Result
 
+- 2026-11-01: Five-language production `/TimelineStudio/` preview passed all-five locale/default-calendar switches, draft/selection/geometry and calendar undo/redo checks, desktop/mobile/660px light/dark inspection and SVG/PNG/PDF font/control checks. Independent finish review returned `ship` after user feedback fixes. Native picker roundtrip, fluent-speaker translation review and physical-device/accessibility-media coverage remain unverified; see handoff.
 - 2026-10-25: Sage + amber branding passed in the Codex in-app browser using the production `/TimelineStudio/` build, desktop/mobile/660px in light/dark, with theme/item-state and undo/redo smoke. Forced colours were source-reviewed; real home-screen installation and external crawler previews were not exercised. Details and capture paths are in `docs/handoff.md`.
 - 2026-08-02: The selectable secondary-calendar feature was user-confirmed working in the browser. The browser family was not recorded.

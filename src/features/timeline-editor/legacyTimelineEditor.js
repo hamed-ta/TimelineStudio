@@ -1,3 +1,5 @@
+import { t, formatNumber } from "../../i18n/index.ts";
+import { localizedEmptyTimeline, newItemTitle, nextLineName, itemTypeLabel, spanUnit, isolate } from "../../i18n/presentation.ts";
 import {
   addDaysIso,
   addMonthsIso,
@@ -16,12 +18,10 @@ import {
 import {
   ITEM_COLOR_PALETTE,
   TYPE_COLORS,
-  createEmptyTimeline,
   hasEndYear,
   isGlobalTimelineItemType,
   normalizeItem,
   normalizeTimeline,
-  titleForType,
 } from "../../timeline/model";
 import {
   adjustColor,
@@ -40,6 +40,7 @@ import {
 } from "../../timeline/json";
 import {
   calendarDayLabel,
+  calendarDayValue,
   calendarMonthLabel,
   calendarYearLabel,
   formatDateForCalendars,
@@ -65,7 +66,7 @@ import {
   buildPdfFromJpeg,
 } from "../../timeline/export/pdf";
 import {
-  serializeTimelineSvg,
+  serializeTimelineSvgForExport,
 } from "../../timeline/export/svgExport";
 import {
   canPickFileWithPicker,
@@ -209,7 +210,7 @@ import {
   const CALENDAR_YEAR_BOUNDARY_PADDING_DAYS = 400;
   const TIMELINE_ITEM_TYPES = ["birth", "event", "marker", "note", "period", "line", "text"];
   const TIMELINE_JSON_FILE_TYPE = {
-    description: "Timeline JSON",
+    get description() { return t("timeline_json"); },
     accept: { "application/json": [".json"] },
   };
   const dom = {
@@ -324,7 +325,7 @@ import {
     dirtyIndicator: document.getElementById("dirtyIndicator"),
   };
 
-  let timeline = createEmptyTimeline();
+  let timeline = localizedEmptyTimeline();
   let selectedId = null;
   let zoom = clamp(Number(localStorage.getItem(ZOOM_KEY)) || DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM);
   let timelineAreaExtraHeight = clamp(
@@ -362,6 +363,7 @@ import {
   let timelineViewportResizeObserver = null;
   let lastTimelineViewportWidth = -1;
   let lastTimelineViewportHeight = -1;
+  let lastStatus = { key: "ready", options: {} };
 
   init();
 
@@ -369,11 +371,48 @@ import {
     timeline = normalizeTimeline(timeline);
     history = resetTimelineHistory(timelineDataSnapshot());
     bindEvents();
+    document.addEventListener("timeline-language-changed", refreshLocalePresentation);
+    if (document.fonts) void document.fonts.ready.then(() => refreshLocalePresentation());
     syncTimelineAreaHeight();
     setZoom(initialTimelineZoom(), { render: false });
     renderAll({ save: false });
     if (timeline.items.length === 0) dom.timelineViewport.scrollLeft = 0;
-    setStatus("Ready");
+    setStatus("ready");
+  }
+
+  function refreshLocalePresentation() {
+    const scrollLeft = dom.timelineViewport.scrollLeft;
+    const scrollTop = dom.timelineViewport.scrollTop;
+    renderTimeline();
+    updateMeta();
+    updateTimelineInfoPanel();
+    updateCursorReadout();
+    updateFileState();
+    syncItemsLockedButton();
+    dom.zoomLabel.textContent = t("zoom_value", { value: formatZoomValue(zoom) });
+    dom.timelineHeightLabel.textContent = timelineAreaExtraHeight > 0
+      ? t("height_value", { value: formatNumber(timelineAreaExtraHeight) }) : t("auto");
+    updateItemNotesLabel({ type: dom.itemTypeInput.value });
+    updateItemFieldVisibilityForType(dom.itemTypeInput.value);
+    if (getItem(selectedId)) updateItemCalendarPreviewFromInputs();
+    else dom.itemCalendarPreview.textContent = t("inspect_calendar_dates");
+    for (const picker of [itemColorPicker, itemTextColorPicker, lineColorPicker]) {
+      if (!picker) continue;
+      if (picker.optional) picker.emptyLabel = t("no_color");
+      // Existing swatches retain focus and event handlers.
+      picker.palette.querySelectorAll(".color-swatch-button").forEach((button, index) => {
+        const name = t(`color_${ITEM_COLOR_PALETTE[index].name.toLowerCase()}`);
+        button.title = name;
+        button.setAttribute("aria-label", t("use_color", { name }));
+      });
+      if (picker.optional && !picker.input.value) picker.valueLabel.textContent = t("no_color");
+      picker.plane.setAttribute("aria-valuetext", t("color_values", { saturation: formatNumber(Math.round(picker.hsv.s)), brightness: formatNumber(Math.round(picker.hsv.v)) }));
+    }
+    if (lineEditorLaneIndex !== null) dom.lineEditorTitle.textContent = timeline.settings.laneLabels[lineEditorLaneIndex];
+    setStatus(lastStatus.key, lastStatus.options);
+    positionNoteInlineEditor();
+    dom.timelineViewport.scrollLeft = scrollLeft;
+    dom.timelineViewport.scrollTop = scrollTop;
   }
 
   function initialTimelineZoom() {
@@ -714,8 +753,9 @@ import {
           dayTickPath += `M ${x} ${geometry.axisY - 5} V ${geometry.axisY + 5} `;
         }
         if (axisDetail.dayLabels && dayLabelInterval > 0) {
-          const dayLabel = secondaryAxis ? calendarDayLabel(date, secondaryAxis) : String(isoDay(date));
-          if (isDayLabelCandidate(Number(dayLabel), dayLabelInterval)) {
+          const day = secondaryAxis ? calendarDayValue(date, secondaryAxis) : isoDay(date);
+          const dayLabel = secondaryAxis ? calendarDayLabel(date, secondaryAxis) : formatNumber(day);
+          if (isDayLabelCandidate(day, dayLabelInterval)) {
             lastDayLabelEnd = drawDayAxisLabel(svg, date, x, contentEndDate, lastDayLabelEnd, geometry, dayLabel);
           }
         }
@@ -792,7 +832,7 @@ import {
 
   function axisYearLabel(date, displayCalendars) {
     if (hasGregorianDisplay(displayCalendars)) {
-      return zoom < 42 ? String(isoYear(date)) : formatDisplayDate(date);
+      return zoom < 42 ? formatNumber(isoYear(date)) : formatDisplayDate(date);
     }
     const secondary = secondaryAxisCalendar(displayCalendars);
     return secondary && zoom < 42
@@ -904,7 +944,7 @@ import {
         class: "lane-label-control",
         "data-timeline-lane-index": lane,
         tabindex: "0",
-        "aria-label": `Drag ${label} to reorder line`,
+        "aria-label": t("drag_line", { label: isolate(label) }),
       });
 
       group.append(svgEl("rect", {
@@ -927,7 +967,7 @@ import {
       class: "lane-add-control",
       "data-timeline-lane-add": "true",
       tabindex: "0",
-      "aria-label": "Add line",
+      "aria-label": t("add_line"),
     });
     addGroup.append(svgEl("rect", {
       class: "lane-add-hit",
@@ -939,7 +979,7 @@ import {
     }));
     addGroup.append(svgEl("line", { class: "lane-add-icon", x1: 23, x2: 35, y1: addY, y2: addY }));
     addGroup.append(svgEl("line", { class: "lane-add-icon", x1: 29, x2: 29, y1: addY - 6, y2: addY + 6 }));
-    addGroup.append(svgEl("text", { class: "lane-add-label", x: 44, y: addY + 4 }, "Add line"));
+    addGroup.append(svgEl("text", { class: "lane-add-label", x: 44, y: addY + 4 }, t("add_line")));
     svg.append(addGroup);
   }
 
@@ -1249,7 +1289,7 @@ import {
   }
 
   function markerLabelLayout(item, x, geometry, contentWidth = currentContentWidth()) {
-    const rawText = item.title || titleForType("marker");
+    const rawText = item.title || newItemTitle("marker");
     const naturalText = fitSvgText(rawText, MARKER_LABEL_NATURAL_MAX_WIDTH, AXIS_LABEL_CHAR_WIDTH);
     const naturalWidth = Math.max(NOTE_MIN_WIDTH, Math.min(MARKER_LABEL_NATURAL_MAX_WIDTH, estimateSvgTextWidth(naturalText, AXIS_LABEL_CHAR_WIDTH) + NOTE_PADDING_X * 2));
     const width = hasFiniteNumber(item.labelWidth) ? clamp(Number(item.labelWidth), NOTE_MIN_WIDTH, NOTE_MAX_WIDTH) : naturalWidth;
@@ -1283,7 +1323,7 @@ import {
   function drawBirth(group, item, x, geometry) {
     const y1 = geometry.trackTop;
     const y2 = geometry.trackBottom;
-    const label = fitSvgText(item.title || titleForType("birth"), 116, AXIS_LABEL_CHAR_WIDTH);
+    const label = fitSvgText(item.title || newItemTitle("birth"), 116, AXIS_LABEL_CHAR_WIDTH);
     const labelWidth = Math.max(70, label.length * 7.2 + 22);
     const labelX = Math.max(8, x - labelWidth - 10);
     const labelY = geometry.axisY + 12;
@@ -1614,7 +1654,7 @@ import {
     const settings = timeline.settings;
     dom.stageTitle.textContent = settings.title;
     const displayCalendars = effectiveCurrentDisplayCalendars();
-    dom.stageMeta.textContent = `${formatDateForCalendars(settings.startDate, displayCalendars)} to ${formatDateForCalendars(settings.endDate, displayCalendars)}`;
+    dom.stageMeta.textContent = t("range", { start: isolate(formatDateForCalendars(settings.startDate, displayCalendars)), end: isolate(formatDateForCalendars(settings.endDate, displayCalendars)) });
   }
 
   function updateTimelineInfoPanel() {
@@ -1676,14 +1716,14 @@ import {
   function updateFileState() {
     if (!dom.fileNameLabel || !dom.dirtyIndicator) return;
     if (currentFileHandle) {
-      dom.fileNameLabel.textContent = `File: ${currentFileName || currentFileHandle.name || "selected file"}`;
-      dom.fileNameLabel.title = "Save writes to this file.";
+      dom.fileNameLabel.textContent = t("file_name", { name: isolate(currentFileName || currentFileHandle.name || t("selected_file")) });
+      dom.fileNameLabel.title = t("save_direct_help");
     } else if (currentFileName) {
-      dom.fileNameLabel.textContent = `Copy: ${currentFileName}`;
-      dom.fileNameLabel.title = "This browser did not grant write access; Save downloads a JSON copy.";
+      dom.fileNameLabel.textContent = t("copy_name", { name: isolate(currentFileName) });
+      dom.fileNameLabel.title = t("save_copy_help");
     } else {
-      dom.fileNameLabel.textContent = "No file selected";
-      dom.fileNameLabel.title = "Save will ask for a file location or download a JSON copy.";
+      dom.fileNameLabel.textContent = t("no_file");
+      dom.fileNameLabel.title = t("save_location_help");
     }
     dom.dirtyIndicator.hidden = !hasUnsavedChanges;
   }
@@ -1717,7 +1757,7 @@ import {
   function undoTimelineEdit() {
     const result = undoTimelineChange(history, currentHistoryEntry());
     if (!result.entry) {
-      setStatus("Nothing to undo");
+      setStatus("nothing_undo");
       return false;
     }
     closeContextMenu();
@@ -1729,14 +1769,14 @@ import {
     restoreHistoryEntry(result.entry);
     renderAll();
     updateContextMenuItems();
-    setStatus("Change undone");
+    setStatus("undone");
     return true;
   }
 
   function redoTimelineEdit() {
     const result = redoTimelineChange(history, currentHistoryEntry());
     if (!result.entry) {
-      setStatus("Nothing to redo");
+      setStatus("nothing_redo");
       return false;
     }
     closeContextMenu();
@@ -1748,7 +1788,7 @@ import {
     restoreHistoryEntry(result.entry);
     renderAll();
     updateContextMenuItems();
-    setStatus("Change redone");
+    setStatus("redone");
     return true;
   }
 
@@ -1779,7 +1819,7 @@ import {
     syncDisplayCalendarControls();
     syncHistoryButtons();
     dom.zoomRange.value = String(zoom);
-    dom.zoomLabel.textContent = `${formatZoomValue(zoom)} px/month`;
+    dom.zoomLabel.textContent = t("zoom_value", { value: formatZoomValue(zoom) });
     syncTimelineAreaControls();
     suppressControlEvents = false;
   }
@@ -1817,7 +1857,7 @@ import {
     const previousEntry = currentHistoryEntry();
     timeline.settings.rowHeight = clampedHeight;
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Line spacing resized");
+    if (changed) setStatus("spacing_resized");
     return changed;
   }
 
@@ -1831,7 +1871,7 @@ import {
     timelineAreaExtraHeight = clampedHeight;
     localStorage.setItem(TIMELINE_AREA_HEIGHT_KEY, String(timelineAreaExtraHeight));
     syncTimelineAreaHeight();
-    setStatus(timelineAreaExtraHeight > 0 ? "Timeline area resized" : "Timeline area reset");
+    setStatus(timelineAreaExtraHeight > 0 ? "area_resized" : "area_reset");
     return true;
   }
 
@@ -1843,7 +1883,7 @@ import {
   function syncTimelineAreaControls() {
     if (dom.timelineHeightRange) dom.timelineHeightRange.value = String(timelineAreaExtraHeight);
     if (dom.timelineHeightLabel) {
-      dom.timelineHeightLabel.textContent = timelineAreaExtraHeight > 0 ? `+${timelineAreaExtraHeight}px` : "Auto";
+      dom.timelineHeightLabel.textContent = timelineAreaExtraHeight > 0 ? t("height_value", { value: formatNumber(timelineAreaExtraHeight) }) : t("auto");
     }
   }
 
@@ -1948,7 +1988,7 @@ import {
     document.removeEventListener("pointermove", moveTimelineAreaHeightDrag);
     document.removeEventListener("pointerup", endTimelineAreaHeightDrag);
     document.removeEventListener("pointercancel", endTimelineAreaHeightDrag);
-    setStatus(timelineAreaExtraHeight > 0 ? "Timeline area resized" : "Timeline area reset");
+    setStatus(timelineAreaExtraHeight > 0 ? "area_resized" : "area_reset");
     event.preventDefault();
   }
 
@@ -2005,7 +2045,7 @@ import {
       updateItemFieldVisibilityForType("event");
       updateItemNotesLabel(null);
       updateNotesInputDirection();
-      dom.itemCalendarPreview.textContent = "Select an item to inspect calendar dates.";
+      dom.itemCalendarPreview.textContent = t("inspect_calendar_dates");
       dom.itemEndField.hidden = true;
       dom.itemDerivedLabelsField.hidden = true;
       setColorPickerValue(itemColorPicker, TYPE_COLORS.event, { emit: false });
@@ -2043,17 +2083,17 @@ import {
   function updateItemNotesLabel(item) {
     const label = dom.itemNotesField?.querySelector("span");
     if (!label) return;
-    label.textContent = item?.type === "note" ? "Balloon text" : "Notes";
+    label.textContent = item?.type === "note" ? t("balloon_text") : t("notes");
     dom.itemNotesInput.placeholder = item?.type === "note"
-      ? "Write the text shown inside the note balloon."
-      : "Write private notes for this item.";
+      ? t("balloon_placeholder")
+      : t("private_notes_placeholder");
   }
 
   function updateItemFieldVisibilityForType(type) {
     if (dom.itemTitleField) dom.itemTitleField.hidden = type === "note";
     if (dom.itemTextColorField) dom.itemTextColorField.hidden = type !== "note";
     const colorLabel = dom.itemColorField?.querySelector(".field-caption");
-    if (colorLabel) colorLabel.textContent = type === "note" ? "Balloon" : "Color";
+    if (colorLabel) colorLabel.textContent = type === "note" ? t("balloon") : t("color");
   }
 
   function updateNotesInputDirection() {
@@ -2107,7 +2147,7 @@ import {
       hexInput: dom.lineColorHexInput,
       palette: dom.lineColorPalette,
       defaultColor: "#e2e8f0",
-      emptyLabel: "No color",
+      emptyLabel: t("no_color"),
       optional: true,
       onChange: updateLineEditorColor,
     });
@@ -2149,8 +2189,8 @@ import {
       button.className = "color-swatch-button";
       button.dataset.color = swatch.value;
       button.style.setProperty("--swatch-color", swatch.value);
-      button.setAttribute("aria-label", `Use ${swatch.name} color`);
-      button.title = swatch.name;
+      button.setAttribute("aria-label", t("use_color", { name: t(`color_${swatch.name.toLowerCase()}`) }));
+      button.title = t(`color_${swatch.name.toLowerCase()}`);
       button.setAttribute("aria-pressed", "false");
       button.addEventListener("click", () => {
         if (picker.disabled) return;
@@ -2252,7 +2292,7 @@ import {
     picker.hueInput.value = String(Math.round(picker.hsv.h));
     picker.hexInput.value = storedColor || displayColor;
     picker.plane.setAttribute("aria-valuenow", String(Math.round(picker.hsv.s)));
-    picker.plane.setAttribute("aria-valuetext", `Saturation ${Math.round(picker.hsv.s)} percent, brightness ${Math.round(picker.hsv.v)} percent`);
+    picker.plane.setAttribute("aria-valuetext", t("color_values", { saturation: formatNumber(Math.round(picker.hsv.s)), brightness: formatNumber(Math.round(picker.hsv.v)) }));
     picker.palette?.querySelectorAll(".color-swatch-button").forEach((button) => {
       const isActive = Boolean(storedColor) && button.dataset.color?.toLowerCase() === storedColor.toLowerCase();
       button.classList.toggle("is-active", isActive);
@@ -2345,7 +2385,7 @@ import {
     const previousEntry = currentHistoryEntry();
     item.color = color;
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Item color updated");
+    if (changed) setStatus("item_color_updated");
   }
 
   function applyItemTextColorFromControl() {
@@ -2359,7 +2399,7 @@ import {
     const previousEntry = currentHistoryEntry();
     item.textColor = color;
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Note text color updated");
+    if (changed) setStatus("text_color_updated");
   }
 
   function renderLaneControls() {
@@ -2376,8 +2416,8 @@ import {
       dragHandle.type = "button";
       dragHandle.className = "lane-drag-handle";
       dragHandle.dataset.laneIndex = String(index);
-      dragHandle.ariaLabel = `Drag ${displayLabel} to reorder`;
-      dragHandle.title = "Drag to reorder";
+      dragHandle.ariaLabel = t("drag_line", { label: isolate(displayLabel) });
+      dragHandle.title = t("drag_reorder");
       dragHandle.addEventListener("pointerdown", beginSidebarLanePointerDrag);
       for (let dot = 0; dot < 6; dot += 1) {
         dragHandle.append(document.createElement("span"));
@@ -2403,7 +2443,7 @@ import {
       const removeButton = document.createElement("button");
       removeButton.type = "button";
       removeButton.className = "lane-remove-button";
-      removeButton.textContent = "Remove";
+      removeButton.textContent = t("remove");
       removeButton.dataset.laneIndex = String(index);
       removeButton.disabled = labels.length <= 1;
       removeButton.addEventListener("click", removeLane);
@@ -2428,11 +2468,7 @@ import {
   }
 
   function nextLaneLabel(labels) {
-    const highestNumber = labels.reduce((highest, label) => {
-      const match = String(label || "").trim().match(/^Line [+-]?(\d+)$/);
-      return match ? Math.max(highest, Number(match[1])) : highest;
-    }, 0);
-    return `Line ${highestNumber + 1}`;
+    return nextLineName(labels);
   }
 
   function ensureLaneColors() {
@@ -2455,7 +2491,7 @@ import {
     const previousEntry = currentHistoryEntry();
     timeline.settings.laneLabels[index] = event.currentTarget.value.trim() || laneDisplayLabel(index);
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Line renamed");
+    if (changed) setStatus("line_renamed");
   }
 
   function updateLaneLabelDraft(event) {
@@ -2480,7 +2516,7 @@ import {
       if (!isGlobalTimelineItemType(item.type) && item.lane >= insertAt) item.lane += 1;
     });
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Line added");
+    if (changed) setStatus("line_added");
   }
 
   function beginSidebarLanePointerDrag(event) {
@@ -2534,7 +2570,7 @@ import {
     if (moved) {
       history = recordTimelineChange(history, endedDrag.previousEntry);
       renderAll();
-      setStatus("Line moved");
+      setStatus("line_moved");
     }
     event.preventDefault();
   }
@@ -2584,7 +2620,7 @@ import {
       });
 
       renderAll({ save: false });
-      if (options.announce !== false) setStatus("Line moved");
+      if (options.announce !== false) setStatus("line_moved");
       return true;
     }
 
@@ -2604,7 +2640,7 @@ import {
     });
 
     renderAll({ save: false });
-    if (options.announce !== false) setStatus("Line moved");
+    if (options.announce !== false) setStatus("line_moved");
     return true;
   }
 
@@ -2617,17 +2653,17 @@ import {
     const labels = ensureLaneLabels();
     if (!Number.isInteger(index) || index < 0 || index >= labels.length) return;
     if (labels.length <= 1) {
-      setStatus("Keep at least one line");
+      setStatus("keep_line");
       return;
     }
 
     const label = laneDisplayLabel(index, labels[index]);
     const itemsOnLine = timeline.items.filter((item) => item.lane === index);
-    const itemText = itemsOnLine.length === 1 ? "1 item" : `${itemsOnLine.length} items`;
+    const itemText = spanUnit("items", itemsOnLine.length);
     const ok = window.confirm(
       itemsOnLine.length
-        ? `Remove "${label}" and delete ${itemText} on it?`
-        : `Remove "${label}"?`,
+        ? t("remove_line_items", { label: isolate(label), items: itemText })
+        : t("remove_line_confirm", { label: isolate(label) }),
     );
     if (!ok) return;
 
@@ -2643,7 +2679,7 @@ import {
     if (lineEditorLaneIndex === index) closeLineEditor({ commit: false });
     if (lineEditorLaneIndex !== null && lineEditorLaneIndex > index) lineEditorLaneIndex -= 1;
     renderAllAfterMaybeChange(previousEntry);
-    setStatus("Line removed");
+    setStatus("line_removed");
   }
 
   function updateItemCalendarPreviewFromInputs() {
@@ -2654,14 +2690,14 @@ import {
       : startDate;
     const displayCalendars = effectiveCurrentDisplayCalendars();
     dom.itemCalendarPreview.textContent = hasEndYear(dom.itemTypeInput.value)
-      ? `${formatDateForCalendars(startDate, displayCalendars)} to ${formatDateForCalendars(endDate, displayCalendars)}`
+      ? t("range", { start: isolate(formatDateForCalendars(startDate, displayCalendars)), end: isolate(formatDateForCalendars(endDate, displayCalendars)) })
       : formatDateForCalendars(startDate, displayCalendars);
   }
 
   function updateItemCalendarPreview(item) {
     const displayCalendars = effectiveCurrentDisplayCalendars();
     dom.itemCalendarPreview.textContent = hasEndYear(item.type)
-      ? `${formatDateForCalendars(item.startDate, displayCalendars)} to ${formatDateForCalendars(item.endDate, displayCalendars)}`
+      ? t("range", { start: isolate(formatDateForCalendars(item.startDate, displayCalendars)), end: isolate(formatDateForCalendars(item.endDate, displayCalendars)) })
       : formatDateForCalendars(item.startDate, displayCalendars);
   }
 
@@ -2669,7 +2705,7 @@ import {
     if (suppressControlEvents) return;
     const previousEntry = currentHistoryEntry();
     const settings = timeline.settings;
-    settings.title = dom.timelineTitleInput.value || "New Timeline";
+    settings.title = dom.timelineTitleInput.value || t("new_timeline");
     settings.startDate = normalizeDateInput(dom.startDateInput.value, settings.startDate);
     settings.autoEndDate = dom.autoEndDateInput.checked;
     if (event && event.currentTarget === dom.endDateInput) {
@@ -2683,7 +2719,7 @@ import {
     settings.snap = normalizeSnap(dom.snapInput.value);
     settings.displayCalendars = selectedDisplayCalendarsFromControls();
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Timeline updated");
+    if (changed) setStatus("timeline_updated");
   }
 
   function handleTimelineDateKeydown(event) {
@@ -2784,7 +2820,7 @@ import {
 
   function canCreateOrPasteItems() {
     if (!timeline.settings.itemsLocked) return true;
-    setStatus("Turn off read only to edit the timeline");
+    setStatus("read_only_edit_timeline");
     return false;
   }
 
@@ -2792,14 +2828,14 @@ import {
     return Boolean(timeline.settings.itemsLocked || item?.locked);
   }
 
-  function canModifyItem(item, actionLabel = "modify") {
+  function canModifyItem(item) {
     if (!item) return false;
     if (timeline.settings.itemsLocked) {
-      setStatus(`Turn off read only to ${actionLabel}`);
+      setStatus("read_only_modify");
       return false;
     }
     if (item.locked) {
-      setStatus(`Unlock this item to ${actionLabel}`);
+      setStatus("unlock_modify");
       return false;
     }
     return true;
@@ -2808,7 +2844,7 @@ import {
   function applyItemForm() {
     const item = getItem(selectedId);
     if (!item) return;
-    if (!canModifyItem(item, "edit it")) {
+    if (!canModifyItem(item)) {
       syncItemForm();
       return;
     }
@@ -2819,7 +2855,7 @@ import {
     const notes = dom.itemNotesInput.value;
     item.title = type === "note"
       ? noteTitleFromText(notes)
-      : dom.itemTitleInput.value.trim() || titleForType(type);
+      : dom.itemTitleInput.value.trim() || newItemTitle(type);
     item.lane = isGlobalTimelineItemType(type) ? 0 : clamp(Math.round(toNumber(dom.itemLaneInput.value, item.lane)), 0, 20);
     item.color = normalizeColor(dom.itemColorInput.value || TYPE_COLORS[type]);
     item.startDate = normalizeDateInput(dom.itemStartInput.value, item.startDate);
@@ -2835,7 +2871,7 @@ import {
     }
 
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Item updated");
+    if (changed) setStatus("item_updated");
   }
 
   function addItem(type) {
@@ -2848,7 +2884,7 @@ import {
     timeline.items.push(item);
     selectedId = item.id;
     renderAllAfterMaybeChange(previousEntry);
-    setStatus(`${titleForType(type)} added`);
+    setStatus("item_added", { typeId: type });
   }
 
   function createItemAt(type, target = {}) {
@@ -2862,7 +2898,7 @@ import {
       lane: isGlobalTimelineItemType(type) ? 0 : clamp(lane, 0, 20),
       startDate,
       endDate: clampIso(endDate, addDaysIso(startDate, 1), addDaysIso(timeline.settings.endDate, 1)),
-      title: titleForType(type),
+      title: newItemTitle(type),
       color: randomPaletteColor(),
       notes: "",
       locked: false,
@@ -2884,32 +2920,32 @@ import {
     if (!itemId) return;
     const item = getItem(itemId);
     if (!item) return;
-    if (!canModifyItem(item, "delete it")) return;
-    const ok = window.confirm(`Delete "${item.title}"?`);
+    if (!canModifyItem(item)) return;
+    const ok = window.confirm(t("delete_confirm", { title: isolate(item.title) }));
     if (!ok) return;
     const previousEntry = currentHistoryEntry();
     timeline.items = timeline.items.filter((candidate) => candidate.id !== item.id);
     if (selectedId === item.id) selectedId = null;
     renderAllAfterMaybeChange(previousEntry);
-    setStatus("Item deleted");
+    setStatus("item_deleted");
   }
 
   function copySelectedItem(itemId = selectedId) {
     const item = getItem(itemId);
     if (!item) {
-      setStatus("Select an item to copy");
+      setStatus("select_copy");
       return false;
     }
     copiedItem = { ...item };
     updateContextMenuItems();
-    setStatus("Item copied");
+    setStatus("item_copied");
     return true;
   }
 
   function pasteCopiedItem(target = {}) {
     if (!canCreateOrPasteItems()) return false;
     if (!copiedItem) {
-      setStatus("Copy an item before pasting");
+      setStatus("copy_before_paste");
       updateContextMenuItems();
       return false;
     }
@@ -2918,7 +2954,7 @@ import {
     timeline.items.push(copy);
     selectedId = copy.id;
     renderAllAfterMaybeChange(previousEntry);
-    setStatus("Item pasted");
+    setStatus("item_pasted");
     return true;
   }
 
@@ -2951,7 +2987,7 @@ import {
   function duplicateSelectedItem(itemId = selectedId) {
     const item = getItem(itemId);
     if (!item) return;
-    if (!canModifyItem(item, "duplicate it")) return;
+    if (!canModifyItem(item)) return;
     const previousEntry = currentHistoryEntry();
     const copy = {
       ...item,
@@ -2963,13 +2999,13 @@ import {
     timeline.items.push(copy);
     selectedId = copy.id;
     renderAllAfterMaybeChange(previousEntry);
-    setStatus("Item duplicated");
+    setStatus("item_duplicated");
   }
 
   function setItemsLocked(locked) {
     const nextLocked = Boolean(locked);
     if (timeline.settings.itemsLocked === nextLocked) {
-      setStatus(nextLocked ? "Timeline is already read only" : "Timeline is already editable");
+      setStatus(nextLocked ? "already_read_only" : "already_editable");
       updateContextMenuItems();
       return;
     }
@@ -2978,7 +3014,7 @@ import {
     timeline.settings.itemsLocked = nextLocked;
     const changed = renderAllAfterMaybeChange(previousEntry);
     updateContextMenuItems();
-    if (changed) setStatus(nextLocked ? "Read only on" : "Read only off");
+    if (changed) setStatus(nextLocked ? "read_only_on" : "read_only_off");
   }
 
   function syncItemsLockedButton() {
@@ -2986,8 +3022,8 @@ import {
     const locked = timeline.settings.itemsLocked;
     dom.itemsLockedButton.classList.toggle("is-active", locked);
     dom.itemsLockedButton.setAttribute("aria-pressed", String(locked));
-    dom.itemsLockedButton.setAttribute("aria-label", locked ? "Turn off read only" : "Read only");
-    dom.itemsLockedButton.title = locked ? "Turn off read only" : "Read only";
+    dom.itemsLockedButton.setAttribute("aria-label", locked ? t("read_only_off_action") : t("read_only"));
+    dom.itemsLockedButton.title = locked ? t("read_only_off_action") : t("read_only");
     dom.itemsLockedButton.querySelectorAll(".toggle-icon-state").forEach((icon) => {
       icon.dataset.active = String(icon.dataset.lockState === (locked ? "locked" : "unlocked"));
     });
@@ -3042,7 +3078,7 @@ import {
     labels[lineEditorLaneIndex] = dom.lineNameInput.value.trim() || laneDisplayLabel(lineEditorLaneIndex);
     dom.lineNameInput.value = labels[lineEditorLaneIndex];
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Line renamed");
+    if (changed) setStatus("line_renamed");
   }
 
   function updateLineEditorColor() {
@@ -3054,7 +3090,7 @@ import {
     dom.lineEditorPopover.dataset.color = color;
     setColorPickerValue(lineColorPicker, color, { emit: false });
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Line color updated");
+    if (changed) setStatus("line_color_updated");
   }
 
   function clearLineEditorColor() {
@@ -3065,7 +3101,7 @@ import {
     dom.lineEditorPopover.dataset.color = "";
     setColorPickerValue(lineColorPicker, "", { emit: false });
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Line color cleared");
+    if (changed) setStatus("line_color_cleared");
   }
 
   function applyLineEditor(event) {
@@ -3193,18 +3229,18 @@ import {
     timeline.items.push(item);
     selectedId = item.id;
     renderAllAfterMaybeChange(previousEntry);
-    setStatus(`${titleForType(type)} added`);
+    setStatus("item_added", { typeId: type });
   }
 
   function setSelectedItemLocked(locked, itemId = selectedId) {
     const item = getItem(itemId);
     if (!item) {
-      setStatus("Select an item first");
+      setStatus("select_first");
       return;
     }
     const nextLocked = Boolean(locked);
     if (item.locked === nextLocked) {
-      setStatus(nextLocked ? "Item already locked" : "Item already unlocked");
+      setStatus(nextLocked ? "already_locked" : "already_unlocked");
       updateContextMenuItems();
       return;
     }
@@ -3212,7 +3248,7 @@ import {
     item.locked = nextLocked;
     const changed = renderAllAfterMaybeChange(previousEntry);
     updateContextMenuItems();
-    if (changed) setStatus(nextLocked ? "Item locked" : "Item unlocked");
+    if (changed) setStatus(nextLocked ? "item_locked" : "item_unlocked");
   }
 
   function updateContextMenuItems() {
@@ -3315,7 +3351,7 @@ import {
     if (!itemNode) return;
     const item = getItem(itemNode.dataset.itemId);
     if (!item || item.type !== "note") return;
-    if (!canModifyItem(item, "edit it")) return;
+    if (!canModifyItem(item)) return;
     event.preventDefault();
     selectedId = item.id;
     renderAll({ save: false });
@@ -3404,13 +3440,13 @@ import {
     item.title = noteTitleFromText(value);
     selectedId = item.id;
     const changed = renderAllAfterMaybeChange(previousEntry);
-    if (changed) setStatus("Note text updated");
+    if (changed) setStatus("note_updated");
   }
 
   function cancelNoteInlineEditor() {
     closeNoteInlineEditor();
     renderAll({ save: false });
-    setStatus("Note edit canceled");
+    setStatus("note_canceled");
   }
 
   function commitNoteInlineEditorFromPointer(event) {
@@ -3497,7 +3533,7 @@ import {
     if (noteDoubleClick) {
       event.preventDefault();
       lastNotePointerDown = null;
-      if (!canModifyItem(item, "edit it")) {
+      if (!canModifyItem(item)) {
         renderAll({ save: false });
         return;
       }
@@ -3794,7 +3830,7 @@ import {
     dom.timelineViewport.classList.remove("is-reordering-lanes");
     dragState = null;
     if (wasPan) {
-      if (panMoved) setStatus("Timeline panned");
+      if (panMoved) setStatus("timeline_panned");
       return;
     }
     if (wasLaneReorder) {
@@ -3802,7 +3838,7 @@ import {
         history = recordTimelineChange(history, endedDrag.previousEntry);
       }
       renderAll({ save: Boolean(endedDrag.moved) });
-      if (endedDrag.moved) setStatus("Line moved");
+      if (endedDrag.moved) setStatus("line_moved");
       return;
     }
     if (dataMoved) {
@@ -3810,15 +3846,15 @@ import {
     }
     renderAll({ save: dataMoved });
     if (dataMoved && endedDrag.mode === "note-resize") {
-      setStatus("Note resized");
+      setStatus("note_resized");
     } else if (dataMoved && endedDrag.mode === "marker-label-resize") {
-      setStatus("Marker label resized");
+      setStatus("marker_resized");
     } else if (dataMoved && endedDrag.mode === "note-position") {
-      setStatus("Note moved");
+      setStatus("note_moved");
     } else if (dataMoved && endedDrag.mode === "marker-label-position") {
-      setStatus("Marker label moved");
+      setStatus("marker_moved");
     } else {
-      setStatus(dataMoved ? "Item moved" : "Item selected");
+      setStatus(dataMoved ? "item_moved" : "item_selected");
     }
   }
 
@@ -3868,7 +3904,7 @@ import {
     zoom = clamp(Number(value) || DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM);
     localStorage.setItem(ZOOM_KEY, String(zoom));
     dom.zoomRange.value = String(zoom);
-    dom.zoomLabel.textContent = `${formatZoomValue(zoom)} px/month`;
+    dom.zoomLabel.textContent = t("zoom_value", { value: formatZoomValue(zoom) });
     if (options.render !== false) renderAll({ save: false });
   }
 
@@ -3876,11 +3912,11 @@ import {
     const requestedZoom = zoom + delta;
     setZoom(requestedZoom);
     if (requestedZoom < MIN_ZOOM) {
-      setStatus("Minimum readable zoom reached");
+      setStatus("min_zoom");
     } else if (requestedZoom > MAX_ZOOM) {
-      setStatus("Maximum zoom reached");
+      setStatus("max_zoom");
     } else {
-      setStatus(delta > 0 ? "Zoomed in" : "Zoomed out");
+      setStatus(delta > 0 ? "zoomed_in" : "zoomed_out");
     }
   }
 
@@ -3897,7 +3933,7 @@ import {
     const readableZoom = Math.max(fittedZoom, FIT_MIN_ZOOM);
     setZoom(readableZoom);
     dom.timelineViewport.scrollLeft = 0;
-    setStatus(fittedZoom < FIT_MIN_ZOOM ? "Fit applied at readable zoom" : "Fit applied");
+    setStatus(fittedZoom < FIT_MIN_ZOOM ? "fit_readable" : "fit_applied");
   }
 
   function getViewportCenterDate() {
@@ -3966,7 +4002,7 @@ import {
       if (currentFileHandle) {
         await saveBlobToHandle(blob, currentFileHandle);
         setDirty(false);
-        setStatus(`Saved ${currentFileName || "current file"}`);
+        setStatus("saved", { name: isolate(currentFileName || t("current_file")) });
         return;
       }
 
@@ -3975,24 +4011,24 @@ import {
         const savedName = handle.name || filename;
         setCurrentFile(handle, savedName);
         setDirty(false);
-        setStatus(`Saved ${savedName}`);
+        setStatus("saved", { name: isolate(savedName) });
         return;
       }
 
       downloadBlob(blob, filename);
       setCurrentFile(null, filename);
       setDirty(false);
-      setStatus("JSON downloaded");
+      setStatus("json_downloaded");
     } catch (error) {
       if (error && error.name === "AbortError") {
-        setStatus("Save canceled");
+        setStatus("save_canceled");
         return;
       }
       console.error(error);
       downloadBlob(blob, filename);
       setCurrentFile(null, filename);
       setDirty(false);
-      setStatus("JSON downloaded");
+      setStatus("json_downloaded");
     }
   }
 
@@ -4007,7 +4043,7 @@ import {
       await loadTimelineFromFile(picked.file, picked.handle);
     } catch (error) {
       if (error && error.name === "AbortError") {
-        setStatus("Load canceled");
+        setStatus("load_canceled");
         return;
       }
       handleLoadTimelineError(error);
@@ -4034,7 +4070,7 @@ import {
     setCurrentFile(handle, file.name);
     renderAll({ save: false });
     setDirty(false);
-    setStatus(handle ? `Loaded ${file.name}` : "JSON loaded; Save downloads a copy");
+    setStatus(handle ? "loaded" : "json_loaded_copy", { name: isolate(file.name) });
   }
 
   function parseTimelineFileText(text) {
@@ -4051,52 +4087,58 @@ import {
   function handleLoadTimelineError(error) {
     console.error(error);
     if (error?.code === "INVALID_TIMELINE_JSON") {
-      setStatus("Could not load JSON");
-      window.alert("The selected file is not a valid timeline JSON file.");
+      setStatus("load_failed");
+      window.alert(t("invalid_file"));
       return;
     }
-    setStatus("Could not render timeline");
-    window.alert("The timeline file loaded, but the app could not render it.");
+    setStatus("render_failed");
+    window.alert(t("render_file_failed"));
   }
 
-  function exportSvgFile() {
-    const svgText = serializeTimelineSvg(dom.timelineSvg);
-    downloadBlob(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }), `${filenameBase()}.svg`);
-    setStatus("SVG exported");
+  async function exportSvgFile() {
+    try {
+      const svgText = await serializeTimelineSvgForExport(dom.timelineSvg);
+      downloadBlob(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }), `${filenameBase()}.svg`);
+      setStatus("svg_exported");
+    } catch (error) {
+      console.error(error);
+      setStatus("svg_failed");
+      window.alert(t("svg_error"));
+    }
   }
 
   async function exportPngFile() {
     try {
-      setStatus("Exporting PNG");
+      setStatus("exporting_png");
       const canvas = await timelineToCanvas("image/png");
       const blob = await canvasToBlob(canvas, "image/png");
       downloadBlob(blob, `${filenameBase()}.png`);
-      setStatus("PNG exported");
+      setStatus("png_exported");
     } catch (error) {
       console.error(error);
-      setStatus("PNG export failed");
-      window.alert("PNG export failed.");
+      setStatus("png_failed");
+      window.alert(t("png_error"));
     }
   }
 
   async function exportPdfFile() {
     try {
-      setStatus("Exporting PDF");
+      setStatus("exporting_pdf");
       const canvas = await timelineToCanvas("image/jpeg");
       const jpegBlob = await canvasToBlob(canvas, "image/jpeg", 0.92);
       const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer());
       const pdfBytes = buildPdfFromJpeg(jpegBytes, canvas.width, canvas.height);
       downloadBlob(new Blob([pdfBytes], { type: "application/pdf" }), `${filenameBase()}.pdf`);
-      setStatus("PDF exported");
+      setStatus("pdf_exported");
     } catch (error) {
       console.error(error);
-      setStatus("PDF export failed");
-      window.alert("PDF export failed.");
+      setStatus("pdf_failed");
+      window.alert(t("pdf_error"));
     }
   }
 
   async function timelineToCanvas(type) {
-    const svgText = serializeTimelineSvg(dom.timelineSvg);
+    const svgText = await serializeTimelineSvgForExport(dom.timelineSvg);
     const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
     const svgWidth = Number(dom.timelineSvg.getAttribute("width"));
@@ -4131,7 +4173,17 @@ import {
       if (value === undefined || value === null) return;
       node.setAttribute(key, String(value));
     });
-    if (text !== null) node.textContent = text;
+    if (text !== null) {
+      node.textContent = text;
+      if (tagName === "text" && attributes.direction === undefined) {
+        const direction = textDirectionFor(String(text));
+        node.setAttribute("direction", direction);
+        node.setAttribute("unicode-bidi", "plaintext");
+        // SVG start/end anchors reverse under RTL; preserve the geometric anchor.
+        const anchor = attributes["text-anchor"] || "start";
+        if (direction === "rtl" && anchor !== "middle") node.setAttribute("text-anchor", anchor === "start" ? "end" : "start");
+      }
+    }
     return node;
   }
 
@@ -4184,8 +4236,9 @@ import {
     return slug || "timeline";
   }
 
-  function setStatus(message) {
-    dom.statusText.textContent = message;
+  function setStatus(key, options = {}) {
+    lastStatus = { key, options };
+    dom.statusText.textContent = t(key, options.typeId ? { ...options, type: itemTypeLabel(options.typeId) } : options);
   }
 })();
 

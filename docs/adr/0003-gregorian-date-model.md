@@ -12,6 +12,8 @@ Store and calculate dates internally as Gregorian ISO dates in `YYYY-MM-DD` form
 
 Iranian date labels are derived display output, using English letters and numbers.
 
+ADR 0010 supersedes the English-letter/number display restriction with localized presentation. Gregorian ISO storage and calculations remain unchanged.
+
 ## Consequences
 
 Positive:

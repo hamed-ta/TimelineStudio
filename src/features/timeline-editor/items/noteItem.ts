@@ -1,3 +1,4 @@
+import { graphemes } from "../../../shared/text.ts";
 import {
   adjustColor,
   normalizeOptionalColor,
@@ -42,7 +43,8 @@ export function noteTitleFromText(text: string): string {
     .map((line) => line.trim())
     .find(Boolean);
   if (!firstLine) return NOTE_FALLBACK_TITLE;
-  return firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
+  const clusters = graphemes(firstLine);
+  return clusters.length > 80 ? `${clusters.slice(0, 77).join("")}...` : firstLine;
 }
 
 export function noteTextColorForItem(item: Pick<NoteLike, "color" | "textColor">): string {

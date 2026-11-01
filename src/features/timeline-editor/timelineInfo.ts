@@ -1,3 +1,6 @@
+import { t } from "../../i18n/index.ts";
+import { calendarLabel, spanUnit, joinSpan, isolate, itemTypeLabel } from "../../i18n/presentation.ts";
+export { itemTypeLabel } from "../../i18n/presentation.ts";
 import {
   formatDetailedAgeAtDate,
   formatDetailedAgeValueAtDate,
@@ -14,9 +17,6 @@ import {
   normalizeDisplayCalendars,
   type TimelineDisplayCalendar,
 } from "../../timeline/calendars.ts";
-import {
-  CALENDAR_REGISTRY,
-} from "../../timeline/calendarRegistry.ts";
 import {
   noteDisplayText,
   noteTitleFromText,
@@ -66,9 +66,9 @@ export function pointerInfoText(
   const calendars = normalizeDisplayCalendars(displayCalendars);
   if (!hoverDate) {
     return {
-      dateLabel: "Hover over the timeline",
+      dateLabel: t("hover_timeline"),
       iranianLabel: calendarPlaceholder(calendars),
-      ageLabel: birthDate ? "Age appears here" : "Add a birth item to calculate age",
+      ageLabel: birthDate ? t("age_here") : t("add_birth_age"),
     };
   }
 
@@ -76,7 +76,7 @@ export function pointerInfoText(
   return {
     dateLabel: dateLines[0],
     iranianLabel: dateLines[1] || "",
-    ageLabel: birthDate ? formatDetailedAgeAtDate(birthDate, hoverDate) : "Age: add a birth item",
+    ageLabel: birthDate ? formatDetailedAgeAtDate(birthDate, hoverDate) : t("age_add_birth"),
   };
 }
 
@@ -96,7 +96,7 @@ export function cursorReadoutText(
 
   return {
     agoLabel: stabilizeReadoutNumericWidth(relativeDateLabel(hoverDate, currentDate)),
-    ageLabel: stabilizeReadoutNumericWidth(birthDate ? formatDetailedAgeAtDate(birthDate, hoverDate) : "Age unavailable"),
+    ageLabel: stabilizeReadoutNumericWidth(birthDate ? formatDetailedAgeAtDate(birthDate, hoverDate) : t("age_unavailable")),
     dateLabel: formatDateForCalendars(hoverDate, normalizeDisplayCalendars(displayCalendars)),
   };
 }
@@ -110,9 +110,9 @@ export function selectionInfoText(
   const calendars = normalizeDisplayCalendars(displayCalendars);
   if (!item) {
     return {
-      itemLabel: "No item selected",
+      itemLabel: t("no_item"),
       lineLine: "",
-      dateLine: "Select an item to inspect dates",
+      dateLine: t("inspect_dates"),
       endLine: "",
       durationLine: "",
       ageLine: "",
@@ -130,28 +130,28 @@ export function selectionInfoText(
 }
 
 function relativeDateLabel(date: string, currentDate: string): string {
-  if (date === currentDate) return "today";
-  if (date < currentDate) return `${largestDateSpanUnit(date, currentDate)} ago`;
-  return `in ${largestDateSpanUnit(currentDate, date)}`;
+  if (date === currentDate) return t("today");
+  if (date < currentDate) return t("ago", { value: largestDateSpanUnit(date, currentDate) });
+  return t("in_time", { value: largestDateSpanUnit(currentDate, date) });
 }
 
 function largestDateSpanUnit(startDate: string, endDate: string): string {
   const span = getDateSpanParts(startDate, endDate);
   const parts = [];
   if (span.years) {
-    parts.push(`${span.years} ${span.years === 1 ? "year" : "years"}`);
+    parts.push(spanUnit("years", span.years));
   }
   if (span.months) {
-    parts.push(`${span.months} ${span.months === 1 ? "month" : "months"}`);
+    parts.push(spanUnit("months", span.months));
   }
   if (span.days || parts.length === 0) {
-    parts.push(`${span.days} ${span.days === 1 ? "day" : "days"}`);
+    parts.push(spanUnit("days", span.days));
   }
-  return parts.join(" ");
+  return joinSpan(parts, false);
 }
 
 function stabilizeReadoutNumericWidth(label: string): string {
-  return label.replace(/\d+/g, (digits) => {
+  return label.replace(/[\p{Decimal_Number}]+/gu, (digits) => {
     if (digits.length >= 2) {
       return digits;
     }
@@ -159,52 +159,41 @@ function stabilizeReadoutNumericWidth(label: string): string {
   });
 }
 
-export function itemTypeLabel(type: unknown): string {
-  return {
-    birth: "Birth",
-    event: "Event",
-    marker: "Marker",
-    note: "Note",
-    period: "Period",
-    line: "Line",
-    text: "Text",
-  }[String(type)] || "Item";
-}
 
 function selectedItemTitle(item: InfoItem): string {
-  const lockedText = item.locked ? "Locked - " : "";
   const title = item.type === "note" ? noteTitleFromText(noteDisplayText(item)) : item.title;
-  return `${lockedText}${itemTypeLabel(item.type)}: ${title}`;
+  const label = t("item_title", { type: itemTypeLabel(item.type), title: isolate(title) });
+  return item.locked ? t("locked_title", { value: label }) : label;
 }
 
 function selectedItemLineLine(item: InfoItem, laneLabels: readonly string[]): string {
   if (isGlobalTimelineItemType(item.type) || item.type === "note") return "";
-  return `Line: ${laneDisplayLabel(item.lane, laneLabels[item.lane])}`;
+  return t("line_detail", { value: isolate(laneDisplayLabel(item.lane, laneLabels[item.lane])) });
 }
 
 function selectedItemStartLine(item: InfoItem, displayCalendars: readonly TimelineDisplayCalendar[]): string {
   const start = formatDateForCalendars(item.startDate, displayCalendars);
-  return hasEndDate(item.type) ? `Start: ${start}` : `Date: ${start}`;
+  return t(hasEndDate(item.type) ? "start_detail" : "date_detail", { value: isolate(start) });
 }
 
 function selectedItemEndLine(item: InfoItem, displayCalendars: readonly TimelineDisplayCalendar[]): string {
   if (!hasEndDate(item.type)) return "";
   const end = formatDateForCalendars(item.endDate, displayCalendars);
-  return `End: ${end}`;
+  return t("end_detail", { value: isolate(end) });
 }
 
 function selectedItemDurationLine(item: InfoItem): string {
   if (!hasEndDate(item.type)) return "";
-  return `Duration: ${formatDetailedDateSpan(item.startDate, item.endDate)}`;
+  return t("duration_detail", { value: formatDetailedDateSpan(item.startDate, item.endDate) });
 }
 
 function selectedItemAgeLine(item: InfoItem, birthDate?: string | null): string {
-  if (item.type === "birth") return "Age source";
+  if (item.type === "birth") return t("age_source");
   if (!birthDate) return "";
   if (hasEndDate(item.type)) {
-    return `Age: ${formatDetailedAgeValueAtDate(birthDate, item.startDate)} to ${formatDetailedAgeValueAtDate(birthDate, item.endDate)}`;
+    return t("age_detail", { value: t("range", { start: formatDetailedAgeValueAtDate(birthDate, item.startDate), end: formatDetailedAgeValueAtDate(birthDate, item.endDate) }) });
   }
-  return `Age: ${formatDetailedAgeValueAtDate(birthDate, item.startDate)}`;
+  return t("age_detail", { value: formatDetailedAgeValueAtDate(birthDate, item.startDate) });
 }
 
 function hasEndDate(type: unknown): boolean {
@@ -221,7 +210,7 @@ function pointerDateLines(hoverDate: string, displayCalendars: readonly Timeline
 
 function calendarPlaceholder(displayCalendars: readonly TimelineDisplayCalendar[]): string {
   const labels = displayCalendars.map((calendar) => (
-    calendar === "gregorian" ? "Gregorian" : CALENDAR_REGISTRY[calendar].label
+    calendarLabel(calendar)
   ));
-  return labels.length === 1 ? `${labels[0]} date` : `${labels[0]} and ${labels[1]} dates`;
+  return labels.length === 1 ? t("calendar_date", { calendar: labels[0] }) : t("calendar_dates", { first: labels[0], second: labels[1] });
 }

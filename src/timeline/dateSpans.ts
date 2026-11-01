@@ -1,3 +1,5 @@
+import { t, formatNumber } from "../i18n/index.ts";
+import { spanUnit, joinSpan } from "../i18n/presentation.ts";
 export type DateSpanParts = {
   years: number;
   months: number;
@@ -5,38 +7,38 @@ export type DateSpanParts = {
 };
 
 export function formatAgeAtDate(birthDate: string, targetDate: string): string {
-  if (targetDate < birthDate) return "Before birth";
-  return `Age ${formatCompactDateSpan(birthDate, targetDate)}`;
+  if (targetDate < birthDate) return t("before_birth");
+  return t("age", { value: formatCompactDateSpan(birthDate, targetDate) });
 }
 
 export function formatDetailedAgeAtDate(birthDate: string, targetDate: string): string {
-  if (targetDate < birthDate) return "Before birth";
-  return `Age ${formatDetailedDateSpan(birthDate, targetDate)}`;
+  if (targetDate < birthDate) return t("before_birth");
+  return t("age", { value: formatDetailedDateSpan(birthDate, targetDate) });
 }
 
 export function formatDetailedAgeValueAtDate(birthDate: string, targetDate: string): string {
-  if (targetDate < birthDate) return "before birth";
+  if (targetDate < birthDate) return t("before_birth_value");
   return formatDetailedDateSpan(birthDate, targetDate);
 }
 
 export function formatCompactDateSpan(startDate: string, endDate: string): string {
-  if (endDate < startDate) return "before";
+  if (endDate < startDate) return t("before");
   const span = getDateSpanParts(startDate, endDate);
   const parts: string[] = [];
-  if (span.years) parts.push(`${span.years}y`);
-  if (span.months) parts.push(`${span.months}m`);
-  if (span.days || parts.length === 0) parts.push(`${span.days}d`);
+  if (span.years) parts.push(t("compact_years", { value: formatNumber(span.years) }));
+  if (span.months) parts.push(t("compact_months", { value: formatNumber(span.months) }));
+  if (span.days || parts.length === 0) parts.push(t("compact_days", { value: formatNumber(span.days) }));
   return parts.join(" ");
 }
 
 export function formatDetailedDateSpan(startDate: string, endDate: string): string {
-  if (endDate < startDate) return "before";
+  if (endDate < startDate) return t("before");
   const span = getDateSpanParts(startDate, endDate);
   const parts: string[] = [];
-  if (span.years) parts.push(`${span.years} ${span.years === 1 ? "year" : "years"}`);
-  if (span.months) parts.push(`${span.months} ${span.months === 1 ? "month" : "months"}`);
-  if (span.days || parts.length === 0) parts.push(`${span.days} ${span.days === 1 ? "day" : "days"}`);
-  return parts.join(", ");
+  if (span.years) parts.push(spanUnit("years", span.years));
+  if (span.months) parts.push(spanUnit("months", span.months));
+  if (span.days || parts.length === 0) parts.push(spanUnit("days", span.days));
+  return joinSpan(parts);
 }
 
 export function getDateSpanParts(startDate: string, endDate: string): DateSpanParts {

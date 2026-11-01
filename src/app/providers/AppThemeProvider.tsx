@@ -1,3 +1,9 @@
+import enUS from "antd/es/locale/en_US";
+import esES from "antd/es/locale/es_ES";
+import frFR from "antd/es/locale/fr_FR";
+import faIR from "antd/es/locale/fa_IR";
+import arEG from "antd/es/locale/ar_EG";
+import { useAppLocale } from "./AppLocaleProvider";
 import { ConfigProvider, theme as antTheme } from "antd";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
@@ -6,11 +12,7 @@ type ResolvedThemeMode = "light" | "dark";
 
 const THEME_STORAGE_KEY = "timeline-studio-theme";
 const THEME_ORDER: ThemeMode[] = ["system", "light", "dark"];
-const THEME_LABELS: Record<ThemeMode, string> = {
-  system: "System",
-  light: "Light",
-  dark: "Dark",
-};
+const ANT_LOCALES = { en: enUS, es: esES, fr: frFR, fa: faIR, ar: arEG };
 
 const APP_FONT_STACK =
   '"Inter Variable", "Vazirmatn Variable", "Noto Sans Arabic", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif';
@@ -26,6 +28,7 @@ type AppThemeContextValue = {
 const AppThemeContext = createContext<AppThemeContextValue | null>(null);
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
+  const { language, direction, t } = useAppLocale();
   const [themeMode, setThemeMode] = useState<ThemeMode>(readStoredTheme);
   const systemTheme = useSystemTheme();
   const resolvedTheme: ResolvedThemeMode = themeMode === "system" ? systemTheme : themeMode;
@@ -84,15 +87,15 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     () => ({
       themeMode,
       nextMode,
-      themeLabel: THEME_LABELS[themeMode],
-      nextThemeLabel: THEME_LABELS[nextMode],
+      themeLabel: t(themeMode),
+      nextThemeLabel: t(nextMode),
       cycleTheme: () => setThemeMode(nextMode),
     }),
-    [nextMode, themeMode],
+    [nextMode, themeMode, language],
   );
 
   return (
-    <ConfigProvider theme={antConfigTheme}>
+    <ConfigProvider theme={antConfigTheme} locale={ANT_LOCALES[language]} direction={direction}>
       <AppThemeContext value={value}>{children}</AppThemeContext>
     </ConfigProvider>
   );

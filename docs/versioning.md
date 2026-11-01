@@ -6,7 +6,7 @@ Timeline Studio uses semantic versioning for releases:
 - `MINOR`: new user-facing features that preserve existing saved JSON compatibility.
 - `PATCH`: bug fixes, internal refactors, documentation fixes, and behavior-preserving improvements.
 
-The current package version is `0.4.0`. Do not bump it during ordinary migration slices unless the user asks for a release or version bump.
+The current package version is `0.5.0`. Do not bump it during ordinary migration slices unless the user asks for a release or version bump.
 
 ## Changelog
 
@@ -26,21 +26,21 @@ GitHub Actions validates normal branch pushes and pull requests with:
 node --check src/features/timeline-editor/legacyTimelineEditor.js
 npm test
 npm run typecheck
+npm run i18n:check
 npm run build
 ```
 
 Versioned releases are tag-based. A release tag must match the version in `package.json` and `package-lock.json`, and `CHANGELOG.md` must include a matching version heading.
 
-Example release flow:
+Example release flow (replace the example version with the newly bumped package version):
 
 ```sh
 npm version minor --no-git-tag-version
-# Move CHANGELOG.md Unreleased entries to: ## 0.2.0 - YYYY-MM-DD
+# Move CHANGELOG.md Unreleased entries to: ## 0.5.0 - YYYY-MM-DD
 git add package.json package-lock.json CHANGELOG.md
-git commit -m "chore: release 0.2.0"
-git tag v0.2.0
-git push origin main
-git push origin v0.2.0
+git commit -m "chore: release 0.5.0"
+git tag -a v0.5.0 -m "Timeline Studio 0.5.0"
+git push --atomic origin main v0.5.0
 ```
 
 Pushing the tag runs the release workflow. It builds the app, deploys `dist` to GitHub Pages, creates or updates the GitHub Release, and attaches a zipped static build artifact.

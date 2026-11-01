@@ -1,3 +1,4 @@
+import { useAppLocale } from "../../../app/providers/AppLocaleProvider";
 import { BgColorsOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 
@@ -10,6 +11,7 @@ export function ColorPickerField({
   prefix: "item" | "itemText" | "line";
   paletteLabel: string;
 }) {
+  const { t } = useAppLocale();
   const inputId = `${prefix}ColorInput`;
   const triggerId = `${prefix}ColorTrigger`;
   const previewId = `${prefix}ColorPreview`;
@@ -38,13 +40,13 @@ export function ColorPickerField({
           <span className="color-picker-preview" id={previewId} aria-hidden="true"></span>
           <span className="color-picker-value" id={valueId}>#2563EB</span>
         </Button>
-        <div className="color-picker-panel" id={panelId} role="dialog" aria-label={`${label} picker`} hidden>
+        <div className="color-picker-panel" id={panelId} role="dialog" aria-label={t("picker", { label })} hidden>
           <div
             className="color-picker-plane"
             id={planeId}
             role="slider"
             tabIndex={0}
-            aria-label={`${label} saturation and brightness`}
+            aria-label={t("saturation_brightness", { label })}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={100}
@@ -52,12 +54,12 @@ export function ColorPickerField({
             <span className="color-picker-plane-marker" id={markerId}></span>
           </div>
           <label className="color-picker-range">
-            Hue
-            <input id={hueId} type="range" min={0} max={360} defaultValue={220} aria-label={`${label} hue`} />
+            {t("hue")}
+            <input id={hueId} type="range" min={0} max={360} defaultValue={220} aria-label={t("color_hue", { label })} />
           </label>
           <label className="color-picker-hex-row">
-            Hex
-            <input id={hexId} className="ant-input legacy-input" type="text" inputMode="text" maxLength={7} spellCheck={false} aria-label={`${label} hex color`} />
+            {t("hex")}
+            <input id={hexId} className="ant-input legacy-input" type="text" dir="ltr" inputMode="text" maxLength={7} spellCheck={false} aria-label={t("hex_color", { label })} />
           </label>
           <div className="color-swatch-grid" id={paletteId} role="group" aria-label={paletteLabel}></div>
         </div>

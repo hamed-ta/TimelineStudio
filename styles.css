@@ -2726,3 +2726,59 @@ button:focus-visible {
     border: 1px solid ButtonText;
   }
 }
+
+/* Language is an app preference; the chronological canvas remains explicitly LTR. */
+.language-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-block-size: 34px;
+  margin: 0;
+  padding-inline: 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-button);
+  background: var(--surface);
+  color: var(--text);
+}
+.language-control select {
+  max-inline-size: 8rem;
+  min-inline-size: 0;
+  min-block-size: 32px;
+  padding-inline: 3px;
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.language-control option { background: var(--surface-raised); color: var(--text); }
+.language-control:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+[dir="rtl"] .inspector { border-right: 0; border-left: 1px solid var(--line); }
+[dir="rtl"] .toolbar-group { padding-right: 0; padding-left: 8px; border-right: 0; border-left: 1px solid var(--line); }
+[dir="rtl"] .toolbar-view-group { padding-left: 0; padding-right: 8px; border-left: 0; border-right: 1px solid var(--line); }
+[dir="rtl"] .legacy-select {
+  padding-right: 9px;
+  padding-left: 30px;
+  background-position: 11px calc(50% - 2px), 16px calc(50% - 2px);
+}
+[dir="rtl"] .panel-toggle-button .toggle-icon-stack { transform: scaleX(-1); }
+[dir="rtl"] .color-picker-trigger,
+[dir="rtl"] .context-menu button { text-align: start; }
+[dir="rtl"] .context-menu-label + .anticon { transform: scaleX(-1); }
+[dir="rtl"] .brand { direction: ltr; }
+.timeline-context { unicode-bidi: isolate; }
+#stageTitle, #lineEditorTitle, #selectedItemLabel { unicode-bidi: plaintext; }
+#stageMeta, #selectedItemDateLabel, #selectedItemEndLabel, .calendar-preview { unicode-bidi: plaintext; }
+#fileNameLabel { unicode-bidi: plaintext; overflow-wrap: anywhere; }
+#timelineViewport, .color-picker-plane, .color-picker-range input,
+#zoomRange, #timelineHeightRange, .color-picker-value, .color-picker-hex-row input { direction: ltr; }
+.timeline-empty-state { text-align: center; }
+@media (max-width: 960px) {
+  [dir="rtl"] .inspector { border-left: 0; }
+}
+@media (max-width: 560px) {
+  [dir="rtl"] .toolbar-group, [dir="rtl"] .toolbar-view-group { border-inline: 0; padding-inline: 0; }
+}
+@media (pointer: coarse) { .language-control, .language-control select { min-block-size: 44px; } }
+@media (forced-colors: active) { .language-control { border-color: ButtonText; } }

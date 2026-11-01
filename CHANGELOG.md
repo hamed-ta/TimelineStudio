@@ -2,9 +2,17 @@
 
 All notable project changes should be recorded here.
 
-This project follows semantic versioning. The current package version is `0.4.0`.
+This project follows semantic versioning. The current package version is `0.5.0`.
 
 ## Unreleased
+
+## 0.5.0 - 2026-11-01
+
+### Added
+
+- Added English, Spanish, French, Persian and Arabic interface catalogs with remembered language selection, Ant Design localization, RTL controls, localized dates/ages/durations and catalog validation during builds.
+- New timelines use language-specific initial display calendars; language switching preserves existing document calendars, text, drafts and history.
+- Embedded Latin and Arabic/Persian fonts in SVG/PNG/PDF exports, removed editor-only controls from exports and preserved grapheme clusters when fitting text.
 
 ### Design
 

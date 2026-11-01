@@ -1,3 +1,4 @@
+import { graphemes } from "../../../shared/text.ts";
 export type NoteRect = {
   x: number;
   y: number;
@@ -204,7 +205,7 @@ export function fitNoteText(
   const suffix = "...";
   let output = value;
   while (output.length > 1 && measureText(`${output}${suffix}`) > maxWidth) {
-    output = output.slice(0, -1);
+    output = graphemes(output).slice(0, -1).join("");
   }
   return `${output}${suffix}`;
 }
@@ -258,7 +259,7 @@ function splitLongNoteWord(
   if (measureText(value) <= maxWidth) return [value];
   const chunks: string[] = [];
   let current = "";
-  Array.from(value).forEach((char) => {
+  graphemes(value).forEach((char) => {
     const next = `${current}${char}`;
     if (current && measureText(next) > maxWidth) {
       chunks.push(current);
