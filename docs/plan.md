@@ -6,7 +6,7 @@ Continue the ADR 0009 migration by moving undo/redo history ownership into the r
 
 ## Five-Language Interface — 2026-11-01
 
-- Preparing the user-authorized `0.5.0` minor release; release/deployment evidence is recorded in `docs/handoff.md`.
+- Released the user-authorized `0.5.0` minor version from `96d01da`, with branch CI, tag-triggered Pages deployment, published ZIP and live-site verification passed. Evidence is recorded in `docs/handoff.md`.
 - Implemented English, Spanish, French, Persian and Arabic with shared i18next/react-i18next catalogs, typed keys, Ant locale/direction and explicit native number/calendar formatting. ADR 0010 records the dependency and localized-display update to ADR 0003.
 - Language preference stays outside document JSON/history; a presentation-only bridge refreshes legacy output without resetting form drafts. Creation-language default names become ordinary saved text. New timelines default to Persian / Solar Hijri in Persian, Islamic / Umm al-Qura in Arabic and Gregorian otherwise; current calendar choices survive language changes.
 - Added `npm run i18n:check` to production builds, grapheme-safe measured labels and font-embedded exports. Browser, automated and independent-review evidence is in `docs/handoff.md`.

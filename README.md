@@ -7,7 +7,7 @@
 
 Timeline Studio is a local-first web app for building personal horizontal timelines. It runs in the browser, saves portable JSON files, and can export the visible timeline as SVG, PNG, or PDF.
 
-Current release: **0.5.0**, with a five-language interface and language-specific calendar defaults for new timelines. [Open Timeline Studio](https://hamed-ta.github.io/TimelineStudio/) or see the [release notes](CHANGELOG.md).
+Current release: [**0.5.0**](https://github.com/hamed-ta/TimelineStudio/releases/tag/v0.5.0), with a five-language interface and language-specific calendar defaults for new timelines. [Open Timeline Studio](https://hamed-ta.github.io/TimelineStudio/) or see the [release notes](CHANGELOG.md).
 
 The project is migrating toward a modern Vite, React, TypeScript, Ant Design, and eventually Firebase-based app while preserving local JSON ownership.
 
